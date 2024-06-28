@@ -7,9 +7,10 @@ interface TextInputProps {
   value: string;
   onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
   className?: string;
+  error?: boolean;
 }
 
-const TextInput: React.FC<TextInputProps> = ({ type, name, placeholder, value, onChange, className }) => {
+const TextInput: React.FC<TextInputProps> = ({ type, name, placeholder, value, onChange, className, error }) => {
   return (
     <input
       type={type}
@@ -17,7 +18,7 @@ const TextInput: React.FC<TextInputProps> = ({ type, name, placeholder, value, o
       placeholder={placeholder}
       value={value}
       onChange={onChange}
-      className={`text-black p-2 bg-transparent border-b-2 border-gray-300 rounded-none focus:outline-none ${className}`}
+      className={`text-black saira p-2 bg-transparent border-b-2 border-gray-300 rounded-none focus:outline-none ${error ? 'border-red-500 text-red-500' : 'border-gray-300'} ${className}`}
     />
   );
 };
