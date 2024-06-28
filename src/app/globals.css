@@ -31,3 +31,12 @@ body {
     text-wrap: balance;
   }
 }
+
+@font-face {
+  font-family: saira;
+  src: url(../../public/static/fonts/Saira-VariableFont_wdth.ttf);
+}
+
+.saira {
+  font-family: saira;
+}
