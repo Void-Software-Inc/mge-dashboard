@@ -17,6 +17,8 @@ export default function Login() {
   })
 
   const router = useRouter();
+  const [error, setError] = useState(false);
+  const [errorMessage, setErrorMessage] = useState('');
 
   const login = async () => {
     try {
@@ -27,12 +29,20 @@ export default function Login() {
           password: data.password
         })
 
-      if (dataUser) {
+      if (dataUser && !error) {
         router.refresh();
       }
-
+      if (error) {
+        setError(true)
+        setErrorMessage('Invalid credentials')
+        setTimeout(() => {
+          setError(false)
+          setErrorMessage('')
+        }, 3000)
+      }
     } catch (error) {
       console.log(error)
+      setError(true)
     }
   }
 
@@ -67,6 +77,7 @@ export default function Login() {
               placeholder="Email"
               value={data.email}
               onChange={handleChange}
+              error={error}
             />
           </div>
           <div className='grid'>
@@ -76,7 +87,11 @@ export default function Login() {
               placeholder="Password"
               value={data.password}
               onChange={handleChange}
+              error={error}
             />
+          </div>
+          <div style={{ height: '24px' }}>
+            {error && <p className="text-red-500 saira text-sm">{errorMessage}</p>}
           </div>
           <div className="flex justify-center w-full">
             <button onClick={login} className="px-4 py-2 bg-orange-500 rounded cursor-pointer w-full saira">Login</button>
