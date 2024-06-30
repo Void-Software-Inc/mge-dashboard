@@ -42,8 +42,8 @@ export default async function Login({
   };
   
   return (
-    <main className="flex justify-center md:items-center h-[100vh] bg-white">
-      <div className="p-8 w-full h-[75vh] md:w-[400px] md:shadow-2xl rounded-lg flex flex-col justify-around">
+    <main className="flex justify-center md:items-center h-[100vh] bg-gray-200 lg:bg-gray-300">
+      <div className="p-8 w-full h-[75vh] md:w-[400px] md:shadow-2xl rounded-lg bg-gray-200 flex flex-col justify-around">
         <div className="flex flex-col items-start items-center">
           <h2 className="text-black text-3xl md:text-2xl mb-12 saira font-semibold">Welcome</h2>
           <Image
@@ -79,7 +79,7 @@ export default async function Login({
             <div className="flex justify-center w-full">
               <SubmitButton
                 formAction={signIn}
-                className="px-4 py-2 bg-orange-500 rounded cursor-pointer w-full saira"
+                className="px-4 py-2 text-gray-200 bg-orange-500 rounded cursor-pointer w-full saira"
                 pendingText="Signing In..."
               >
                 Sign In
