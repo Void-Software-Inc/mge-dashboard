@@ -63,7 +63,7 @@ export const Navbar = () => {
                 onMouseLeave={handleNavBarItemLeaveRight}>
                 <Link href='/products' legacyBehavior scroll={false}>
                   <a
-                    className="uppercase text-black font-semibold text-sm hover:transition hover:duration-[600ms] cursor-pointer hover:text-orange-500"
+                    className="uppercase saira text-black font-semibold text-sm hover:transition hover:duration-[600ms] cursor-pointer hover:text-orange-500"
                     onMouseEnter={() => handleNavBarItemEnterRight(1)}
                   >
                     Produits
@@ -71,7 +71,7 @@ export const Navbar = () => {
                 </Link>
                 <Link href='/quotes' legacyBehavior scroll={false}>
                   <a
-                    className="uppercase text-black font-semibold text-sm hover:transition hover:duration-[600ms] cursor-pointer hover:text-orange-500"
+                    className="uppercase saira text-black font-semibold text-sm hover:transition hover:duration-[600ms] cursor-pointer hover:text-orange-500"
                     onMouseEnter={() => handleNavBarItemEnterRight(2)}
                   >
                     Devis
@@ -79,7 +79,7 @@ export const Navbar = () => {
                 </Link>
                 <Link href='/settings' legacyBehavior scroll={false}>
                   <a
-                    className="uppercase text-black font-semibold text-sm hover:transition hover:duration-[600ms] cursor-pointer hover:text-orange-500"
+                    className="uppercase saira text-black font-semibold text-sm hover:transition hover:duration-[600ms] cursor-pointer hover:text-orange-500"
                     onMouseEnter={() => handleNavBarItemEnterRight(3)}
                   >
                     Paramètres
@@ -108,8 +108,8 @@ export const Navbar = () => {
       <div
         className={
           hamburgerController
-            ? 'lg:hidden top-[65px] h-full bg-gray-300 w-full border-t-[0.01px] border-gray-300 border-opacity-40 fixed z-[799] transform transition-transform duration-500 translate-y-0'
-            : 'lg:hidden top-[65px] h-full bg-gray-300 w-full fixed z-[799] transform transition-transform duration-500 -translate-y-full'
+            ? 'lg:hidden top-[65px] h-full bg-gray-200 w-full border-t-[0.01px] border-gray-300 border-opacity-40 fixed z-[799] transform transition-transform duration-500 translate-y-0'
+            : 'lg:hidden top-[65px] h-full bg-gray-200 w-full fixed z-[799] transform transition-transform duration-500 -translate-y-full'
         }>
         <Link href='/products'>
           <div onClick={toggleHambFalse} className="text-lg font-bold uppercase text-black flex justify-center mt-12 hover:text-orange-500">
