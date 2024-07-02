@@ -42,7 +42,7 @@ const Datatable: React.FC<DatatableComponentProps> = ({ headers, items, onSelect
 
     const renderHeaders = () => (
         <tr>
-            <th className='whitespace-nowrap px-4 py-2 font-medium text-gray-900'>
+            <th className='px-4 py-2 font-medium text-gray-900'>
                 <input
                     type="checkbox"
                     checked={selectedItems.size === currentItems.length}
@@ -51,15 +51,15 @@ const Datatable: React.FC<DatatableComponentProps> = ({ headers, items, onSelect
                 />
             </th>
             {headers.map((header, index) => (
-                <th className='whitespace-nowrap px-4 py-2 font-medium text-gray-900 text-start' key={index}>{header.title}</th>
+                <th className='saira whitespace-nowrap px-4 py-2 font-medium text-gray-900 text-start' key={index}>{header.title}</th>
             ))}
         </tr>
     );
 
     const renderItems = () => (
         currentItems.map((item, index) => (
-            <tr key={index} className="divide-y divide-gray-200">
-                <td className='whitespace-nowrap px-4 py-2 text-gray-700'>
+            <tr key={index} className="h-28">
+                <td className='px-4 py-2 text-gray-700 border-b border-gray-200'>
                     <input
                         type="checkbox"
                         checked={selectedItems.has(item.id)}
@@ -68,7 +68,7 @@ const Datatable: React.FC<DatatableComponentProps> = ({ headers, items, onSelect
                     />
                 </td>
                 {headers.map((header, headerIndex) => (
-                    <td className='whitespace-nowrap px-4 py-2 text-gray-700 text-start' key={headerIndex}>
+                    <td className='saira whitespace-nowrap px-4 py-2 text-gray-700 text-start border-b border-gray-200' key={headerIndex}>
                         {header.value === 'image_url' ? (
                             <Image
                                 src={item[header.value]}
@@ -98,10 +98,10 @@ const Datatable: React.FC<DatatableComponentProps> = ({ headers, items, onSelect
     };
 
     return (
-        <div className="rounded-md border w-[90vw]">
-            <div className="overflow-x-auto rounded-t-md">
+        <div className="w-[90vw]">
+            <div className="overflow-x-auto rounded-t-md h-[70vh] bg-white">
                 <table className='min-w-full divide-y-2 divide-gray-200 bg-white text-sm'>
-                    <thead className='bg-gray-200'>
+                    <thead className='bg-gray-200 sticky top-0'>
                         {renderHeaders()}
                     </thead>
                     <tbody>

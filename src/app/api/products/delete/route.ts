@@ -20,7 +20,6 @@ export async function POST(request: NextRequest) {
     const imagePaths = products.map((product) => {
         const url = new URL(product.image_url);
         const modifiedPath = url.pathname.split('/').slice(-1)[0];
-        console.log(modifiedPath);
         return modifiedPath;
     });
 
