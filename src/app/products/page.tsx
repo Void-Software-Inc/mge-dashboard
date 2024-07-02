@@ -52,7 +52,7 @@ export default async function Products() {
   }));
 
   return (
-    <main className="flex min-h-screen flex-col items-center justify-center">
+    <main className="flex min-h-screen flex-col items-center justify-end pb-4">
       <ProductDatatableClientWrapper headers={headers} items={items} />
     </main>
   );

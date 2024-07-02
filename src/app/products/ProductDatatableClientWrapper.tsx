@@ -32,7 +32,7 @@ const ProductDatatableClientWrapper = ({ headers, items}: DatatableProps) => {
     return (
         <>
             <Datatable headers={headers} items={items} onSelectedItemsChange={handleSelectedItemsChange} />
-            <button onClick={handleDelete}>Delete Selected Items</button>
+            {/* <button onClick={handleDelete}>Delete Selected Items</button> */}
         </>
     );
 };
