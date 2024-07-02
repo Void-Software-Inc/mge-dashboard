@@ -1,8 +1,9 @@
 import React from 'react';
 import { createClient } from '@/utils/supabase/server';
 import { redirect } from 'next/navigation';
-import Datatable from '@/components/Datatable';
+import ProductDatatableClientWrapper from './ProductDatatableClientWrapper';
 import { Header } from '@/utils/types/datatableTypes';
+import {GET as getProducts} from '@/app/api/products/route';
 
 export default async function Products() {
   const supabase = createClient();
@@ -26,21 +27,17 @@ export default async function Products() {
     { title: 'Actions', value: 'actions', filterable: false },
   ];
 
-  let { data: products, error: productsError } = await supabase
-    .from('products')
-    .select('*');
-
-  if (productsError) {
-    console.error('Error fetching products:', productsError);
-    return;
-  }
+  const res = await getProducts();
+  const { products } = await res.json();
 
   if (!products) {
     console.error('No products found');
     return;
   }
 
-  const items = products.map(product => ({
+
+
+  const items = products.map((product: { id: number; name: string; type: string; color: string; stock: number; price: number; description: string; image_url: string; created_at: Date; last_update: Date; }) => ({
     id: product.id,
     name: product.name,
     type: product.type,
@@ -55,9 +52,8 @@ export default async function Products() {
   }));
 
   return (
-    <main className="flex min-h-screen flex-col items-center p-24">
-      <h1 className="text-white text-4xl">Products page</h1>
-      <Datatable headers={headers} items={items} />
+    <main className="flex min-h-screen flex-col items-center justify-center">
+      <ProductDatatableClientWrapper headers={headers} items={items} />
     </main>
   );
 }
