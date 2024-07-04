@@ -1,9 +1,14 @@
-
-import { createClient } from "@/utils/supabase/server";
+import Image from "next/image"
+import { createClient } from "@/utils/supabase/server"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
 import { redirect } from "next/navigation";
 import { SubmitButton } from "./submit-button";
-import Image from 'next/image';
-import TextInput from '@/components/inputs/textInput';
+import {
+  ResizableHandle,
+  ResizablePanel,
+  ResizablePanelGroup,
+} from "@/components/ui/resizable"
 
 export function handleError(searchParams: { message: string }) {
   let isError = searchParams.message === 'Could not authenticate user';
@@ -15,8 +20,8 @@ export default async function Login({
 }: {
   searchParams: { message: string };
 }) {
-
   const supabase = createClient();
+
   const { data, error } = await supabase.auth.getUser()
     if (!error || data?.user) {
       redirect('/')
@@ -40,54 +45,58 @@ export default async function Login({
 
     return redirect("/");
   };
-  
+
   return (
-    <main className="flex justify-center md:items-center h-[100vh] bg-gray-200 lg:bg-gray-300">
-      <div className="p-8 w-full h-[75vh] md:w-[400px] md:shadow-2xl rounded-lg bg-gray-200 flex flex-col justify-around">
-        <div className="flex flex-col items-start items-center">
-          <h2 className="text-black text-3xl md:text-2xl mb-12 saira font-semibold">Welcome</h2>
-          <Image
-            src="/static/svg/mgelogo.svg"
-            alt="mgelogo"
-            width={150}
-            height={150}
-            priority
-            className="mb-8"
-          />
-        </div>
-        <form>
-          <div className='grid gap-4 w-full'>
-            <div className='grid'>
-              <TextInput
-                type="text"
-                name="email"
-                placeholder="Email"
-                error={handleError(searchParams)}
-              />
-            </div>
-            <div className='grid'>
-              <TextInput
-                type="password"
-                name="password"
-                placeholder="Password"
-                error={handleError(searchParams)}
-              />
-            </div>
-            <div style={{ height: '24px' }}>
-              {handleError(searchParams) && <p className="text-red-500 saira text-sm">Invalid email or password</p>}
-            </div>
-            <div className="flex justify-center w-full">
-              <SubmitButton
-                formAction={signIn}
-                className="px-4 py-2 text-gray-200 bg-orange-500 rounded cursor-pointer w-full saira"
-                pendingText="Signing In..."
-              >
-                Sign In
-              </SubmitButton>
+    <div className="w-full h-full">
+      <ResizablePanelGroup direction="horizontal" className="min-h-[100vh] min-w-[100vw] rounded-lg border">
+        <ResizablePanel defaultSize={50}>
+          <div className="flex items-center justify-center py-12">
+            <div className="mx-auto grid w-[350px] gap-6">
+              <div className="grid gap-2 text-center">
+                <h1 className="text-3xl font-bold">Login</h1>
+                <p className="text-balance text-muted-foreground">
+                  Enter your email below to login to your account
+                </p>
+              </div>
+              <form>
+                <div className="grid gap-4">
+                  <div className="grid gap-2">
+                    <Label htmlFor="email">Email</Label>
+                    <Input
+                      id="email"
+                      name="email"
+                      type="email"
+                      placeholder="m@example.com"
+                      required
+                    />
+                  </div>
+                  <div className="grid gap-2">
+                    <div className="flex items-center">
+                      <Label htmlFor="password">Password</Label>
+                    </div>
+                    <Input id="password" type="password" name="password" required />
+                  </div>
+                  <SubmitButton formAction={signIn} pendingText="Logging in..." className="w-full">
+                    Login
+                  </SubmitButton>
+                </div>
+              </form>
             </div>
           </div>
-        </form>
-      </div>
-    </main>
-  );
+        </ResizablePanel>
+        <ResizableHandle withHandle />
+        <ResizablePanel defaultSize={50}>
+          <div className="hidden bg-muted lg:block">
+            <Image
+              src=""
+              alt="Image"
+              width="1920"
+              height="1080"
+              className="h-full w-full object-cover dark:brightness-[0.2] dark:grayscale"
+            />
+          </div>
+        </ResizablePanel>
+      </ResizablePanelGroup>
+    </div>
+  )
 }
