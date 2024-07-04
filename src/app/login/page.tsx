@@ -3,7 +3,7 @@ import { createClient } from "@/utils/supabase/server";
 import { redirect } from "next/navigation";
 import { SubmitButton } from "./submit-button";
 import Image from 'next/image';
-import TextInput from '@/components/inputs/TextInput';
+import TextInput from '@/components/inputs/textInput';
 
 export function handleError(searchParams: { message: string }) {
   let isError = searchParams.message === 'Could not authenticate user';
