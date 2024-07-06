@@ -1,4 +1,3 @@
-import Image from "next/image"
 import { createClient } from "@/utils/supabase/server"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -25,29 +24,10 @@ export default async function Login({
 }) {
   const supabase = createClient();
 
-  const { data, error } = await supabase.auth.getUser()
-    if (!error || data?.user) {
-      redirect('/')
+  const { data, error } = await supabase.auth.getUser();
+  if (!error || data?.user) {
+    redirect("/");
   }
-
-  const signIn = async (formData: FormData) => {
-    "use server";
-
-    const email = formData.get("email") as string;
-    const password = formData.get("password") as string;
-    const supabase = createClient();
-
-    const { error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    });
-
-    if (error) {
-      return redirect("/login?message=Could not authenticate user");
-    }
-
-    return redirect("/");
-  };
 
   return (
     <div className="flex justify-center items-center h-screen p-4">
@@ -58,7 +38,7 @@ export default async function Login({
             Enter your email below to login to your account.
           </CardDescription>
         </CardHeader>
-        <form>
+        <form action="/api/auth/login" method="POST">
           <CardContent className="grid gap-4">
             <div className="grid gap-2">
               <Label htmlFor="email">Email</Label>
@@ -70,7 +50,7 @@ export default async function Login({
             </div>
           </CardContent>
           <CardFooter>
-            <SubmitButton formAction={signIn} className="w-full" pendingText="Logging in...">Login</SubmitButton>
+            <SubmitButton className="w-full" pendingText="Logging in...">Login</SubmitButton>
           </CardFooter>
         </form>
       </Card>

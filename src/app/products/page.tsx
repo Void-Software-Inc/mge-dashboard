@@ -37,7 +37,7 @@ export default async function Page() {
   const data = await callGetProducts()
 
   return (
-    <div className="container flex justify-center items-center h-screen mx-auto py-10">
+    <div className="container">
       <DataTable columns={columns} data={data} />
     </div>
   )
