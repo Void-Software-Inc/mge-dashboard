@@ -10,8 +10,8 @@ export default async function Settings() {
   }
 
   return (
-    <main className="flex min-h-screen flex-col items-center justify-between p-24">
-      <h1 className="text-white text-4xl">Settings page</h1>
+    <main className="flex flex-col items-center justify-center h-[100vh] p-24">
+      <h1 className="text-black text-4xl">Settings page</h1>
     </main>
   );
 }
