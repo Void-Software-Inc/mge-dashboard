@@ -1,17 +1,45 @@
-import { createClient } from '@/utils/supabase/server'
-import { redirect } from 'next/navigation';
+import { promises as fs } from "fs"
+import path from "path"
+import { Metadata } from "next"
+import Image from "next/image"
+import { z } from "zod"
 
-export default async function Quotes() {
-  const supabase = createClient()
+import { columns } from "./components/columns"
+import { DataTable } from "./components/data-table"
+import { taskSchema } from "./data/schema"
 
-  const { data, error } = await supabase.auth.getUser()
-  if (error || !data?.user) {
-    redirect('/login')
-  }
+export const metadata: Metadata = {
+  title: "Tasks",
+  description: "A task and issue tracker build using Tanstack Table.",
+}
+
+// Simulate a database read for tasks.
+async function getTasks() {
+  const data = await fs.readFile(
+    path.join(process.cwd(), "src/app/quotes/data/tasks.json")
+  )
+
+  const tasks = JSON.parse(data.toString())
+
+  return z.array(taskSchema).parse(tasks)
+}
+
+export default async function TaskPage() {
+  const tasks = await getTasks()
 
   return (
-    <main className="flex flex-col items-center justify-center h-[100vh] p-24">
-      <h1 className="text-black text-4xl">Quotes page</h1>
-    </main>
-  );
+    <>
+      <div className="h-full flex flex-1 flex-col space-y-8 p-2 md:p-8">
+        <div className="flex items-center justify-between space-y-2">
+          <div>
+            <h2 className="text-2xl font-bold tracking-tight">Welcome back!</h2>
+            <p className="text-muted-foreground">
+              Here&apos;s a list of your tasks for this month!
+            </p>
+          </div>
+        </div>
+        <DataTable data={tasks} columns={columns} />
+      </div>
+    </>
+  )
 }
