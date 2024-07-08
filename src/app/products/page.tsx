@@ -37,7 +37,7 @@ export default async function Page() {
   const data = await callGetProducts()
 
   return (
-    <div className="container">
+    <div className="p-2 md:p-8">
       <DataTable columns={columns} data={data} />
     </div>
   )
