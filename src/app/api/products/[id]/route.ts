@@ -1,13 +1,12 @@
-// api/products/[id]/route.ts
 import { createClient } from "@/utils/supabase/server";
 import { NextResponse } from 'next/server';
 
 export async function GET(request: { url: string | URL; }) {
   const supabase = createClient();
 
-  // Extracting the product ID from the URL path
-  const { pathname } = new URL(request.url);
-  const id = pathname.split('/').pop();
+  const extractedURL = request.url;
+  const pathSegments = extractedURL.toString().split('/');
+  const id = pathSegments[pathSegments.length - 1] || pathSegments[pathSegments.length - 2];
 
   const { data: product, error } = await supabase
     .from('products')
