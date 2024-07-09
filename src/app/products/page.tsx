@@ -1,8 +1,9 @@
-import { Product, columns } from "./components/columns"
+import { columns } from "./components/columns"
 import { createClient } from "@/utils/supabase/server"
 import { DataTable } from "./components/data-table"
 import {GET as getProducts} from "@/app/api/products/route"
 import { redirect } from "next/navigation"
+import { Product } from "@/utils/types/products"
 
 async function callGetProducts(): Promise<Product[]> {
   const supabase = createClient()
