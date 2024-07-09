@@ -1,5 +1,8 @@
+"use client"
+
 import Link from "next/link";
 import Image from "next/image";
+import { useState } from "react";
 import { CircleUser, Menu } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import {
@@ -12,7 +15,12 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
 
-export default async function Navbar(){
+export default function Navbar(){
+  const [isOpen, setIsOpen] = useState(false);
+
+  const handleItemClick = () => {
+    setIsOpen(false);
+  }
   return (
     <header className="sticky top-0 flex h-16 items-center gap-4 border-b bg-background px-4 md:px-6 z-50">
         <nav className="hidden flex-col gap-6 text-lg font-medium md:flex md:flex-row md:items-center md:gap-5 md:text-sm lg:gap-6">
@@ -42,7 +50,7 @@ export default async function Navbar(){
             Settings
           </Link>
         </nav>
-        <Sheet>
+        <Sheet open={isOpen} onOpenChange={setIsOpen}>
           <SheetTrigger asChild>
             <Button
               variant="outline"
@@ -60,23 +68,26 @@ export default async function Navbar(){
                 href="/"
                 className="flex items-center gap-2 text-lg font-semibold"
               >
-                <Image className="cursor-pointer" src="/static/svg/mglogo.svg" alt="logo" width={32} height={32} />
+                <Image onClick={handleItemClick} className="cursor-pointer" src="/static/svg/mglogo.svg" alt="logo" width={32} height={32} />
               </Link>
               <Link
                 href="/products"
                 className="text-muted-foreground hover:text-foreground"
+                onClick={handleItemClick}
               >
                 Products
               </Link>
               <Link
                 href="/quotes"
                 className="text-muted-foreground hover:text-foreground"
+                onClick={handleItemClick}
               >
                 Quotes
               </Link>
               <Link
                 href="/settings"
                 className="text-muted-foreground hover:text-foreground"
+                onClick={handleItemClick}
               >
                 Settings
               </Link>

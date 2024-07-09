@@ -37,6 +37,8 @@ export default async function ProductPage({ params }: { params: { id: string } }
       <p><strong>Stock:</strong> {product.stock}</p>
       <p><strong>Price:</strong> {product.price}</p>
       <p><strong>Description:</strong> {product.description}</p>
+      <p><strong>Created At:</strong> {product.created_at}</p>
+      <p><strong>Last Update:</strong> {product.last_update}</p>
     </div>
   )
 }

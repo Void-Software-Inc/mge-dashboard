@@ -5,13 +5,16 @@ import {
   ArrowUpIcon,
   CaretSortIcon,
   EyeNoneIcon,
+  MixerVerticalIcon,
 } from "@radix-ui/react-icons"
 import { ColumnDef } from "@tanstack/react-table"
 import { MoreHorizontal } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
+import { Badge } from "@/components/ui/badge"
 import {
   DropdownMenu,
+  DropdownMenuCheckboxItem,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuLabel,
@@ -20,19 +23,8 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { cn } from "@/lib/utils"
 import Link from "next/link"
-
-// This type is used to define the shape of our data.
-// You can use a Zod schema here if you want.
-export type Product = {
-    id: string
-    name: string,
-    type: string,
-    color: string,
-    stock: number,
-    price: number,
-    description: string,
-    image_url: string,
-}
+import Image from "next/image"
+import { Product, productTypes } from "@/utils/types/products"
 
 export const columns: ColumnDef<Product>[] = [
   {
@@ -56,6 +48,14 @@ export const columns: ColumnDef<Product>[] = [
     ),
     enableSorting: false,
     enableHiding: false,
+  },
+  {
+    accessorKey: "image_url",
+    header: "Image",
+    cell: ({ row }) => {
+      const image_url = row.original.image_url
+      return <Image sizes="100vw" width="0" height="0" src={image_url} alt={row.original.name} className="h-12 w-12" />
+    },
   },
   {
     accessorKey: "name",
@@ -98,14 +98,63 @@ export const columns: ColumnDef<Product>[] = [
         </div>
       )
     },
+    cell: ({ row }) => {
+      return <div className="whitespace-nowrap overflow-hidden overflow-ellipsis">{row.getValue("name")}</div>
+    },
   },
   {
     accessorKey: "type",
-    header: "Type",
+    header: ({ column }) => {
+      return (
+        <div className={cn("flex items-center space-x-2")}>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="-ml-3 h-8 data-[state=open]:bg-accent"
+              >
+                <span>Type</span>
+                <MixerVerticalIcon className="ml-2 h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="start">
+              {productTypes.map((type) => (
+                <DropdownMenuCheckboxItem
+                  key={type.value}
+                  className="capitalize"
+                  checked={column.getFilterValue() === type.value}
+                  onCheckedChange={(value) => {
+                    if (value) {
+                      column.setFilterValue(type.value);
+                    } else {
+                      column.setFilterValue(null);
+                    }
+                  }}
+                >
+                  {type.name}
+                </DropdownMenuCheckboxItem>
+              ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
+      );
+    },
+    cell: ({ row }) => {
+      const type = row.getValue("type");
+      return (
+        <Badge variant="outline" className="whitespace-nowrap overflow-hidden overflow-ellipsis">
+          {String(type)}
+        </Badge>
+      );
+    },
   },
   {
     accessorKey: "color",
     header: "Color",
+    cell: ({ row }) => {
+      return <div className="whitespace-nowrap overflow-hidden overflow-ellipsis">{row.getValue("color")}</div>
+    },
   },
   {
     accessorKey: "stock",
@@ -126,6 +175,9 @@ export const columns: ColumnDef<Product>[] = [
   {
     accessorKey: "description",
     header: "Description",
+    cell: ({ row }) => {
+      return <div className="whitespace-nowrap overflow-hidden overflow-ellipsis">{row.getValue("description")}</div>
+    },
   },
   {
     id: "actions",
@@ -142,12 +194,6 @@ export const columns: ColumnDef<Product>[] = [
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
             <DropdownMenuLabel>Actions</DropdownMenuLabel>
-            <DropdownMenuItem
-              onClick={() => navigator.clipboard.writeText(product.id)}
-            >
-              Copy product ID
-            </DropdownMenuItem>
-            <DropdownMenuSeparator />
             <Link href={`/products/${product.id}`} passHref legacyBehavior>
               <DropdownMenuItem>View product</DropdownMenuItem>
             </Link>
