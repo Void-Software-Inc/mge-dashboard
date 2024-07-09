@@ -19,6 +19,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { cn } from "@/lib/utils"
+import Link from "next/link"
 
 // This type is used to define the shape of our data.
 // You can use a Zod schema here if you want.
@@ -129,7 +130,7 @@ export const columns: ColumnDef<Product>[] = [
   {
     id: "actions",
     cell: ({ row }) => {
-      const payment = row.original
+      const product = row.original
  
       return (
         <DropdownMenu>
@@ -142,12 +143,14 @@ export const columns: ColumnDef<Product>[] = [
           <DropdownMenuContent align="end">
             <DropdownMenuLabel>Actions</DropdownMenuLabel>
             <DropdownMenuItem
-              onClick={() => navigator.clipboard.writeText(payment.id)}
+              onClick={() => navigator.clipboard.writeText(product.id)}
             >
               Copy product ID
             </DropdownMenuItem>
             <DropdownMenuSeparator />
-            <DropdownMenuItem>View product</DropdownMenuItem>
+            <Link href={`/products/${product.id}`} passHref legacyBehavior>
+              <DropdownMenuItem>View product</DropdownMenuItem>
+            </Link>
             <DropdownMenuItem>Delete product</DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
