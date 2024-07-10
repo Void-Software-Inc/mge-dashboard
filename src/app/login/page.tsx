@@ -1,103 +1,59 @@
-'use client';
+import { createClient } from "@/utils/supabase/server"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import { redirect } from "next/navigation";
+import { SubmitButton } from "./submit-button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card"
 
-import { supabase } from "@/lib/supabase";
-import { useRouter } from "next/navigation";
-import { useState } from "react";
-import Image from 'next/image';
+export function handleError(searchParams: { message: string }) {
+  let isError = searchParams.message === 'Could not authenticate user';
+  return isError;
+}
 
-import TextInput from '@/components/inputs/textInput';
+export default async function Login({
+  searchParams,
+}: {
+  searchParams: { message: string };
+}) {
+  const supabase = createClient();
 
-export default function Login() {
-  const [data, setData] = useState<{
-    email: string,
-    password: string
-  }>({
-    email: '',
-    password: ''
-  })
-
-  const router = useRouter();
-  const [error, setError] = useState(false);
-  const [errorMessage, setErrorMessage] = useState('');
-
-  const login = async () => {
-    try {
-      let { data: dataUser, error } = await supabase
-        .auth
-        .signInWithPassword({
-          email: data.email,
-          password: data.password
-        })
-
-      if (dataUser && !error) {
-        router.refresh();
-      }
-      if (error) {
-        setError(true)
-        setErrorMessage('Invalid credentials')
-        setTimeout(() => {
-          setError(false)
-          setErrorMessage('')
-        }, 3000)
-      }
-    } catch (error) {
-      console.log(error)
-      setError(true)
-    }
-  }
-
-  const handleChange = (e: any) => {
-    const { name, value } = e.target;
-    setData((prev: any) => ({
-      ...prev,
-      [name]: value,
-    }));
+  const { data, error } = await supabase.auth.getUser();
+  if (!error || data?.user) {
+    redirect("/");
   }
 
   return (
-    <main className="flex justify-center md:items-center h-[100vh] bg-white">
-      <div className="p-8 w-full h-[75vh] md:w-[400px] md:shadow-2xl rounded-lg flex flex-col justify-around">
-        <div className="flex flex-col items-start items-center">
-          <h2 className="text-black text-3xl md:text-2xl mb-12 saira font-semibold">Welcome</h2>
-          <Image
-            src="/static/svg/mgelogo.svg"
-            alt="mgelogo"
-            width={150}
-            height={150}
-            priority
-            className="mb-8"
-          />
-        </div>
-        <div></div>
-        <div className='grid gap-4 w-full'>
-          <div className='grid'>
-            <TextInput
-              type="text"
-              name="email"
-              placeholder="Email"
-              value={data.email}
-              onChange={handleChange}
-              error={error}
-            />
-          </div>
-          <div className='grid'>
-            <TextInput
-              type="password"
-              name="password"
-              placeholder="Password"
-              value={data.password}
-              onChange={handleChange}
-              error={error}
-            />
-          </div>
-          <div style={{ height: '24px' }}>
-            {error && <p className="text-red-500 saira text-sm">{errorMessage}</p>}
-          </div>
-          <div className="flex justify-center w-full">
-            <button onClick={login} className="px-4 py-2 bg-orange-500 rounded cursor-pointer w-full saira">Login</button>
-          </div>
-        </div>
-      </div>
-    </main>
+    <div className="flex justify-center items-center h-screen p-4">
+      <Card className="w-full max-w-sm">
+        <CardHeader>
+          <CardTitle className="text-2xl">Login</CardTitle>
+          <CardDescription>
+            Enter your email below to login to your account.
+          </CardDescription>
+        </CardHeader>
+        <form action="/api/auth/login" method="POST">
+          <CardContent className="grid gap-4">
+            <div className="grid gap-2">
+              <Label htmlFor="email">Email</Label>
+              <Input name="email" id="email" type="email" placeholder="m@example.com" required />
+            </div>
+            <div className="grid gap-2">
+              <Label htmlFor="password">Password</Label>
+              <Input name="password" id="password" type="password" required />
+            </div>
+          </CardContent>
+          <CardFooter>
+            <SubmitButton className="w-full" pendingText="Logging in...">Login</SubmitButton>
+          </CardFooter>
+        </form>
+      </Card>
+    </div>
   )
 }
