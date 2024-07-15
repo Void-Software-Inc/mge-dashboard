@@ -10,6 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Toaster, toast } from 'sonner'
 import { ChevronLeftIcon, DownloadIcon } from "@radix-ui/react-icons"
 import { useRouter } from 'next/navigation'
+import { useProductsContext } from '../context/ProductsContext'
 
 export default function ProductForm({ product: initialProduct }: { product: Product }) {
   const router = useRouter()
@@ -17,6 +18,7 @@ export default function ProductForm({ product: initialProduct }: { product: Prod
   const [formData, setFormData] = useState(initialProduct)
   const [isChanged, setIsChanged] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const { setShouldRefetch } = useProductsContext()
 
   const handleGoBack = useCallback(() => {
     router.push('/products')
@@ -57,6 +59,10 @@ export default function ProductForm({ product: initialProduct }: { product: Prod
   
       if (!response.ok) {
         throw new Error(result.error || 'Failed to update product')
+      }
+
+      if(response.ok){
+        setShouldRefetch(true)
       }
   
       console.log('Product updated:', result.data)
