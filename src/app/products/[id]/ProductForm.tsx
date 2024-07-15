@@ -1,24 +1,26 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { Product, productTypes } from "@/utils/types/products"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { Label } from "@/components/ui/label"
 import { Button } from "@/components/ui/button"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Toaster, toast } from 'sonner'
 import { ChevronLeftIcon, DownloadIcon } from "@radix-ui/react-icons"
 import Link from "next/link"
 
-export default function ProductForm({ product }: { product: Product }) {
-  const [formData, setFormData] = useState(product)
+export default function ProductForm({ product: initialProduct }: { product: Product }) {
+  const [product, setProduct] = useState(initialProduct)
+  const [formData, setFormData] = useState(initialProduct)
   const [isChanged, setIsChanged] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
-  
+
   useEffect(() => {
     setIsChanged(JSON.stringify(product) !== JSON.stringify(formData))
-  }, [formData, product])
-
+  }, [product, formData])
+  
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { id, value } = e.target
     setFormData(prev => ({ ...prev, [id]: value }))
@@ -53,9 +55,21 @@ export default function ProductForm({ product }: { product: Product }) {
       }
   
       console.log('Product updated:', result.data)
-      setFormData(result.data) // Update the form data with the response
+      setProduct(result.data)
+      setFormData(result.data)
+      setIsChanged(false)
+      toast.custom((t) => (
+        <div className="bg-lime-300 text-black px-6 py-4 rounded-md shadow-md">
+          Produit mis à jour avec succès
+        </div>
+      ))
     } catch (error) {
       console.error('Error updating product:', error)
+      toast.custom((t) => (
+        <div className="bg-red-400 text-black px-6 py-4 rounded-md shadow-md">
+          {error instanceof Error ? error.message : 'An error occurred'}
+        </div>
+      ))
     } finally {
       setIsSubmitting(false)
     }
@@ -151,6 +165,12 @@ export default function ProductForm({ product }: { product: Product }) {
           </div>
         </div>
       </form>
+      <Toaster
+        className="!fixed !top-4 !left-1/2 !-translate-x-1/2 md:!top-auto md:!bottom-4 md:!left-auto md:!right-4 md:!translate-x-0"
+        toastOptions={{
+          className: "!bg-white !text-black !rounded-md !p-4 !max-w-md !w-full md:!w-auto",
+        }}
+      />
     </>
   )
 }
