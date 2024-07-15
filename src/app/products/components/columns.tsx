@@ -22,9 +22,10 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { cn } from "@/lib/utils"
-import Link from "next/link"
+import { useRouter } from 'next/navigation'
 import Image from "next/image"
 import { Product, productTypes } from "@/utils/types/products"
+import { useCallback } from "react"
 
 export const columns: ColumnDef<Product>[] = [
   {
@@ -183,6 +184,11 @@ export const columns: ColumnDef<Product>[] = [
     id: "actions",
     cell: ({ row }) => {
       const product = row.original
+      const router = useRouter()
+
+      const handleViewProduct = useCallback(() => {
+        router.push(`/products/${product.id}`)
+      }, [router, product.id])
  
       return (
         <DropdownMenu>
@@ -194,9 +200,9 @@ export const columns: ColumnDef<Product>[] = [
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
             <DropdownMenuLabel>Actions</DropdownMenuLabel>
-            <Link href={`/products/${product.id}`} passHref legacyBehavior>
-              <DropdownMenuItem>View product</DropdownMenuItem>
-            </Link>
+            <DropdownMenuItem onClick={handleViewProduct}>
+              View product
+            </DropdownMenuItem>
             <DropdownMenuItem>Delete product</DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
