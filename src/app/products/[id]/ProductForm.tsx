@@ -9,13 +9,18 @@ import { Button } from "@/components/ui/button"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Toaster, toast } from 'sonner'
 import { ChevronLeftIcon, DownloadIcon } from "@radix-ui/react-icons"
-import Link from "next/link"
+import { useRouter } from 'next/navigation'
 
 export default function ProductForm({ product: initialProduct }: { product: Product }) {
+  const router = useRouter()
   const [product, setProduct] = useState(initialProduct)
   const [formData, setFormData] = useState(initialProduct)
   const [isChanged, setIsChanged] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
+
+  const handleGoBack = useCallback(() => {
+    router.push('/products')
+  }, [router])
 
   useEffect(() => {
     setIsChanged(JSON.stringify(product) !== JSON.stringify(formData))
@@ -59,17 +64,21 @@ export default function ProductForm({ product: initialProduct }: { product: Prod
       setFormData(result.data)
       setIsChanged(false)
       toast.custom((t) => (
-        <div className="bg-lime-300 text-black px-6 py-4 rounded-md shadow-md">
+        <div className="bg-lime-300 text-black px-6 py-4 rounded-md">
           Produit mis à jour avec succès
         </div>
-      ))
+      ), {
+        duration: 3000,
+      })
     } catch (error) {
       console.error('Error updating product:', error)
       toast.custom((t) => (
-        <div className="bg-red-400 text-black px-6 py-4 rounded-md shadow-md">
+        <div className="bg-red-400 text-black px-6 py-4 rounded-md">
           {error instanceof Error ? error.message : 'An error occurred'}
         </div>
-      ))
+      ), {
+        duration: 3000,
+      })
     } finally {
       setIsSubmitting(false)
     }
@@ -79,10 +88,8 @@ export default function ProductForm({ product: initialProduct }: { product: Prod
     <>
       <div className="w-[100vw] h-14 fixed bg-white flex items-center z-10">
         <div className="p-4 flex justify-start w-full">
-          <Button variant="secondary" size="icon">
-            <Link legacyBehavior href="/products">
-              <ChevronLeftIcon className="w-4 h-4" />
-            </Link>
+          <Button variant="secondary" size="icon" onClick={handleGoBack}>
+            <ChevronLeftIcon className="w-4 h-4" />
           </Button>
         </div>
         <div className="p-4 md:p-6 flex justify-end w-full">
@@ -165,12 +172,7 @@ export default function ProductForm({ product: initialProduct }: { product: Prod
           </div>
         </div>
       </form>
-      <Toaster
-        className="!fixed !top-4 !left-1/2 !-translate-x-1/2 md:!top-auto md:!bottom-4 md:!left-auto md:!right-4 md:!translate-x-0"
-        toastOptions={{
-          className: "!bg-white !text-black !rounded-md !p-4 !max-w-md !w-full md:!w-auto",
-        }}
-      />
+      <Toaster />
     </>
   )
 }
