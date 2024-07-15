@@ -33,23 +33,67 @@ import {
 
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
+import { Product } from "@/utils/types/products"
+import { useProductsContext } from '../context/ProductsContext'
 
 interface DataTableProps<TData, TValue> {
   columns: ColumnDef<TData, TValue>[]
-  data: TData[]
 }
 
-export function DataTable<TData, TValue>({
+export function DataTable({
   columns,
-  data,
-}: DataTableProps<TData, TValue>) {
+}: Omit<DataTableProps<Product, any>, 'data'>) {
+  const [products, setProducts] = React.useState<Product[]>([])
+  const [isLoading, setIsLoading] = React.useState(true)
+  const { shouldRefetch, setShouldRefetch } = useProductsContext()
+
   const [sorting, setSorting] = React.useState<SortingState>([])
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([])
   const [columnVisibility, setColumnVisibility] = React.useState<VisibilityState>({})
   const [rowSelection, setRowSelection] = React.useState({})
+
+  const fetchProducts = async () => {
+    setIsLoading(true)
+    try {
+      const res = await fetch('/api/products')
+      const { products } = await res.json()
+      const cleanProducts = products.map((product: Product) => ({
+        id: product.id,
+        name: product.name,
+        type: product.type,
+        color: product.color,
+        stock: product.stock,
+        price: product.price,
+        description: product.description,
+        image_url: product.image_url,
+      }))
+      setProducts(cleanProducts)
+      sessionStorage.setItem('cachedProducts', JSON.stringify(cleanProducts))
+    } catch (error) {
+      console.error('Error fetching products:', error)
+    }
+    setShouldRefetch(false)
+    setIsLoading(false)
+  }
+
+  React.useEffect(() => {
+    if (shouldRefetch) {
+      fetchProducts()
+    } else {
+      const cachedProducts = sessionStorage.getItem('cachedProducts')
+      if (cachedProducts) {
+        setProducts(JSON.parse(cachedProducts))
+        setIsLoading(false)
+      } else {
+        fetchProducts()
+      }
+    }
+  }, [shouldRefetch])
+
+  const memoizedProducts = React.useMemo(() => products, [products])
   
   const table = useReactTable({
-    data,
+    data : memoizedProducts,
     columns,
     getCoreRowModel: getCoreRowModel(),
     getPaginationRowModel: getPaginationRowModel(),
@@ -67,6 +111,10 @@ export function DataTable<TData, TValue>({
     },
   })
 
+  if (isLoading) {
+    return <div>Loading...</div>
+  }
+
   return (
     <div>
       <div className="flex items-center py-4">
@@ -76,7 +124,7 @@ export function DataTable<TData, TValue>({
           onChange={(event) =>
             table.getColumn("name")?.setFilterValue(event.target.value)
           }
-          className="max-w-sm text-base"
+          className="max-w-sm"
         />
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
