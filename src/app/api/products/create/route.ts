@@ -9,6 +9,7 @@ export async function POST(request: NextRequest) {
   const file = formData.get('image') as File | null
   
   let imageUrl = ''
+  let imageFilename = ''
 
   if (file) {
     const validTypes = ['image/jpeg', 'image/png', 'image/jpg', 'image/heic', 'image/heif', 'image/webp']
@@ -16,18 +17,21 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Invalid file type' }, { status: 400 })
     }
 
+    const filename = `product-${Date.now()}-${file.name}`
     const { data, error } = await supabase.storage
       .from('mge-product-images')
-      .upload(`product-${Date.now()}-${file.name}`, file)
+      .upload(filename, file)
 
     if (error) {
       console.error('Error uploading file:', error)
       return NextResponse.json({ error: 'Failed to upload image' }, { status: 500 })
     }
 
+    
+    imageFilename = filename
     const { data: { publicUrl } } = supabase.storage
       .from('mge-product-images')
-      .getPublicUrl(data.path)
+      .getPublicUrl(imageFilename)
 
     imageUrl = publicUrl
   }
@@ -52,10 +56,22 @@ export async function POST(request: NextRequest) {
     .insert([productData])
     .select()
 
-  if (error) {
-    console.error('Error creating product:', error)
-    return NextResponse.json({ error: error.message }, { status: 500 })
-  }
+    if (error) {
+      console.error('Error creating product:', error)
+      
+      // Delete the uploaded image if product creation fails
+      if (imageFilename) {
+        const { error: deleteError } = await supabase.storage
+          .from('mge-product-images')
+          .remove([imageFilename])
+        
+        if (deleteError) {
+          console.error('Error deleting image after product creation failure:', deleteError)
+        }
+      }
+      
+      return NextResponse.json({ error: error.message }, { status: 500 })
+    }
 
   return NextResponse.json({ data: data[0] }, { status: 201 })
 }
