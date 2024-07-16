@@ -5,7 +5,6 @@ export async function POST(request: NextRequest) {
     const supabase = createClient();
     const { ids } = await request.json();
 
-    // Fetch the products to be deleted
     const { data: products, error: fetchError } = await supabase
         .from('products')
         .select('image_url')
@@ -16,25 +15,24 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ error: 'Failed to fetch products' }, { status: 500 });
     }
 
-    // Extract the image paths from the URLs
-    const imagePaths = products.map((product) => {
-        const url = new URL(product.image_url);
-        const modifiedPath = url.pathname.split('/').slice(-1)[0];
-        return modifiedPath;
-    });
+    const imagePaths = products
+        .filter(product => product.image_url)
+        .map((product) => {
+            const url = new URL(product.image_url);
+            return url.pathname.split('/').slice(-1)[0];
+        });
 
-    // Delete the images from the storage bucket
-    const { error: deleteImagesError } = await supabase
-        .storage
-        .from('mge-product-images')
-        .remove(imagePaths);
+    if (imagePaths.length > 0) {
+        const { error: deleteImagesError } = await supabase
+            .storage
+            .from('mge-product-images')
+            .remove(imagePaths);
 
-    if (deleteImagesError) {
-        console.error('Error deleting images:', deleteImagesError);
-        return NextResponse.json({ error: 'Failed to delete images' }, { status: 500 });
+        if (deleteImagesError) {
+            console.error('Error deleting images:', deleteImagesError);
+        }
     }
 
-    // Delete the products from the database
     const { data, error: deleteError } = await supabase
         .from('products')
         .delete()

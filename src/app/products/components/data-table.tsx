@@ -132,11 +132,13 @@ export function DataTable({
         <div className="rounded-md border">
           <Table>
             <TableHeader>
-              {Array.from({ length: columns.length }).map((_, index) => (
-                <TableHead key={index}>
-                  <Skeleton className="h-8 w-full" />
-                </TableHead>
-              ))}
+              <TableRow>
+                {Array.from({ length: columns.length }).map((_, index) => (
+                  <TableHead key={index}>
+                    <Skeleton className="h-8 w-full" />
+                  </TableHead>
+                ))}
+              </TableRow>
             </TableHeader>
             <TableBody>
               {Array.from({ length: 5 }).map((_, rowIndex) => (
@@ -163,7 +165,7 @@ export function DataTable({
     <div>
       <div className="flex items-center py-4">
         <Input
-          placeholder="Filter names..."
+          placeholder="Chercher par produit..."
           value={(table.getColumn("name")?.getFilterValue() as string) ?? ""}
           onChange={(event) =>
             table.getColumn("name")?.setFilterValue(event.target.value)
@@ -173,7 +175,7 @@ export function DataTable({
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button variant="outline" className="ml-2">
-              Columns
+              Colonnes
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
