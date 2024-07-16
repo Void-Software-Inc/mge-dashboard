@@ -34,6 +34,7 @@ import {
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Product } from "@/utils/types/products"
+import { Skeleton } from "@/components/ui/skeleton"
 import { useProductsContext } from '../context/ProductsContext'
 
 interface DataTableProps<TData, TValue> {
@@ -46,6 +47,7 @@ export function DataTable({
   const [products, setProducts] = React.useState<Product[]>([])
   const [isLoading, setIsLoading] = React.useState(true)
   const { shouldRefetch, setShouldRefetch } = useProductsContext()
+  const [isMounted, setIsMounted] = React.useState(false)
 
   const [sorting, setSorting] = React.useState<SortingState>([])
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([])
@@ -68,7 +70,9 @@ export function DataTable({
         image_url: product.image_url,
       }))
       setProducts(cleanProducts)
-      sessionStorage.setItem('cachedProducts', JSON.stringify(cleanProducts))
+      if (typeof window !== 'undefined') {
+        sessionStorage.setItem('cachedProducts', JSON.stringify(cleanProducts))
+      }
     } catch (error) {
       console.error('Error fetching products:', error)
     }
@@ -77,15 +81,18 @@ export function DataTable({
   }
 
   React.useEffect(() => {
+    setIsMounted(true)
     if (shouldRefetch) {
       fetchProducts()
     } else {
-      const cachedProducts = sessionStorage.getItem('cachedProducts')
-      if (cachedProducts) {
-        setProducts(JSON.parse(cachedProducts))
-        setIsLoading(false)
-      } else {
-        fetchProducts()
+      if (typeof window !== 'undefined') {
+        const cachedProducts = sessionStorage.getItem('cachedProducts')
+        if (cachedProducts) {
+          setProducts(JSON.parse(cachedProducts))
+          setIsLoading(false)
+        } else {
+          fetchProducts()
+        }
       }
     }
   }, [shouldRefetch])
@@ -111,8 +118,45 @@ export function DataTable({
     },
   })
 
-  if (isLoading) {
-    return <div>Loading...</div>
+  if (!isMounted) {
+    return null
+  }
+
+  else if (isLoading) {
+    return (
+      <div className="flex flex-col space bg-transparent">
+        <div className="flex items-center py-4">
+          <Skeleton className="h-10 w-[250px]" />
+          <Skeleton className="h-10 w-[100px] ml-2" />
+        </div>
+        <div className="rounded-md border">
+          <Table>
+            <TableHeader>
+              {Array.from({ length: columns.length }).map((_, index) => (
+                <TableHead key={index}>
+                  <Skeleton className="h-8 w-full" />
+                </TableHead>
+              ))}
+            </TableHeader>
+            <TableBody>
+              {Array.from({ length: 5 }).map((_, rowIndex) => (
+                <TableRow key={rowIndex} className="h-20">
+                  {Array.from({ length: columns.length }).map((_, cellIndex) => (
+                    <TableCell key={cellIndex}>
+                      <Skeleton className="h-6 w-full" />
+                    </TableCell>
+                  ))}
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </div>
+        <div className="flex items-center justify-end space-x-2 py-4">
+          <Skeleton className="h-10 w-[100px]" />
+          <Skeleton className="h-10 w-[100px]" />
+        </div>
+      </div>
+    )
   }
 
   return (
