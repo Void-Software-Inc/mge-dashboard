@@ -36,6 +36,8 @@ import { Input } from "@/components/ui/input"
 import { Product } from "@/utils/types/products"
 import { Skeleton } from "@/components/ui/skeleton"
 import { useProductsContext } from '../context/ProductsContext'
+import { useRouter } from 'next/navigation'
+import { PlusIcon } from "@radix-ui/react-icons"
 
 interface DataTableProps<TData, TValue> {
   columns: ColumnDef<TData, TValue>[]
@@ -44,6 +46,8 @@ interface DataTableProps<TData, TValue> {
 export function DataTable({
   columns,
 }: Omit<DataTableProps<Product, any>, 'data'>) {
+  const router = useRouter()
+
   const [products, setProducts] = React.useState<Product[]>([])
   const [isLoading, setIsLoading] = React.useState(true)
   const { shouldRefetch, setShouldRefetch } = useProductsContext()
@@ -118,6 +122,10 @@ export function DataTable({
     },
   })
 
+  const handleCreateProduct = React.useCallback(() => {
+    router.push('/products/create')
+  }, [router])
+
   if (!isMounted) {
     return null
   }
@@ -163,43 +171,53 @@ export function DataTable({
 
   return (
     <div>
-      <div className="flex items-center py-4">
-        <Input
-          placeholder="Chercher par produit..."
-          value={(table.getColumn("name")?.getFilterValue() as string) ?? ""}
-          onChange={(event) =>
-            table.getColumn("name")?.setFilterValue(event.target.value)
-          }
-          className="max-w-sm"
-        />
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="outline" className="ml-2">
-              Colonnes
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            {table
-              .getAllColumns()
-              .filter(
-                (column) => column.getCanHide()
-              )
-              .map((column) => {
-                return (
-                  <DropdownMenuCheckboxItem
-                    key={column.id}
-                    className="capitalize"
-                    checked={column.getIsVisible()}
-                    onCheckedChange={(value) =>
-                      column.toggleVisibility(!!value)
-                    }
-                  >
-                    {column.id}
-                  </DropdownMenuCheckboxItem>
+       <div className="flex flex-col md:flex-row items-center justify-between gap-4 py-4">
+        <div className="w-full md:w-auto md:flex-grow">
+          <Input
+            placeholder="Chercher par produit..."
+            value={(table.getColumn("name")?.getFilterValue() as string) ?? ""}
+            onChange={(event) =>
+              table.getColumn("name")?.setFilterValue(event.target.value)
+            }
+            className="w-full"
+          />
+        </div>
+        <div className="flex w-full md:w-auto justify-between md:justify-start gap-2">
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" className="flex-grow md:flex-grow-0">
+                Colonnes
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              {table
+                .getAllColumns()
+                .filter(
+                  (column) => column.getCanHide()
                 )
-              })}
-          </DropdownMenuContent>
-        </DropdownMenu>
+                .map((column) => {
+                  return (
+                    <DropdownMenuCheckboxItem
+                      key={column.id}
+                      className="capitalize"
+                      checked={column.getIsVisible()}
+                      onCheckedChange={(value) =>
+                        column.toggleVisibility(!!value)
+                      }
+                    >
+                      {column.id}
+                    </DropdownMenuCheckboxItem>
+                  )
+                })}
+            </DropdownMenuContent>
+          </DropdownMenu>
+          <Button 
+            onClick={handleCreateProduct}
+            className="flex-grow md:flex-grow-0 bg-lime-300 hover:bg-lime-400 text-black"
+          >
+            <PlusIcon className="mr-2 h-4 w-4" /> Create Product
+          </Button>
+        </div>
       </div>
       <div className="rounded-md border">
         <Table>
