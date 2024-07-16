@@ -7,7 +7,8 @@ export async function GET() {
 
   const { data: products, error } = await supabase
     .from('products')
-    .select('*');
+    .select('*')
+    .order('last_update', { ascending: false });
 
   if (error) {
     console.error('Error fetching products:', error);
