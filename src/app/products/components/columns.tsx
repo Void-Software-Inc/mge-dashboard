@@ -21,10 +21,23 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
 import { cn } from "@/lib/utils"
-import Link from "next/link"
+import { useRouter } from 'next/navigation'
 import Image from "next/image"
 import { Product, productTypes } from "@/utils/types/products"
+import { useCallback, useState } from "react"
+import { useProductsContext } from '../context/ProductsContext'
+import { toast } from "sonner"
 
 export const columns: ColumnDef<Product>[] = [
   {
@@ -69,7 +82,7 @@ export const columns: ColumnDef<Product>[] = [
                 size="sm"
                 className="-ml-3 h-8 data-[state=open]:bg-accent"
               >
-                <span>Name</span>
+                <span>Produit</span>
                 {column.getIsSorted() === "desc" ? (
                   <ArrowDownIcon className="ml-2 h-4 w-4" />
                 ) : column.getIsSorted() === "asc" ? (
@@ -151,7 +164,7 @@ export const columns: ColumnDef<Product>[] = [
   },
   {
     accessorKey: "color",
-    header: "Color",
+    header: "Couleur",
     cell: ({ row }) => {
       return <div className="whitespace-nowrap overflow-hidden overflow-ellipsis">{row.getValue("color")}</div>
     },
@@ -162,7 +175,7 @@ export const columns: ColumnDef<Product>[] = [
   },
   {
     accessorKey: "price",
-    header: () => <div className="text-right">Price</div>,
+    header: () => <div className="text-right">Prix</div>,
     cell: ({ row }) => {
       const price = parseFloat(row.getValue("price"))
       const formatted = new Intl.NumberFormat("en-US", {
@@ -183,24 +196,77 @@ export const columns: ColumnDef<Product>[] = [
     id: "actions",
     cell: ({ row }) => {
       const product = row.original
- 
+      const router = useRouter()
+      const { setShouldRefetch } = useProductsContext()
+      const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
+
+      const handleViewProduct = useCallback(() => {
+        router.push(`/products/${product.id}`)
+      }, [router, product.id])
+
+      const handleDeleteProduct = useCallback(async () => {
+        try {
+          const response = await fetch('/api/products/delete', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ ids: [product.id] }),
+          })
+
+          if (!response.ok) {
+            throw new Error('Failed to delete product')
+          }
+
+          setShouldRefetch(true)
+          toast.success('Product deleted successfully')
+        } catch (error) {
+          console.error('Error deleting product:', error)
+          toast.error('Failed to delete product')
+        } finally {
+          setIsDeleteDialogOpen(false)
+        }
+      }, [product.id, setShouldRefetch])
+
       return (
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="ghost" className="h-8 w-8 p-0">
-              <span className="sr-only">Open menu</span>
-              <MoreHorizontal className="h-4 w-4" />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            <DropdownMenuLabel>Actions</DropdownMenuLabel>
-            <Link href={`/products/${product.id}`} passHref legacyBehavior>
-              <DropdownMenuItem>View product</DropdownMenuItem>
-            </Link>
-            <DropdownMenuItem>Delete product</DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
+        <>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" className="h-8 w-8 p-0">
+                <span className="sr-only">Open menu</span>
+                <MoreHorizontal className="h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuLabel>Actions</DropdownMenuLabel>
+              <DropdownMenuItem onClick={handleViewProduct}>
+                Voir le produit
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => setIsDeleteDialogOpen(true)}>
+                Supprimer le produit
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+
+          <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Etes vous sure de vouloir supprimer ce produit ?</AlertDialogTitle>
+                <AlertDialogDescription>
+                  Cette action est irréversible. Cela supprimera définitivement le produit "{product.name}" et toutes ses données seront supprimées de nos serveurs.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                <AlertDialogAction onClick={handleDeleteProduct}>
+                  Supprimer
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+        </>
       )
     },
   },
 ]
+

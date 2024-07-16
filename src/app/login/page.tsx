@@ -33,20 +33,20 @@ export default async function Login({
     <div className="flex justify-center items-center h-screen p-4">
       <Card className="w-full max-w-sm">
         <CardHeader>
-          <CardTitle className="text-2xl">Login</CardTitle>
-          <CardDescription>
+          <CardTitle className="text-3xl">Login</CardTitle>
+          <CardDescription className="text-base">
             Enter your email below to login to your account.
           </CardDescription>
         </CardHeader>
         <form action="/api/auth/login" method="POST">
           <CardContent className="grid gap-4">
             <div className="grid gap-2">
-              <Label htmlFor="email">Email</Label>
-              <Input name="email" id="email" type="email" placeholder="m@example.com" required />
+              <Label htmlFor="email" className="text-base">Email</Label>
+              <Input className="text-base" name="email" id="email" type="email" placeholder="m@example.com" required />
             </div>
             <div className="grid gap-2">
-              <Label htmlFor="password">Password</Label>
-              <Input name="password" id="password" type="password" required />
+              <Label htmlFor="password" className="text-base">Password</Label>
+              <Input className="text-base" name="password" id="password" type="password" required />
             </div>
           </CardContent>
           <CardFooter>
