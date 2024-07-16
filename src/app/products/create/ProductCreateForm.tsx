@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useState } from 'react'
+import { useCallback, useRef, useState } from 'react'
 import { Product, productTypes } from "@/utils/types/products"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
@@ -27,6 +27,7 @@ export default function ProductCreateForm() {
   const [formData, setFormData] = useState(initialProduct)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const { setShouldRefetch } = useProductsContext()
+  const fileInputRef = useRef<HTMLInputElement>(null)
 
   const handleGoBack = useCallback(() => {
     router.push('/products')
@@ -35,6 +36,7 @@ export default function ProductCreateForm() {
   const isFormValid = () => {
     return formData.name && formData.type && formData.color && formData.price && formData.stock
   }
+  
   
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { id, value } = e.target
@@ -51,12 +53,23 @@ export default function ProductCreateForm() {
   
     setIsSubmitting(true)
     try {
+      const formDataToSend = new FormData()
+      
+      // Append all form fields
+      Object.entries(formData).forEach(([key, value]) => {
+        if (value !== undefined) {
+          formDataToSend.append(key, value.toString());
+        }
+      });
+
+      // Append the file if it exists
+      if (fileInputRef.current?.files?.[0]) {
+        formDataToSend.append('image', fileInputRef.current.files[0])
+      }
+
       const response = await fetch('/api/products/create', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(formData),
+        body: formDataToSend,
       })
   
       const result = await response.json()
@@ -156,8 +169,14 @@ export default function ProductCreateForm() {
             <Textarea id="description" value={formData.description} onChange={handleInputChange} className="w-full text-base" />
           </div>
           <div className="mb-4">
-            <Label className="text-base">Image</Label>
-            <Input type="file" className="w-full text-base" />
+            <Label htmlFor="image" className="text-base">Image</Label>
+            <Input
+              id="image"
+              type="file"
+              ref={fileInputRef}
+              accept="image/jpeg,image/png,image/jpg,image/heic,image/heif,image/webp"
+              className="w-full text-base"
+            />
           </div>
         </div>
       </form>

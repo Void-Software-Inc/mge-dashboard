@@ -185,7 +185,7 @@ export function DataTable({
         <div className="flex w-full md:w-auto justify-between md:justify-start gap-2">
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="outline" className="flex-grow md:flex-grow-0">
+              <Button variant="outline" className="w-3/5 md:w-auto flex-grow md:flex-grow-0">
                 Colonnes
               </Button>
             </DropdownMenuTrigger>
@@ -213,7 +213,7 @@ export function DataTable({
           </DropdownMenu>
           <Button 
             onClick={handleCreateProduct}
-            className="flex-grow md:flex-grow-0 bg-lime-300 hover:bg-lime-400 text-black"
+            className="flex-grow md:flex-grow-0 bg-lime-300 hover:bg-lime-4000 text-black w-2/5 md:w-auto"
           >
             <PlusIcon className="mr-2 h-4 w-4" /> Create Product
           </Button>
