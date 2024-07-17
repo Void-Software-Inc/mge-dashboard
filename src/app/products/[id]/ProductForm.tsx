@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { Product, productTypes } from "@/utils/types/products"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
@@ -14,23 +14,37 @@ import { useProductsContext } from '../context/ProductsContext'
 
 export default function ProductForm({ product: initialProduct }: { product: Product }) {
   const router = useRouter()
+
   const [product, setProduct] = useState(initialProduct)
   const [formData, setFormData] = useState(initialProduct)
+
   const [isChanged, setIsChanged] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const { setShouldRefetch } = useProductsContext()
+
+  const fileInputRef = useRef<HTMLInputElement>(null)
+  const [selectedFile, setSelectedFile] = useState<File | null>(null)
 
   const handleGoBack = useCallback(() => {
     router.push('/products')
   }, [router])
 
   useEffect(() => {
-    setIsChanged(JSON.stringify(product) !== JSON.stringify(formData))
-  }, [product, formData])
+    setIsChanged(
+      JSON.stringify(product) !== JSON.stringify(formData) || selectedFile !== null
+    )
+  }, [product, formData, selectedFile])
   
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { id, value } = e.target
     setFormData(prev => ({ ...prev, [id]: value }))
+  }
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      setSelectedFile(e.target.files[0])
+      setIsChanged(true)
+    }
   }
 
   const handleSelectChange = (value: string) => {
@@ -43,16 +57,23 @@ export default function ProductForm({ product: initialProduct }: { product: Prod
   
     setIsSubmitting(true)
     try {
-      const updatedFormData = {
-        ...formData
+      const formDataToSend = new FormData()
+      
+      // Append all form fields
+      Object.entries(formData).forEach(([key, value]) => {
+        if (value !== null && value !== undefined) {
+          formDataToSend.append(key, value.toString())
+        }
+      })
+  
+      // Append the file if it exists
+      if (selectedFile) {
+        formDataToSend.append('image', selectedFile)
       }
   
       const response = await fetch('/api/products/update', {
         method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(updatedFormData),
+        body: formDataToSend,
       })
   
       const result = await response.json()
@@ -60,15 +81,13 @@ export default function ProductForm({ product: initialProduct }: { product: Prod
       if (!response.ok) {
         throw new Error(result.error || 'Failed to update product')
       }
-
-      if(response.ok){
-        setShouldRefetch(true)
-      }
   
       console.log('Product updated:', result.data)
       setProduct(result.data)
       setFormData(result.data)
       setIsChanged(false)
+      setSelectedFile(null)
+      setShouldRefetch(true)
       toast.custom((t) => (
         <div className="bg-lime-300 text-black px-6 py-4 rounded-md">
           Produit mis à jour avec succès
@@ -158,7 +177,12 @@ export default function ProductForm({ product: initialProduct }: { product: Prod
           <div className="mb-4">
             <Label className="text-base">Image</Label>
             <img src={product.image_url} alt={product.name} className="w-full h-auto mb-2" />
-            <Input type="file" className="w-full text-base" />
+            <Input
+              type="file"
+              onChange={handleFileChange}
+              accept="image/jpeg,image/png,image/jpg,image/heic,image/heif,image/webp"
+              className="w-full text-base"
+            />
           </div>
           <div className="mb-4">
             <Label className="text-base">Created At</Label>
