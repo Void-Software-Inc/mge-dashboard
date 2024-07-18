@@ -1,18 +1,20 @@
 'use client'
 
 import { useCallback, useEffect, useState } from 'react'
-import { Product, productTypes } from "@/utils/types/products"
+
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { Label } from "@/components/ui/label"
 import { Button } from "@/components/ui/button"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Toaster, toast } from 'sonner'
+import { Skeleton } from "@/components/ui/skeleton"
 import { ChevronLeftIcon, DownloadIcon } from "@radix-ui/react-icons"
+
 import { useRouter } from 'next/navigation'
 import { useProductsContext } from '../context/ProductsContext'
-
 import { getProduct, updateProduct } from "@/services/products"
+import { Product, productTypes } from "@/utils/types/products"
 
 export default function ProductForm({ productId }: { productId: string }) {
   const router = useRouter()
@@ -123,11 +125,27 @@ export default function ProductForm({ productId }: { productId: string }) {
   }
 
   if (isLoading) {
-    return <div>Loading...</div>
+    return (
+      <div className="flex flex-col items-center justify-center pt-20 px-4 md:px-0">
+        <div className="w-full max-w-2xl">
+          <Skeleton className="h-8 w-full mb-4" />
+          <Skeleton className="h-12 w-full mb-4" />
+          <Skeleton className="h-12 w-full mb-4" />
+          <Skeleton className="h-12 w-full mb-4" />
+          <Skeleton className="h-12 w-full mb-4" />
+          <Skeleton className="h-24 w-full mb-4" />
+          <Skeleton className="h-48 w-full mb-4" />
+        </div>
+      </div>
+    )
   }
-
+  
   if (!product) {
-    return <div>Product not found</div>
+    return (
+      <div className="flex items-center justify-center h-screen">
+        <div className="text-2xl font-semibold">Product not found</div>
+      </div>
+    )
   }
 
   return (
