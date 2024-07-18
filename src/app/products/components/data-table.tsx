@@ -2,6 +2,8 @@
 
 import * as React from "react"
 
+import { getProducts } from "@/services/products"
+
 import {
   ColumnDef,
   ColumnFiltersState,
@@ -61,21 +63,10 @@ export function DataTable({
   const fetchProducts = async () => {
     setIsLoading(true)
     try {
-      const res = await fetch('/api/products')
-      const { products } = await res.json()
-      const cleanProducts = products.map((product: Product) => ({
-        id: product.id,
-        name: product.name,
-        type: product.type,
-        color: product.color,
-        stock: product.stock,
-        price: product.price,
-        description: product.description,
-        image_url: product.image_url,
-      }))
-      setProducts(cleanProducts)
+      const products = await getProducts()
+      setProducts(products)
       if (typeof window !== 'undefined') {
-        sessionStorage.setItem('cachedProducts', JSON.stringify(cleanProducts))
+        sessionStorage.setItem('cachedProducts', JSON.stringify(products))
       }
     } catch (error) {
       console.error('Error fetching products:', error)

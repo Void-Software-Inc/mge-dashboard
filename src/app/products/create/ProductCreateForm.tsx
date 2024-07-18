@@ -11,6 +11,7 @@ import { Toaster, toast } from 'sonner'
 import { ChevronLeftIcon, PlusIcon } from "@radix-ui/react-icons"
 import { useRouter } from 'next/navigation'
 import { useProductsContext } from '../context/ProductsContext'
+import { createProduct } from '@/services/products'
 
 const initialProduct: Partial<Product> = {
   name: '',
@@ -67,40 +68,31 @@ export default function ProductCreateForm() {
         formDataToSend.append('image', fileInputRef.current.files[0])
       }
 
-      const response = await fetch('/api/products/create', {
-        method: 'POST',
-        body: formDataToSend,
-      })
-  
-      const result = await response.json()
-  
-      if (!response.ok) {
-        throw new Error(result.error || 'Failed to create product')
-      }
+      const result = await createProduct(formDataToSend);
 
-      setShouldRefetch(true)
-  
-      console.log('Product created:', result.data)
-      toast.custom((t) => (
-        <div className="bg-lime-300 text-black px-6 py-4 rounded-md">
-          Produit créé avec succès
-        </div>
-      ), {
-        duration: 3000,
-      })
-      router.push(`/products/${result.data.id}`)
-    } catch (error) {
-      console.error('Error creating product:', error)
-      toast.custom((t) => (
-        <div className="bg-red-400 text-black px-6 py-4 rounded-md">
-          {error instanceof Error ? error.message : 'An error occurred'}
-        </div>
-      ), {
-        duration: 3000,
-      })
-    } finally {
-      setIsSubmitting(false)
-    }
+    setShouldRefetch(true)
+
+    console.log('Product created:', result)
+    toast.custom((t) => (
+      <div className="bg-lime-300 text-black px-6 py-4 rounded-md">
+        Produit créé avec succès
+      </div>
+    ), {
+      duration: 3000,
+    })
+    router.push(`/products/${result.id}`)
+  } catch (error) {
+    console.error('Error creating product:', error)
+    toast.custom((t) => (
+      <div className="bg-red-400 text-black px-6 py-4 rounded-md">
+        {error instanceof Error ? error.message : 'An error occurred'}
+      </div>
+    ), {
+      duration: 3000,
+    })
+  } finally {
+    setIsSubmitting(false)
+  }
   }
 
   return (
