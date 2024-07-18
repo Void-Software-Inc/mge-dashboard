@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { Product, productTypes } from "@/utils/types/products"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
@@ -12,22 +12,41 @@ import { ChevronLeftIcon, DownloadIcon } from "@radix-ui/react-icons"
 import { useRouter } from 'next/navigation'
 import { useProductsContext } from '../context/ProductsContext'
 
-export default function ProductForm({ product: initialProduct }: { product: Product }) {
+import { getProduct, updateProduct } from "@/services/products"
+
+export default function ProductForm({ productId }: { productId: string }) {
   const router = useRouter()
 
-  const [product, setProduct] = useState(initialProduct)
-  const [formData, setFormData] = useState(initialProduct)
+  const [product, setProduct] = useState<Product | null>(null)
+  const [formData, setFormData] = useState<Product | null>(null)
+  const [isLoading, setIsLoading] = useState(true)
 
   const [isChanged, setIsChanged] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const { setShouldRefetch } = useProductsContext()
 
-  const fileInputRef = useRef<HTMLInputElement>(null)
   const [selectedFile, setSelectedFile] = useState<File | null>(null)
 
   const handleGoBack = useCallback(() => {
     router.push('/products')
   }, [router])
+  
+  useEffect(() => {
+    const fetchProduct = async () => {
+      try {
+        const fetchedProduct = await getProduct(parseInt(productId))
+        setProduct(fetchedProduct)
+        setFormData(fetchedProduct)
+      } catch (error) {
+        console.error('Error fetching product:', error)
+        toast.error('Failed to load product')
+      } finally {
+        setIsLoading(false)
+      }
+    }
+
+    fetchProduct()
+  }, [productId])
 
   useEffect(() => {
     setIsChanged(
@@ -37,7 +56,7 @@ export default function ProductForm({ product: initialProduct }: { product: Prod
   
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { id, value } = e.target
-    setFormData(prev => ({ ...prev, [id]: value }))
+    setFormData(prev => prev ? { ...prev, [id]: value } : null)
   }
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -48,7 +67,7 @@ export default function ProductForm({ product: initialProduct }: { product: Prod
   }
 
   const handleSelectChange = (value: string) => {
-    setFormData(prev => ({ ...prev, type: value }))
+    setFormData(prev => prev ? { ...prev, type: value } : null)
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -60,31 +79,25 @@ export default function ProductForm({ product: initialProduct }: { product: Prod
       const formDataToSend = new FormData()
       
       // Append all form fields
-      Object.entries(formData).forEach(([key, value]) => {
-        if (value !== null && value !== undefined) {
-          formDataToSend.append(key, value.toString())
-        }
-      })
+      if (formData) {
+        Object.entries(formData).forEach(([key, value]) => {
+          if (value !== null && value !== undefined) {
+            formDataToSend.append(key, value.toString())
+          }
+        })
+      }
   
       // Append the file if it exists
       if (selectedFile) {
         formDataToSend.append('image', selectedFile)
       }
   
-      const response = await fetch('/api/products/update', {
-        method: 'PUT',
-        body: formDataToSend,
-      })
+      const response = await updateProduct(formDataToSend)
   
-      const result = await response.json()
-  
-      if (!response.ok) {
-        throw new Error(result.error || 'Failed to update product')
-      }
-  
-      console.log('Product updated:', result.data)
-      setProduct(result.data)
-      setFormData(result.data)
+     
+      console.log('Product updated:', response)
+      setProduct(response)
+      setFormData(response)
       setIsChanged(false)
       setSelectedFile(null)
       setShouldRefetch(true)
@@ -107,6 +120,14 @@ export default function ProductForm({ product: initialProduct }: { product: Prod
     } finally {
       setIsSubmitting(false)
     }
+  }
+
+  if (isLoading) {
+    return <div>Loading...</div>
+  }
+
+  if (!product) {
+    return <div>Product not found</div>
   }
 
   return (
@@ -138,17 +159,17 @@ export default function ProductForm({ product: initialProduct }: { product: Prod
         <div className="w-full max-w-2xl">
           <div className="mb-4">
             <Label className="text-base">ID</Label>
-            <Input id="id" value={formData.id} className="w-full text-base" disabled />
+            <Input id="id" value={formData?.id ?? ''} className="w-full text-base" disabled />
           </div>
           <div className="mb-4">
             <Label htmlFor="name" className="text-base">Name</Label>
-            <Input id="name" value={formData.name} onChange={handleInputChange} className="w-full text-base" />
+            <Input id="name" value={formData?.name ?? ''} onChange={handleInputChange} className="w-full text-base" />
           </div>
           <div className="mb-4">
             <Label htmlFor="type" className="text-base">Type</Label>
             <Select
               onValueChange={handleSelectChange}
-              defaultValue={formData.type}
+              defaultValue={formData?.type ?? ''}
             >
               <SelectTrigger className="w-full">
                 <SelectValue placeholder="Select a product type" />
@@ -164,15 +185,15 @@ export default function ProductForm({ product: initialProduct }: { product: Prod
           </div>
           <div className="mb-4">
             <Label htmlFor="color" className="text-base">Color</Label>
-            <Input id="color" value={formData.color} onChange={handleInputChange} className="w-full text-base" />
+            <Input id="color" value={formData?.color ?? ''} onChange={handleInputChange} className="w-full text-base" />
           </div>
           <div className="mb-4">
             <Label htmlFor="price" className="text-base">Price</Label>
-            <Input id="price" value={formData.price} onChange={handleInputChange} className="w-full text-base" />
+            <Input id="price" value={formData?.price ?? ''} onChange={handleInputChange} className="w-full text-base" />
           </div>
           <div className="mb-4">
             <Label htmlFor="description" className="text-base">Description</Label>
-            <Textarea id="description" value={formData.description} onChange={handleInputChange} className="w-full text-base" />
+            <Textarea id="description" value={formData?.description ?? ''} onChange={handleInputChange} className="w-full text-base" />
           </div>
           <div className="mb-4">
             <Label className="text-base">Image</Label>
@@ -186,19 +207,19 @@ export default function ProductForm({ product: initialProduct }: { product: Prod
           </div>
           <div className="mb-4">
             <Label className="text-base">Created At</Label>
-            <Input id="created_at" value={new Date(formData.created_at).toLocaleString('fr-FR', {
+            <Input id="created_at" value={formData?.created_at ? new Date(formData.created_at).toLocaleString('fr-FR', {
               dateStyle: 'short',
               timeStyle: 'short',
-              timeZone: 'Europe/Paris'
-            })} className="w-full text-base" disabled />
+                timeZone: 'Europe/Paris'
+              }) : ''} className="w-full text-base" disabled />
           </div>
           <div className="mb-4">
             <Label className="text-base">Last Update</Label>
-            <Input id="last_update" value={new Date(formData.last_update).toLocaleString('fr-FR', {
+            <Input id="last_update" value={formData?.last_update ? new Date(formData.last_update).toLocaleString('fr-FR', {
               dateStyle: 'short',
               timeStyle: 'short',
-              timeZone: 'Europe/Paris'
-            })} className="w-full text-base" disabled />
+                timeZone: 'Europe/Paris'
+              }) : ''} className="w-full text-base" disabled />
           </div>
         </div>
       </form>

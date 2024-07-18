@@ -39,6 +39,8 @@ import { useCallback, useState } from "react"
 import { useProductsContext } from '../context/ProductsContext'
 import { toast } from "sonner"
 
+import { deleteProduct } from "@/services/products"
+
 export const columns: ColumnDef<Product>[] = [
   {
     id: "select",
@@ -206,27 +208,16 @@ export const columns: ColumnDef<Product>[] = [
 
       const handleDeleteProduct = useCallback(async () => {
         try {
-          const response = await fetch('/api/products/delete', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({ ids: [product.id] }),
-          })
-
-          if (!response.ok) {
-            throw new Error('Failed to delete product')
-          }
-
-          setShouldRefetch(true)
-          toast.success('Product deleted successfully')
+          await deleteProduct([product.id]);
+          setShouldRefetch(true);
+          toast.success('Product deleted successfully');
         } catch (error) {
-          console.error('Error deleting product:', error)
-          toast.error('Failed to delete product')
+          console.error('Error deleting product:', error);
+          toast.error('Failed to delete product');
         } finally {
-          setIsDeleteDialogOpen(false)
+          setIsDeleteDialogOpen(false);
         }
-      }, [product.id, setShouldRefetch])
+      }, [product.id, setShouldRefetch]);
 
       return (
         <>
