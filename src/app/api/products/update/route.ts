@@ -22,37 +22,43 @@ export async function PUT(request: NextRequest) {
     if (!validTypes.includes(file.type)) {
       return NextResponse.json({ error: 'Invalid file type' }, { status: 400 });
     }
-
+  
     // Extract the filename from the existing image_url
     const existingFilename = imageUrl.split('/').pop();
     console.log('existingFilename', existingFilename)
-
+  
     if (!existingFilename) {
       return NextResponse.json({ error: 'Invalid existing image URL' }, { status: 400 });
     }
-
-    // Update the existing file
+  
+    // Delete the existing file
+    const { error: deleteError } = await supabase
+      .storage
+      .from('mge-product-images')
+      .remove([existingFilename]);
+  
+    if (deleteError) {
+      console.error('Error deleting existing file:', deleteError);
+      return NextResponse.json({ error: 'Failed to delete existing image' }, { status: 500 });
+    }
+  
+    // Upload the new file
+    const newFilename = `product-${id}-${Date.now()}-${file.name}`;
     const { data, error: uploadError } = await supabase
       .storage
       .from('mge-product-images')
-      .update(existingFilename, file, {
-        cacheControl: '0',
-        upsert: true
-      });
-
-    console.log('data', data)
-    console.log('uploadError', uploadError)
-
+      .upload(newFilename, file);
+  
     if (uploadError) {
-      console.error('Error updating file:', uploadError);
-      return NextResponse.json({ error: 'Failed to update image' }, { status: 500 });
+      console.error('Error uploading new file:', uploadError);
+      return NextResponse.json({ error: 'Failed to upload new image' }, { status: 500 });
     }
-
-    // Get the public URL of the updated file
+  
+    // Get the public URL of the new file
     const { data: { publicUrl } } = supabase.storage
       .from('mge-product-images')
-      .getPublicUrl(existingFilename);
-
+      .getPublicUrl(newFilename);
+  
     imageUrl = publicUrl;
   }
 
