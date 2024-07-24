@@ -206,7 +206,7 @@ export function DataTable({
             onClick={handleCreateProduct}
             className="flex-grow md:flex-grow-0 bg-lime-300 hover:bg-lime-4000 text-black w-2/5 md:w-auto"
           >
-            <PlusIcon className="mr-2 h-4 w-4" /> Create Product
+            <PlusIcon className="mr-2 h-4 w-4" /> Créer un produit
           </Button>
         </div>
       </div>
@@ -262,7 +262,7 @@ export function DataTable({
           onClick={() => table.previousPage()}
           disabled={!table.getCanPreviousPage()}
         >
-          Previous
+          Précédent
         </Button>
         <Button
           variant="outline"
@@ -270,7 +270,7 @@ export function DataTable({
           onClick={() => table.nextPage()}
           disabled={!table.getCanNextPage()}
         >
-          Next
+          Suivant
         </Button>
       </div>
     </div>
