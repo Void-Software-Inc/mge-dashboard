@@ -13,7 +13,7 @@ import { ChevronLeftIcon, DownloadIcon } from "@radix-ui/react-icons"
 
 import { useRouter } from 'next/navigation'
 import { useProductsContext } from '../context/ProductsContext'
-import { getProduct, getProductImages, updateProduct } from "@/services/products"
+import { getProduct, getProductImages, updateProduct, deleteProductImage } from "@/services/products"
 import { Product, productTypes, ProductImage } from "@/utils/types/products"
 
 export default function ProductForm({ productId }: { productId: string }) {
@@ -129,8 +129,18 @@ export default function ProductForm({ productId }: { productId: string }) {
     }
   }
 
-  const handleImageClick = (imageId: number) => {
+  const handleImageClick = async (imageId: number) => {
     console.log('Clicked image ID:', imageId);
+    if (confirm('Are you sure you want to delete this image?')) {
+      try {
+        await deleteProductImage(parseInt(productId), imageId);
+        setSecondaryImages(prevImages => prevImages ? prevImages.filter(img => img.id !== imageId) : null);
+        toast.success('Image deleted successfully');
+      } catch (error) {
+        console.error('Error deleting image:', error);
+        toast.error('Failed to delete image');
+      }
+    }
   };
 
   if (isLoading) {
