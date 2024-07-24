@@ -13,13 +13,14 @@ import { ChevronLeftIcon, DownloadIcon } from "@radix-ui/react-icons"
 
 import { useRouter } from 'next/navigation'
 import { useProductsContext } from '../context/ProductsContext'
-import { getProduct, updateProduct } from "@/services/products"
-import { Product, productTypes } from "@/utils/types/products"
+import { getProduct, getProductImages, updateProduct } from "@/services/products"
+import { Product, productTypes, ProductImage } from "@/utils/types/products"
 
 export default function ProductForm({ productId }: { productId: string }) {
   const router = useRouter()
 
   const [product, setProduct] = useState<Product | null>(null)
+  const [secondaryImages, setSecondaryImages] = useState<ProductImage[] | null>(null)
   const [formData, setFormData] = useState<Product | null>(null)
   const [isLoading, setIsLoading] = useState(true)
 
@@ -36,9 +37,13 @@ export default function ProductForm({ productId }: { productId: string }) {
   useEffect(() => {
     const fetchProduct = async () => {
       try {
-        const fetchedProduct = await getProduct(parseInt(productId))
+        const [fetchedProduct, fetchedProductImages] = await Promise.all([
+          getProduct(parseInt(productId)),
+          getProductImages(parseInt(productId))
+        ])
         setProduct(fetchedProduct)
         setFormData(fetchedProduct)
+        setSecondaryImages(fetchedProductImages)
       } catch (error) {
         console.error('Error fetching product:', error)
         toast.error('Failed to load product')
@@ -123,6 +128,10 @@ export default function ProductForm({ productId }: { productId: string }) {
       setIsSubmitting(false)
     }
   }
+
+  const handleImageClick = (imageId: number) => {
+    console.log('Clicked image ID:', imageId);
+  };
 
   if (isLoading) {
     return (
@@ -222,6 +231,21 @@ export default function ProductForm({ productId }: { productId: string }) {
               accept="image/jpeg,image/png,image/jpg,image/heic,image/heif,image/webp"
               className="w-full text-base"
             />
+          </div>
+          <div className="mb-4">
+            <Label className="text-base">Images secondaires du produit</Label>
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mt-2">
+              {secondaryImages?.map((image) => (
+                <div 
+                  key={image.id} 
+                  className="relative"
+                  onClick={() => handleImageClick(image.id)}
+                >
+                  <img src={image.url} alt={`Secondary image ${image.id}`} className="w-full h-auto rounded-md" />
+                </div>
+              ))}
+            </div>
+            {/* You can add functionality to upload new secondary images here */}
           </div>
           <div className="mb-4">
             <Label className="text-base">Date de création du produit</Label>

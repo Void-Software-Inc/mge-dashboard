@@ -11,6 +11,12 @@ export type Product = {
     last_update: string,
 }
 
+export type ProductImage = {
+    id: number;
+    product_id: number;
+    url: string;
+}
+
 export type ProductType = {
     value: string;
     name: string;
