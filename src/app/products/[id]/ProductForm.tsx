@@ -176,15 +176,15 @@ export default function ProductForm({ productId }: { productId: string }) {
       <form onSubmit={handleSubmit} className="flex flex-col items-center justify-center pt-20 px-4 md:px-0">
         <div className="w-full max-w-2xl">
           <div className="mb-4">
-            <Label className="text-base">ID</Label>
+            <Label className="text-base">Identifiant du produit</Label>
             <Input id="id" value={formData?.id ?? ''} className="w-full text-base" disabled />
           </div>
           <div className="mb-4">
-            <Label htmlFor="name" className="text-base">Name</Label>
+            <Label htmlFor="name" className="text-base">Nom du produit</Label>
             <Input id="name" value={formData?.name ?? ''} onChange={handleInputChange} className="w-full text-base" />
           </div>
           <div className="mb-4">
-            <Label htmlFor="type" className="text-base">Type</Label>
+            <Label htmlFor="type" className="text-base">Type de produit</Label>
             <Select
               onValueChange={handleSelectChange}
               defaultValue={formData?.type ?? ''}
@@ -202,19 +202,19 @@ export default function ProductForm({ productId }: { productId: string }) {
             </Select>
           </div>
           <div className="mb-4">
-            <Label htmlFor="color" className="text-base">Color</Label>
+            <Label htmlFor="color" className="text-base">Couleur du produit</Label>
             <Input id="color" value={formData?.color ?? ''} onChange={handleInputChange} className="w-full text-base" />
           </div>
           <div className="mb-4">
-            <Label htmlFor="price" className="text-base">Price</Label>
+            <Label htmlFor="price" className="text-base">Prix du produit</Label>
             <Input id="price" value={formData?.price ?? ''} onChange={handleInputChange} className="w-full text-base" />
           </div>
           <div className="mb-4">
-            <Label htmlFor="description" className="text-base">Description</Label>
+            <Label htmlFor="description" className="text-base">Description du produit</Label>
             <Textarea id="description" value={formData?.description ?? ''} onChange={handleInputChange} className="w-full text-base" />
           </div>
           <div className="mb-4">
-            <Label className="text-base">Image</Label>
+            <Label className="text-base">Image principale du produit</Label>
             <img src={product.image_url} alt={product.name} className="w-full h-auto mb-2" />
             <Input
               type="file"
@@ -224,7 +224,7 @@ export default function ProductForm({ productId }: { productId: string }) {
             />
           </div>
           <div className="mb-4">
-            <Label className="text-base">Created At</Label>
+            <Label className="text-base">Date de création du produit</Label>
             <Input id="created_at" value={formData?.created_at ? new Date(formData.created_at).toLocaleString('fr-FR', {
               dateStyle: 'short',
               timeStyle: 'short',
@@ -232,7 +232,7 @@ export default function ProductForm({ productId }: { productId: string }) {
               }) : ''} className="w-full text-base" disabled />
           </div>
           <div className="mb-4">
-            <Label className="text-base">Last Update</Label>
+            <Label className="text-base">Date de dernière mise à jour du produit</Label>
             <Input id="last_update" value={formData?.last_update ? new Date(formData.last_update).toLocaleString('fr-FR', {
               dateStyle: 'short',
               timeStyle: 'short',
