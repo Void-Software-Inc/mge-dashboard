@@ -121,3 +121,23 @@ export async function deleteProduct(ids: number[]): Promise<void> {
     throw error;
   }
 }
+
+export async function deleteProductImage(productId: number, imageId: number): Promise<void> {
+  try {
+    const url = `${API_URL}/products/${productId}/images/delete`;
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ imageId }),
+    });
+
+    if (!response.ok) {
+      throw new Error('Failed to delete product image');
+    }
+  } catch (error) {
+    console.error('Error deleting product image:', error);
+    throw error;
+  }
+}
