@@ -9,11 +9,11 @@ import { Button } from "@/components/ui/button"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Toaster, toast } from 'sonner'
 import { Skeleton } from "@/components/ui/skeleton"
-import { ChevronLeftIcon, DownloadIcon } from "@radix-ui/react-icons"
+import { ChevronLeftIcon, DownloadIcon, Cross2Icon, UploadIcon } from "@radix-ui/react-icons"
 
 import { useRouter } from 'next/navigation'
 import { useProductsContext } from '../context/ProductsContext'
-import { getProduct, getProductImages, updateProduct, deleteProductImage } from "@/services/products"
+import { getProduct, getProductImages, updateProduct, deleteProductImage, createProductImage } from "@/services/products"
 import { Product, productTypes, ProductImage } from "@/utils/types/products"
 
 export default function ProductForm({ productId }: { productId: string }) {
@@ -21,6 +21,8 @@ export default function ProductForm({ productId }: { productId: string }) {
 
   const [product, setProduct] = useState<Product | null>(null)
   const [secondaryImages, setSecondaryImages] = useState<ProductImage[] | null>(null)
+  const [taintedImages, setTaintedImages] = useState<Set<number>>(new Set())
+  const [createdImages, setCreatedImages] = useState<File[]>([])
   const [formData, setFormData] = useState<Product | null>(null)
   const [isLoading, setIsLoading] = useState(true)
 
@@ -57,9 +59,12 @@ export default function ProductForm({ productId }: { productId: string }) {
 
   useEffect(() => {
     setIsChanged(
-      JSON.stringify(product) !== JSON.stringify(formData) || selectedFile !== null
+      JSON.stringify(product) !== JSON.stringify(formData) || 
+      selectedFile !== null ||
+      taintedImages.size > 0 ||
+      createdImages.length > 0
     )
-  }, [product, formData, selectedFile])
+  }, [product, formData, selectedFile, taintedImages, createdImages])
   
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { id, value } = e.target
@@ -100,6 +105,27 @@ export default function ProductForm({ productId }: { productId: string }) {
       }
   
       const response = await updateProduct(formDataToSend)
+
+      if (taintedImages.size > 0) {
+        await Promise.all(
+          Array.from(taintedImages).map(imageId => 
+            deleteProductImage(parseInt(productId), imageId)
+          )
+        )
+        setSecondaryImages(prevImages => 
+          prevImages ? prevImages.filter(img => !taintedImages.has(img.id)) : null
+        )
+        setTaintedImages(new Set())
+      }
+
+      if (createdImages.length > 0) {
+        await Promise.all(
+          createdImages.map(file => createProductImage(parseInt(productId), file))
+        )
+        const updatedImages = await getProductImages(parseInt(productId))
+        setSecondaryImages(updatedImages)
+        setCreatedImages([])
+      }
   
      
       console.log('Product updated:', response)
@@ -129,19 +155,27 @@ export default function ProductForm({ productId }: { productId: string }) {
     }
   }
 
-  const handleImageClick = async (imageId: number) => {
-    console.log('Clicked image ID:', imageId);
-    if (confirm('Are you sure you want to delete this image?')) {
-      try {
-        await deleteProductImage(parseInt(productId), imageId);
-        setSecondaryImages(prevImages => prevImages ? prevImages.filter(img => img.id !== imageId) : null);
-        toast.success('Image deleted successfully');
-      } catch (error) {
-        console.error('Error deleting image:', error);
-        toast.error('Failed to delete image');
-      }
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      setCreatedImages(prev => [...prev, e.target.files![0]])
     }
-  };
+  }
+
+  const handleRemoveCreatedImage = (index: number) => {
+    setCreatedImages(prev => prev.filter((_, i) => i !== index))
+  }
+
+  const handleImageTaint = (imageId: number) => {
+    setTaintedImages(prev => {
+      const newSet = new Set(prev)
+      if (newSet.has(imageId)) {
+        newSet.delete(imageId)
+      } else {
+        newSet.add(imageId)
+      }
+      return newSet
+    })
+  }
 
   if (isLoading) {
     return (
@@ -244,18 +278,66 @@ export default function ProductForm({ productId }: { productId: string }) {
           </div>
           <div className="mb-4">
             <Label className="text-base">Images secondaires du produit</Label>
-            <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mt-2">
+            <div className="grid grid-cols-3 gap-4 mt-2">
+              <div 
+                  className="aspect-square flex items-center justify-center border-2 border-dashed border-gray-300 rounded-md cursor-pointer"
+                  onClick={() => document.getElementById('image-upload')?.click()}
+                >
+                  <label htmlFor="image-upload" className="cursor-pointer">
+                    <UploadIcon className="w-8 h-8 text-gray-400" />
+                  <input
+                    id="image-upload"
+                    type="file"
+                    className="hidden"
+                    onChange={handleImageUpload}
+                    accept="image/*"
+                  />
+                </label>
+              </div>
               {secondaryImages?.map((image) => (
                 <div 
                   key={image.id} 
-                  className="relative"
-                  onClick={() => handleImageClick(image.id)}
+                  className={`relative aspect-square ${taintedImages.has(image.id) ? 'border-2 border-red-500 rounded-md' : ''}`}
                 >
-                  <img src={image.url} alt={`Secondary image ${image.id}`} className="w-full h-auto rounded-md" />
+                  <img 
+                    src={image.url} 
+                    alt={`Secondary image ${image.id}`} 
+                    className="w-full h-full object-cover rounded-md cursor-pointer" 
+                  />
+                  <button
+                    type="button"
+                    onClick={() => handleImageTaint(image.id)}
+                    className="absolute top-2 right-2 bg-red-500 text-white rounded-full p-1 hover:bg-red-600"
+                  >
+                    <Cross2Icon className="w-4 h-4" />
+                  </button>
+                  {taintedImages.has(image.id) && (
+                    <div className="absolute bottom-0 left-0 right-0 bg-red-500 text-white text-xs p-1 text-center">
+                      Cette image sera supprimée lors de la validation
+                    </div>
+                  )}
+                </div>
+              ))}
+              {createdImages.map((file, index) => (
+                <div key={index} className="relative aspect-square border-2 border-green-500 rounded-md">
+                  <img 
+                    src={URL.createObjectURL(file)} 
+                    alt={`New image ${index + 1}`} 
+                    className="w-full h-full object-cover rounded-md" 
+                  />
+                  <button
+                    type="button"
+                    onClick={() => handleRemoveCreatedImage(index)}
+                    className="absolute top-2 right-2 bg-red-500 text-white rounded-full p-1 hover:bg-red-600"
+                  >
+                    <Cross2Icon className="w-4 h-4" />
+                  </button>
+                  <div className="absolute bottom-0 left-0 right-0 bg-green-500 text-white text-xs p-1 text-center">
+                    Image: {file.name} sera uploadée lors de la validation
+                  </div>
                 </div>
               ))}
             </div>
-            {/* You can add functionality to upload new secondary images here */}
           </div>
           <div className="mb-4">
             <Label className="text-base">Date de création du produit</Label>
