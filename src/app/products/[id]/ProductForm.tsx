@@ -72,13 +72,6 @@ export default function ProductForm({ productId }: { productId: string }) {
     setFormData(prev => prev ? { ...prev, [id]: value } : null)
   }
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files[0]) {
-      setSelectedFile(e.target.files[0])
-      setIsChanged(true)
-    }
-  }
-
   const handleSelectChange = (value: string) => {
     setFormData(prev => prev ? { ...prev, type: value } : null)
   }
@@ -133,6 +126,9 @@ export default function ProductForm({ productId }: { productId: string }) {
       setProduct(response)
       setFormData(response)
       setIsChanged(false)
+
+      // Reset main image state
+      setPreviewUrl(null)
       setSelectedFile(null)
       setShouldRefetch(true)
       toast.custom((t) => (
@@ -286,17 +282,17 @@ export default function ProductForm({ productId }: { productId: string }) {
               <img 
                 src={previewUrl || product.image_url} 
                 alt={product.name} 
-                className={`w-full h-auto mb-2 ${previewUrl ? 'border-4 border-green-500' : ''}`}
+                className={`w-full h-auto mb-2 ${previewUrl ? 'border-4 rounded-md border-lime-300' : ''}`}
               />
               {previewUrl && (
                 <>
-                  <div className="absolute top-0 left-0 right-0 bg-green-500 text-white text-xs p-1 text-center">
+                  <div className="absolute bottom-0 left-0 right-0 bg-lime-300 rounded-md text-white text-xs p-1 text-center">
                     Cette image sera remplacée lors de la validation
                   </div>
                   <button
                     type="button"
                     onClick={handleCancelMainImageChange}
-                    className="absolute top-2 right-2 bg-red-500 text-white rounded-full p-1 hover:bg-red-600"
+                    className="absolute top-2 right-2 bg-red-400 text-white rounded-full p-1 hover:bg-red-600"
                   >
                     <ReloadIcon className="w-4 h-4" />
                   </button>
@@ -308,7 +304,7 @@ export default function ProductForm({ productId }: { productId: string }) {
               onClick={() => document.getElementById('main-image-upload')?.click()}
             >
               <UploadIcon className="w-6 h-6 text-gray-400 mr-2" />
-              <span className="text-gray-600">Click to upload new main image</span>
+              <span className="text-gray-600">Changer l'image principale</span>
               <input
                 id="main-image-upload"
                 type="file"
@@ -339,7 +335,7 @@ export default function ProductForm({ productId }: { productId: string }) {
               {secondaryImages?.map((image) => (
                 <div 
                   key={image.id} 
-                  className={`relative aspect-square ${taintedImages.has(image.id) ? 'border-2 border-red-500 rounded-md' : ''}`}
+                  className={`relative aspect-square ${taintedImages.has(image.id) ? 'border-2 border-red-400 rounded-md' : ''}`}
                 >
                   <img 
                     src={image.url} 
@@ -349,19 +345,19 @@ export default function ProductForm({ productId }: { productId: string }) {
                   <button
                     type="button"
                     onClick={() => handleImageTaint(image.id)}
-                    className="absolute top-2 right-2 bg-red-500 text-white rounded-full p-1 hover:bg-red-600"
+                    className="absolute top-2 right-2 bg-red-400 text-white rounded-full p-1 hover:bg-red-500"
                   >
                     <Cross2Icon className="w-4 h-4" />
                   </button>
                   {taintedImages.has(image.id) && (
-                    <div className="absolute bottom-0 left-0 right-0 bg-red-500 text-white text-xs p-1 text-center">
+                    <div className="absolute bottom-0 left-0 right-0 bg-red-400 text-white text-xs p-1 text-center">
                       Cette image sera supprimée lors de la validation
                     </div>
                   )}
                 </div>
               ))}
               {createdImages.map((file, index) => (
-                <div key={index} className="relative aspect-square border-2 border-green-500 rounded-md">
+                <div key={index} className="relative aspect-square border-2 border-lime-300 rounded-md">
                   <img 
                     src={URL.createObjectURL(file)} 
                     alt={`New image ${index + 1}`} 
@@ -370,11 +366,11 @@ export default function ProductForm({ productId }: { productId: string }) {
                   <button
                     type="button"
                     onClick={() => handleRemoveCreatedImage(index)}
-                    className="absolute top-2 right-2 bg-red-500 text-white rounded-full p-1 hover:bg-red-600"
+                    className="absolute top-2 right-2 bg-red-400 text-white rounded-full p-1 hover:bg-red-600"
                   >
                     <Cross2Icon className="w-4 h-4" />
                   </button>
-                  <div className="absolute bottom-0 left-0 right-0 bg-green-500 text-white text-xs p-1 text-center">
+                  <div className="absolute bottom-0 left-0 right-0 bg-lime-300 text-white text-xs p-1 text-center">
                     Cette image sera uploadée lors de la validation
                   </div>
                 </div>
