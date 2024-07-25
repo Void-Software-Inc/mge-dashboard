@@ -122,6 +122,34 @@ export async function deleteProduct(ids: number[]): Promise<void> {
   }
 }
 
+// ... existing imports and functions ...
+
+export async function createProductImage(productId: number, imageFile: File): Promise<ProductImage> {
+  try {
+    const url = `${API_URL}/products/${productId}/images/create`;
+    const formData = new FormData();
+    formData.append('image', imageFile);
+
+    const response = await fetch(url, {
+      method: 'POST',
+      body: formData,
+    });
+
+    if (!response.ok) {
+      const result = await response.json();
+      throw new Error(result.error || 'Failed to create product image');
+    }
+
+    const result = await response.json();
+    return result.data;
+  } catch (error) {
+    console.error('Error creating product image:', error);
+    throw error;
+  }
+}
+
+// ... rest of the existing code ...
+
 export async function deleteProductImage(productId: number, imageId: number): Promise<void> {
   try {
     const url = `${API_URL}/products/${productId}/images/delete`;
