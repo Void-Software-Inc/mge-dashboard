@@ -278,7 +278,7 @@ export default function ProductForm({ productId }: { productId: string }) {
           </div>
           <div className="mb-4">
             <Label className="text-base">Images secondaires du produit</Label>
-            <div className="grid grid-cols-3 gap-4 mt-2">
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mt-2">
               <div 
                   className="aspect-square flex items-center justify-center border-2 border-dashed border-gray-300 rounded-md cursor-pointer"
                   onClick={() => document.getElementById('image-upload')?.click()}
@@ -333,7 +333,7 @@ export default function ProductForm({ productId }: { productId: string }) {
                     <Cross2Icon className="w-4 h-4" />
                   </button>
                   <div className="absolute bottom-0 left-0 right-0 bg-green-500 text-white text-xs p-1 text-center">
-                    Image: {file.name} sera uploadée lors de la validation
+                    Cette image sera uploadée lors de la validation
                   </div>
                 </div>
               ))}
