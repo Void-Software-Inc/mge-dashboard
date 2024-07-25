@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Toaster, toast } from 'sonner'
 import { Skeleton } from "@/components/ui/skeleton"
-import { ChevronLeftIcon, DownloadIcon, Cross2Icon, UploadIcon } from "@radix-ui/react-icons"
+import { ChevronLeftIcon, DownloadIcon, Cross2Icon, UploadIcon, ReloadIcon } from "@radix-ui/react-icons"
 
 import { useRouter } from 'next/navigation'
 import { useProductsContext } from '../context/ProductsContext'
@@ -31,6 +31,7 @@ export default function ProductForm({ productId }: { productId: string }) {
   const { setShouldRefetch } = useProductsContext()
 
   const [selectedFile, setSelectedFile] = useState<File | null>(null)
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null)
 
   const handleGoBack = useCallback(() => {
     router.push('/products')
@@ -155,7 +156,20 @@ export default function ProductForm({ productId }: { productId: string }) {
     }
   }
 
-  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleMainImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      const file = e.target.files[0]
+      setSelectedFile(file)
+      setPreviewUrl(URL.createObjectURL(file))
+    }
+  }
+
+  const handleCancelMainImageChange = () => {
+    setSelectedFile(null)
+    setPreviewUrl(null)
+  }
+
+  const handleSecondaryImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
       setCreatedImages(prev => [...prev, e.target.files![0]])
     }
@@ -268,13 +282,41 @@ export default function ProductForm({ productId }: { productId: string }) {
           </div>
           <div className="mb-4">
             <Label className="text-base">Image principale du produit</Label>
-            <img src={product.image_url} alt={product.name} className="w-full h-auto mb-2" />
-            <Input
-              type="file"
-              onChange={handleFileChange}
-              accept="image/jpeg,image/png,image/jpg,image/heic,image/heif,image/webp"
-              className="w-full text-base"
-            />
+            <div className="relative">
+              <img 
+                src={previewUrl || product.image_url} 
+                alt={product.name} 
+                className={`w-full h-auto mb-2 ${previewUrl ? 'border-4 border-green-500' : ''}`}
+              />
+              {previewUrl && (
+                <>
+                  <div className="absolute top-0 left-0 right-0 bg-green-500 text-white text-xs p-1 text-center">
+                    Cette image sera remplacée lors de la validation
+                  </div>
+                  <button
+                    type="button"
+                    onClick={handleCancelMainImageChange}
+                    className="absolute top-2 right-2 bg-red-500 text-white rounded-full p-1 hover:bg-red-600"
+                  >
+                    <ReloadIcon className="w-4 h-4" />
+                  </button>
+                </>
+              )}
+            </div>
+            <div 
+              className="mt-2 p-4 border-2 border-dashed border-gray-300 rounded-md cursor-pointer flex items-center justify-center"
+              onClick={() => document.getElementById('main-image-upload')?.click()}
+            >
+              <UploadIcon className="w-6 h-6 text-gray-400 mr-2" />
+              <span className="text-gray-600">Click to upload new main image</span>
+              <input
+                id="main-image-upload"
+                type="file"
+                className="hidden"
+                onChange={handleMainImageChange}
+                accept="image/*"
+              />
+            </div>
           </div>
           <div className="mb-4">
             <Label className="text-base">Images secondaires du produit</Label>
@@ -289,7 +331,7 @@ export default function ProductForm({ productId }: { productId: string }) {
                     id="image-upload"
                     type="file"
                     className="hidden"
-                    onChange={handleImageUpload}
+                    onChange={handleSecondaryImageUpload}
                     accept="image/*"
                   />
                 </label>
