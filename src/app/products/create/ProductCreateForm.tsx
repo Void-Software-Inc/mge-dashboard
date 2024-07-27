@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { Product, productTypes } from "@/utils/types/products"
 
 import { Input } from "@/components/ui/input"
@@ -19,6 +19,24 @@ import { ChevronLeftIcon, PlusIcon, Cross2Icon, UploadIcon, InfoCircledIcon } fr
 import { useRouter } from 'next/navigation'
 import { useProductsContext } from '../context/ProductsContext'
 import { createProduct, createProductImage } from '@/services/products'
+
+interface FormErrors {
+  name?: string;
+  type?: string;
+  color?: string;
+  price?: string;
+  stock?: string;
+  image_url?: string;
+}
+
+interface TouchedFields {
+  name: boolean;
+  type: boolean;
+  color: boolean;
+  price: boolean;
+  stock: boolean;
+  image_url: boolean;
+}
 
 const initialProduct: Partial<Product> = {
   name: '',
@@ -40,22 +58,72 @@ export default function ProductCreateForm() {
   const [previewUrl, setPreviewUrl] = useState<string | null>(null)
   const [createdImages, setCreatedImages] = useState<File[]>([])
 
+  const [errors, setErrors] = useState<FormErrors>({})
+  const [touched, setTouched] = useState<TouchedFields>({
+    name: false,
+    type: false,
+    color: false,
+    price: false,
+    stock: false,
+    image_url: false,
+  })
+  const [isFormValid, setIsFormValid] = useState(false)
+
   const handleGoBack = useCallback(() => {
     router.push('/products')
   }, [router])
 
-  const isFormValid = () => {
-    return formData.name && formData.type && formData.color && formData.price && formData.stock && selectedFile
-  }
-  
-  
+  const validateForm = useCallback(() => {
+    const newErrors: FormErrors = {}
+    let isValid = false
+
+    if(formData.name && formData.type && formData.color && formData.price && formData.stock && selectedFile) {
+      isValid = true
+    }
+
+    if (touched.name && !formData.name) {
+      newErrors.name = "Le nom du produit est obligatoire"
+      isValid = false
+    }
+    if (touched.type && !formData.type) {
+      newErrors.type = "Le type du produit est obligatoire"
+      isValid = false
+    }
+    if (touched.color && !formData.color) {
+      newErrors.color = "La couleur du produit est obligatoire"
+      isValid = false
+    }
+    if (touched.price && !formData.price) {
+      newErrors.price = "Le prix du produit est obligatoire"
+      isValid = false
+    }
+    if (touched.stock && !formData.stock) {
+      newErrors.stock = "Le stock du produit est obligatoire"
+      isValid = false
+    }
+    if (touched.image_url && !selectedFile) {
+      newErrors.image_url = "L'image principale du produit est obligatoire"
+      isValid = false
+    }
+
+    setErrors(newErrors)
+    setIsFormValid(isValid)
+    return isValid
+  }, [formData, touched, selectedFile])
+
+  useEffect(() => {
+    validateForm()
+  }, [formData, touched, selectedFile, validateForm])
+    
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { id, value } = e.target
     setFormData(prev => ({ ...prev, [id]: value }))
+    setTouched(prev => ({ ...prev, [id]: true }))
   }
 
   const handleSelectChange = (value: string) => {
     setFormData(prev => ({ ...prev, type: value }))
+    setTouched(prev => ({ ...prev, type: true }))
   }
 
   const handleMainImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -63,12 +131,14 @@ export default function ProductCreateForm() {
       const file = e.target.files[0]
       setSelectedFile(file)
       setPreviewUrl(URL.createObjectURL(file))
+      setTouched(prev => ({ ...prev, image_url: true }))
     }
   }
 
   const handleCancelMainImageChange = () => {
     setSelectedFile(null)
     setPreviewUrl(null)
+    setTouched(prev => ({ ...prev, image_url: true }))
   }
 
   const handleSecondaryImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -83,7 +153,7 @@ export default function ProductCreateForm() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!isFormValid()) return
+    if (!isFormValid) return
   
     setIsSubmitting(true)
     try {
@@ -146,17 +216,17 @@ export default function ProductCreateForm() {
           <div className="p-4 md:p-6 flex justify-end w-full">
           <Button 
               className={`
-                ${isFormValid() 
+                ${isFormValid 
                   ? "bg-lime-300 hover:bg-lime-400" 
                   : "bg-gray-300 hover:bg-gray-400 cursor-not-allowed"
                 }
               `}
               variant="secondary"
-              disabled={!isFormValid() || isSubmitting}
+              disabled={!isFormValid || isSubmitting}
               onClick={handleSubmit}
             >
               <PlusIcon className="w-4 h-4 mr-2" />
-              {isSubmitting ? 'Creating...' : 'Create'}
+              {isSubmitting ? 'Création...' : 'Créer'}
             </Button>
           </div>
         </div>
@@ -174,7 +244,13 @@ export default function ProductCreateForm() {
                   </TooltipContent>
                 </Tooltip>
               </Label>
-              <Input id="name" value={formData.name} onChange={handleInputChange} className="w-full text-base" required />
+              <Input 
+                id="name" 
+                value={formData.name} 
+                onChange={handleInputChange} 
+                className={`w-full text-base ${errors.name ? 'border-red-500' : ''}`}
+              />
+              {errors.name && <p className="text-red-500 text-sm mt-1">{errors.name}</p>}
             </div>
             <div className="mb-4">
               <Label htmlFor="type" className="text-base flex items-center">
@@ -188,11 +264,8 @@ export default function ProductCreateForm() {
                   </TooltipContent>
                 </Tooltip>
               </Label>
-              <Select
-                onValueChange={handleSelectChange}
-                required
-              >
-                <SelectTrigger className="w-full">
+              <Select onValueChange={handleSelectChange}>
+                <SelectTrigger className={`w-full ${errors.type ? 'border-red-500' : ''}`}>
                   <SelectValue placeholder="Sélectionner un type de produit" />
                 </SelectTrigger>
                 <SelectContent className="text-base">
@@ -202,7 +275,8 @@ export default function ProductCreateForm() {
                     </SelectItem>
                   ))}
                 </SelectContent>
-              </Select>
+            </Select>
+            {errors.type && <p className="text-red-500 text-sm mt-1">{errors.type}</p>}
             </div>
             <div className="mb-4">
               <Label htmlFor="color" className="text-base flex items-center">
@@ -216,7 +290,13 @@ export default function ProductCreateForm() {
                   </TooltipContent>
                 </Tooltip>
               </Label>
-              <Input id="color" value={formData.color} onChange={handleInputChange} className="w-full text-base" required />
+              <Input 
+                id="color" 
+                value={formData.color} 
+                onChange={handleInputChange} 
+                className={`w-full text-base ${errors.color ? 'border-red-500' : ''}`}
+              />
+              {errors.color && <p className="text-red-500 text-sm mt-1">{errors.color}</p>}
             </div>
             <div className="mb-4">
               <Label htmlFor="stock" className="text-base flex items-center">
@@ -230,7 +310,13 @@ export default function ProductCreateForm() {
                   </TooltipContent>
                 </Tooltip>
               </Label>
-              <Input id="stock" value={formData.stock} onChange={handleInputChange} className="w-full text-base" required />
+              <Input 
+                id="stock" 
+                value={formData.stock} 
+                onChange={handleInputChange} 
+                className={`w-full text-base ${errors.stock ? 'border-red-500' : ''}`}
+              />
+              {errors.stock && <p className="text-red-500 text-sm mt-1">{errors.stock}</p>}
             </div>
             <div className="mb-4">
               <Label htmlFor="price" className="text-base flex items-center">
@@ -244,7 +330,13 @@ export default function ProductCreateForm() {
                   </TooltipContent>
                 </Tooltip>
               </Label>
-              <Input id="price" value={formData.price} onChange={handleInputChange} className="w-full text-base" required />
+              <Input 
+                id="price" 
+                value={formData.price} 
+                onChange={handleInputChange} 
+                className={`w-full text-base ${errors.price ? 'border-red-500' : ''}`}
+              />
+              {errors.price && <p className="text-red-500 text-sm mt-1">{errors.price}</p>}
             </div>
             <div className="mb-4">
               <Label htmlFor="description" className="text-base">Description du produit</Label>
@@ -286,11 +378,11 @@ export default function ProductCreateForm() {
                 )}
               </div>
               <div 
-                className="mt-2 p-4 border-2 border-dashed border-gray-300 rounded-md cursor-pointer flex items-center justify-center"
+                className={`mt-2 p-4 border-2 border-dashed border-gray-300 rounded-md cursor-pointer flex items-center justify-center ${errors.image_url ? 'border-red-500' : ''}`}
                 onClick={() => document.getElementById('main-image-upload')?.click()}
               >
-                <UploadIcon className="w-6 h-6 text-gray-400 mr-2" />
-                <span className="text-gray-600">Choisir l'image principale</span>
+                <UploadIcon className={`w-6 h-6 text-gray-400 mr-2 ${errors.image_url ? 'text-red-500' : ''}`} />
+                <span className={`text-gray-600 ${errors.image_url ? 'text-red-500' : ''}`}>Choisir l'image principale</span>
                 <input
                   id="main-image-upload"
                   type="file"
@@ -299,6 +391,7 @@ export default function ProductCreateForm() {
                   accept="image/jpeg,image/png,image/jpg,image/heic,image/heif,image/webp"
                 />
               </div>
+              {errors.image_url && <p className="text-red-500 text-sm mt-1">{errors.image_url}</p>}
             </div>
             <div className="mb-4">
               <Label className="text-base">Images secondaires du produit</Label>
