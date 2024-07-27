@@ -1,7 +1,7 @@
 'use client'
 
 import { useCallback, useEffect, useState } from 'react'
-import { Product, productTypes } from "@/utils/types/products"
+import { Product, productTypes, productColors } from "@/utils/types/products"
 
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
@@ -75,33 +75,29 @@ export default function ProductCreateForm() {
 
   const validateForm = useCallback(() => {
     const newErrors: FormErrors = {}
-    let isValid = false
+    let isValid = true
 
-    if(formData.name && formData.type && formData.color && formData.price && formData.stock && selectedFile) {
-      isValid = true
-    }
-
-    if (touched.name && !formData.name) {
+    if (!formData.name && touched.name) {
       newErrors.name = "Le nom du produit est obligatoire"
       isValid = false
     }
-    if (touched.type && !formData.type) {
+    if (!formData.type && touched.type) {
       newErrors.type = "Le type du produit est obligatoire"
       isValid = false
     }
-    if (touched.color && !formData.color) {
+    if (!formData.color && touched.color) {
       newErrors.color = "La couleur du produit est obligatoire"
       isValid = false
     }
-    if (touched.price && !formData.price) {
+    if (formData.price !== undefined && (formData.price === null || formData.price <= 0) && touched.price) {
       newErrors.price = "Le prix du produit est invalide"
       isValid = false
     }
-    if (touched.stock && !formData.stock) {
+    if (formData.stock !== undefined && (formData.stock === null || formData.stock <= 0) && touched.stock) {
       newErrors.stock = "Le stock du produit est invalide"
       isValid = false
     }
-    if (touched.image_url && !selectedFile) {
+    if (!selectedFile && touched.image_url) {
       newErrors.image_url = "L'image principale du produit est obligatoire"
       isValid = false
     }
@@ -109,7 +105,7 @@ export default function ProductCreateForm() {
     setErrors(newErrors)
     setIsFormValid(isValid)
     return isValid
-  }, [formData, touched, selectedFile])
+  }, [formData, selectedFile])
 
   useEffect(() => {
     validateForm()
@@ -117,13 +113,18 @@ export default function ProductCreateForm() {
     
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { id, value } = e.target
-    setFormData(prev => ({ ...prev, [id]: value }))
+    if (id === 'stock' || id === 'price') {
+      const numValue = value === '' ? '' : parseFloat(value)
+      setFormData(prev => ({ ...prev, [id]: numValue }))
+    } else {
+      setFormData(prev => ({ ...prev, [id]: value }))
+    }
     setTouched(prev => ({ ...prev, [id]: true }))
   }
 
-  const handleSelectChange = (value: string) => {
-    setFormData(prev => ({ ...prev, type: value }))
-    setTouched(prev => ({ ...prev, type: true }))
+  const handleSelectChange = (id: string, value: string) => {
+    setFormData(prev => ({ ...prev, [id]: value }))
+    setTouched(prev => ({ ...prev, [id]: true }))
   }
 
   const handleMainImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -264,7 +265,7 @@ export default function ProductCreateForm() {
                   </TooltipContent>
                 </Tooltip>
               </Label>
-              <Select onValueChange={handleSelectChange}>
+              <Select onValueChange={(value) => handleSelectChange('type', value)}>
                 <SelectTrigger className={`w-full ${errors.type ? 'border-red-500' : ''}`}>
                   <SelectValue placeholder="Sélectionner un type de produit" />
                 </SelectTrigger>
@@ -290,12 +291,36 @@ export default function ProductCreateForm() {
                   </TooltipContent>
                 </Tooltip>
               </Label>
-              <Input 
-                id="color" 
-                value={formData.color} 
-                onChange={handleInputChange} 
-                className={`w-full text-base ${errors.color ? 'border-red-500' : ''}`}
-              />
+              <Select
+                onValueChange={(value) => handleSelectChange('color', value)}
+                value={formData.color}
+              >
+                <SelectTrigger className={`w-full ${errors.color ? 'border-red-500' : ''}`}>
+                  <SelectValue placeholder="Sélectionner une couleur" />
+                </SelectTrigger>
+                <SelectContent>
+                  {productColors.map((color) => (
+                    <SelectItem key={color.value} value={color.value}>
+                      <div className="flex items-center">
+                        {color.value === 'multicolore' ? (
+                          <div className="w-4 h-4 mr-2 rounded-full overflow-hidden flex flex-wrap">
+                            <div className="w-2 h-2 bg-yellow-400"></div>
+                            <div className="w-2 h-2 bg-green-500"></div>
+                            <div className="w-2 h-2 bg-pink-400"></div>
+                            <div className="w-2 h-2 bg-blue-500"></div>
+                          </div>
+                        ) : (
+                          <div 
+                            className={`w-4 h-4 rounded-full mr-2 ${color.value === 'blanc' ? 'border border-gray-300' : ''}`}
+                            style={{ backgroundColor: color.hex }}
+                          />
+                        )}
+                        {color.name}
+                      </div>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
               {errors.color && <p className="text-red-500 text-sm mt-1">{errors.color}</p>}
             </div>
             <div className="mb-4">

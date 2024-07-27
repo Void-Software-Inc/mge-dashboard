@@ -12,6 +12,7 @@ import { MoreHorizontal } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Badge } from "@/components/ui/badge"
+import { ScrollArea } from "@/components/ui/scroll-area"
 import {
   DropdownMenu,
   DropdownMenuCheckboxItem,
@@ -34,7 +35,7 @@ import {
 import { cn } from "@/lib/utils"
 import { useRouter } from 'next/navigation'
 import Image from "next/image"
-import { Product, productTypes } from "@/utils/types/products"
+import { Product, productTypes, productColors } from "@/utils/types/products"
 import { useCallback, useState } from "react"
 import { useProductsContext } from '../context/ProductsContext'
 import { toast } from "sonner"
@@ -106,7 +107,7 @@ export const columns: ColumnDef<Product>[] = [
               <DropdownMenuSeparator />
               <DropdownMenuItem onClick={() => column.toggleVisibility(false)}>
                 <EyeNoneIcon className="mr-2 h-3.5 w-3.5 text-muted-foreground/70" />
-                Hide
+                Masquer
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
@@ -133,23 +134,25 @@ export const columns: ColumnDef<Product>[] = [
                 <MixerVerticalIcon className="ml-2 h-4 w-4" />
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="start">
-              {productTypes.map((type) => (
-                <DropdownMenuCheckboxItem
-                  key={type.value}
-                  className="capitalize"
-                  checked={column.getFilterValue() === type.value}
-                  onCheckedChange={(value) => {
-                    if (value) {
-                      column.setFilterValue(type.value);
-                    } else {
-                      column.setFilterValue(null);
-                    }
-                  }}
-                >
-                  {type.name}
-                </DropdownMenuCheckboxItem>
-              ))}
+            <DropdownMenuContent align="start" className="w-[200px]">
+              <ScrollArea className="h-[300px] w-full rounded-md">
+                {productTypes.map((type) => (
+                  <DropdownMenuCheckboxItem
+                    key={type.value}
+                    className="capitalize"
+                    checked={column.getFilterValue() === type.value}
+                    onCheckedChange={(value) => {
+                      if (value) {
+                        column.setFilterValue(type.value);
+                      } else {
+                        column.setFilterValue(null);
+                      }
+                    }}
+                  >
+                    {type.name}
+                  </DropdownMenuCheckboxItem>
+                ))}
+              </ScrollArea>
             </DropdownMenuContent>
           </DropdownMenu>
         </div>
@@ -166,9 +169,84 @@ export const columns: ColumnDef<Product>[] = [
   },
   {
     accessorKey: "color",
-    header: "Couleur",
+    header: ({ column }) => {
+      return (
+        <div className={cn("flex items-center space-x-2")}>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="-ml-3 h-8 data-[state=open]:bg-accent"
+              >
+                <span>Couleur</span>
+                <MixerVerticalIcon className="ml-2 h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="start" className="w-[200px]">
+              <ScrollArea className="h-[300px] w-full rounded-md">
+                {productColors.map((color) => (
+                  <DropdownMenuCheckboxItem
+                    key={color.value}
+                    className="capitalize"
+                    checked={column.getFilterValue() === color.value}
+                    onCheckedChange={(value) => {
+                      if (value) {
+                        column.setFilterValue(color.value);
+                      } else {
+                        column.setFilterValue(null);
+                      }
+                    }}
+                  >
+                    <div className="flex items-center">
+                      {color.value === 'multicolore' ? (
+                        <div className="w-4 h-4 mr-2 rounded-full overflow-hidden flex flex-wrap">
+                          <div className="w-2 h-2 bg-yellow-400"></div>
+                          <div className="w-2 h-2 bg-green-500"></div>
+                          <div className="w-2 h-2 bg-pink-400"></div>
+                          <div className="w-2 h-2 bg-blue-500"></div>
+                        </div>
+                      ) : (
+                        <div 
+                          className={`w-4 h-4 rounded-full mr-2 ${color.value === 'blanc' ? 'border border-gray-300' : ''}`}
+                          style={{ backgroundColor: color.hex }}
+                        />
+                      )}
+                      {color.name}
+                    </div>
+                  </DropdownMenuCheckboxItem>
+                ))}
+              </ScrollArea>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
+      );
+    },
     cell: ({ row }) => {
-      return <div className="whitespace-nowrap overflow-hidden overflow-ellipsis">{row.getValue("color")}</div>
+      const colorValue = row.getValue("color") as string;
+      const color = productColors.find(c => c.value === colorValue);
+      return (
+        <div className="flex items-center">
+          {color && (
+            <>
+              {color.value === 'multicolore' ? (
+                <div className="w-4 h-4 mr-2 rounded-full overflow-hidden flex flex-wrap">
+                  <div className="w-2 h-2 bg-yellow-400"></div>
+                  <div className="w-2 h-2 bg-green-500"></div>
+                  <div className="w-2 h-2 bg-pink-400"></div>
+                  <div className="w-2 h-2 bg-blue-500"></div>
+                </div>
+              ) : (
+                <div 
+                  className={`w-4 h-4 rounded-full mr-2 ${color.value === 'blanc' ? 'border border-gray-300' : ''}`}
+                  style={{ backgroundColor: color.hex }}
+                />
+              )}
+              <span>{color.name}</span>
+            </>
+          )}
+        </div>
+      );
     },
   },
   {
