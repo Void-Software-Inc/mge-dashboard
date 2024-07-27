@@ -94,11 +94,11 @@ export default function ProductForm({ productId }: { productId: string }) {
       isValid = false
     }
     if (!formData?.price) {
-      newErrors.price = "Le prix du produit est obligatoire"
+      newErrors.price = "Le prix du produit est invalide"
       isValid = false
     }
     if (!formData?.stock) {
-      newErrors.stock = "Le stock du produit est obligatoire"
+      newErrors.stock = "Le stock du produit est invalide"
       isValid = false
     }
 
@@ -329,6 +329,9 @@ export default function ProductForm({ productId }: { productId: string }) {
             <Label htmlFor="price" className="text-base">Prix du produit</Label>
             <Input 
               id="price" 
+              type="number"
+              step="1"
+              min="0"
               value={formData?.price ?? ''} 
               onChange={handleInputChange} 
               className={`w-full text-base ${errors.price ? 'border-red-500' : ''}`} 
@@ -338,7 +341,10 @@ export default function ProductForm({ productId }: { productId: string }) {
           <div className="mb-4">
             <Label htmlFor="stock" className="text-base">Stock du produit</Label>
             <Input 
-              id="stock" 
+              id="stock"
+              type="number"
+              step="1"
+              min="0"
               value={formData?.stock ?? ''} 
               onChange={handleInputChange} 
               className={`w-full text-base ${errors.stock ? 'border-red-500' : ''}`} 

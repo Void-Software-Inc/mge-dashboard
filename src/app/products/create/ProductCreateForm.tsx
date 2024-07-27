@@ -94,11 +94,11 @@ export default function ProductCreateForm() {
       isValid = false
     }
     if (touched.price && !formData.price) {
-      newErrors.price = "Le prix du produit est obligatoire"
+      newErrors.price = "Le prix du produit est invalide"
       isValid = false
     }
     if (touched.stock && !formData.stock) {
-      newErrors.stock = "Le stock du produit est obligatoire"
+      newErrors.stock = "Le stock du produit est invalide"
       isValid = false
     }
     if (touched.image_url && !selectedFile) {
@@ -312,6 +312,9 @@ export default function ProductCreateForm() {
               </Label>
               <Input 
                 id="stock" 
+                type="number"
+                step="1"
+                min="0"
                 value={formData.stock} 
                 onChange={handleInputChange} 
                 className={`w-full text-base ${errors.stock ? 'border-red-500' : ''}`}
@@ -332,6 +335,9 @@ export default function ProductCreateForm() {
               </Label>
               <Input 
                 id="price" 
+                type="number"
+                step="1"
+                min="0"
                 value={formData.price} 
                 onChange={handleInputChange} 
                 className={`w-full text-base ${errors.price ? 'border-red-500' : ''}`}
