@@ -14,7 +14,7 @@ import { ChevronLeftIcon, DownloadIcon, Cross2Icon, UploadIcon } from "@radix-ui
 import { useRouter } from 'next/navigation'
 import { useProductsContext } from '../context/ProductsContext'
 import { getProduct, getProductImages, updateProduct, deleteProductImage, createProductImage } from "@/services/products"
-import { Product, productTypes, ProductImage } from "@/utils/types/products"
+import { Product, productTypes, ProductImage, productColors } from "@/utils/types/products"
 
 interface FormErrors {
   name?: string;
@@ -124,8 +124,8 @@ export default function ProductForm({ productId }: { productId: string }) {
     }
   }
 
-  const handleSelectChange = (value: string) => {
-    setFormData(prev => prev ? { ...prev, type: value } : null)
+  const handleSelectChange = (id: string, value: string) => {
+    setFormData(prev => prev ? { ...prev, [id]: value } : null)
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -307,7 +307,7 @@ export default function ProductForm({ productId }: { productId: string }) {
           <div className="mb-4">
             <Label htmlFor="type" className="text-base">Type de produit</Label>
             <Select
-              onValueChange={handleSelectChange}
+              onValueChange={(value) => handleSelectChange('type', value)}
               value={formData?.type ?? ''}
             >
               <SelectTrigger className={`w-full ${errors.type ? 'border-red-500' : ''}`}>
@@ -325,12 +325,36 @@ export default function ProductForm({ productId }: { productId: string }) {
           </div>
           <div className="mb-4">
             <Label htmlFor="color" className="text-base">Couleur du produit</Label>
-            <Input 
-              id="color" 
-              value={formData?.color ?? ''} 
-              onChange={handleInputChange} 
-              className={`w-full text-base ${errors.color ? 'border-red-500' : ''}`} 
-            />
+            <Select
+              onValueChange={(value) => handleSelectChange('color', value)}
+              value={formData?.color ?? ''}
+            >
+              <SelectTrigger className={`w-full ${errors.color ? 'border-red-500' : ''}`}>
+                <SelectValue placeholder="Sélectionner une couleur" />
+              </SelectTrigger>
+              <SelectContent>
+                {productColors.map((color) => (
+                  <SelectItem key={color.value} value={color.value}>
+                    <div className="flex items-center">
+                      {color.value === 'multicolore' ? (
+                        <div className="w-4 h-4 mr-2 rounded-full overflow-hidden flex flex-wrap">
+                          <div className="w-2 h-2 bg-yellow-400"></div>
+                          <div className="w-2 h-2 bg-green-500"></div>
+                          <div className="w-2 h-2 bg-pink-400"></div>
+                          <div className="w-2 h-2 bg-blue-500"></div>
+                        </div>
+                      ) : (
+                        <div 
+                          className={`w-4 h-4 rounded-full mr-2 ${color.value === 'blanc' ? 'border border-gray-300' : ''}`}
+                          style={{ backgroundColor: color.hex }}
+                        />
+                      )}
+                      {color.name}
+                    </div>
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
             {errors.color && <p className="text-red-500 text-sm mt-1">{errors.color}</p>}
           </div>
           <div className="mb-4">
