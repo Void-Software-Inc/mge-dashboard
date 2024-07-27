@@ -113,7 +113,15 @@ export default function ProductForm({ productId }: { productId: string }) {
   
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { id, value } = e.target
-    setFormData(prev => prev ? { ...prev, [id]: value } : null)
+    if (id === 'stock' || id === 'price') {
+      // Only allow numeric input for stock and price
+      if (!/^\d*$/.test(value)) return
+      // Convert to number or null if empty
+      const numValue = value === '' ? null : parseInt(value, 10)
+      setFormData(prev => prev ? { ...prev, [id]: numValue } : null)
+    } else {
+      setFormData(prev => prev ? { ...prev, [id]: value } : null)
+    }
   }
 
   const handleSelectChange = (value: string) => {
