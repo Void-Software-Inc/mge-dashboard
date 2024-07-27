@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Toaster, toast } from 'sonner'
 import { Skeleton } from "@/components/ui/skeleton"
-import { ChevronLeftIcon, DownloadIcon, Cross2Icon, UploadIcon, ReloadIcon } from "@radix-ui/react-icons"
+import { ChevronLeftIcon, DownloadIcon, Cross2Icon, UploadIcon } from "@radix-ui/react-icons"
 
 import { useRouter } from 'next/navigation'
 import { useProductsContext } from '../context/ProductsContext'
@@ -206,7 +206,7 @@ export default function ProductForm({ productId }: { productId: string }) {
   if (!product) {
     return (
       <div className="flex items-center justify-center h-screen">
-        <div className="text-2xl font-semibold">Product not found</div>
+        <div className="text-2xl font-semibold">Produit non trouvé</div>
       </div>
     )
   }
@@ -286,15 +286,15 @@ export default function ProductForm({ productId }: { productId: string }) {
               />
               {previewUrl && (
                 <>
-                  <div className="absolute bottom-0 left-0 right-0 bg-lime-300 rounded-md text-white text-xs p-1 text-center">
-                    Cette image sera remplacée lors de la validation
+                  <div className="absolute bottom-0 left-0 right-0 bg-lime-300 rounded-md text-black text-xs p-1 text-center">
+                    Cette image remplacera l'image principale lors de la validation
                   </div>
                   <button
                     type="button"
                     onClick={handleCancelMainImageChange}
-                    className="absolute top-2 right-2 bg-red-400 text-white rounded-full p-1 hover:bg-red-600"
+                    className="absolute top-2 right-2 bg-red-400 text-white rounded-md p-1 hover:bg-red-600"
                   >
-                    <ReloadIcon className="w-4 h-4" />
+                    <Cross2Icon className="w-4 h-4" />
                   </button>
                 </>
               )}
@@ -345,12 +345,12 @@ export default function ProductForm({ productId }: { productId: string }) {
                   <button
                     type="button"
                     onClick={() => handleImageTaint(image.id)}
-                    className="absolute top-2 right-2 bg-red-400 text-white rounded-full p-1 hover:bg-red-500"
+                    className="absolute top-2 right-2 bg-red-400 text-white rounded-md p-1 hover:bg-red-500"
                   >
                     <Cross2Icon className="w-4 h-4" />
                   </button>
                   {taintedImages.has(image.id) && (
-                    <div className="absolute bottom-0 left-0 right-0 bg-red-400 text-white text-xs p-1 text-center">
+                    <div className="absolute bottom-0 left-0 right-0 bg-red-400 text-black text-xs p-1 text-center">
                       Cette image sera supprimée lors de la validation
                     </div>
                   )}
@@ -366,12 +366,12 @@ export default function ProductForm({ productId }: { productId: string }) {
                   <button
                     type="button"
                     onClick={() => handleRemoveCreatedImage(index)}
-                    className="absolute top-2 right-2 bg-red-400 text-white rounded-full p-1 hover:bg-red-600"
+                    className="absolute top-2 right-2 bg-red-400 text-white rounded-md p-1 hover:bg-red-600"
                   >
                     <Cross2Icon className="w-4 h-4" />
                   </button>
-                  <div className="absolute bottom-0 left-0 right-0 bg-lime-300 text-white text-xs p-1 text-center">
-                    Cette image sera uploadée lors de la validation
+                  <div className="absolute bottom-0 left-0 right-0 bg-lime-300 text-black text-xs p-1 text-center">
+                    L'image sera ajoutée lors de la validation
                   </div>
                 </div>
               ))}
