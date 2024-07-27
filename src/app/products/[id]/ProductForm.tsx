@@ -16,6 +16,14 @@ import { useProductsContext } from '../context/ProductsContext'
 import { getProduct, getProductImages, updateProduct, deleteProductImage, createProductImage } from "@/services/products"
 import { Product, productTypes, ProductImage } from "@/utils/types/products"
 
+interface FormErrors {
+  name?: string;
+  type?: string;
+  color?: string;
+  price?: string;
+  stock?: string;
+}
+
 export default function ProductForm({ productId }: { productId: string }) {
   const router = useRouter()
 
@@ -25,6 +33,8 @@ export default function ProductForm({ productId }: { productId: string }) {
   const [createdImages, setCreatedImages] = useState<File[]>([])
   const [formData, setFormData] = useState<Product | null>(null)
   const [isLoading, setIsLoading] = useState(true)
+  const [errors, setErrors] = useState<FormErrors>({})
+  const [isFormValid, setIsFormValid] = useState(true)
 
   const [isChanged, setIsChanged] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -66,6 +76,40 @@ export default function ProductForm({ productId }: { productId: string }) {
       createdImages.length > 0
     )
   }, [product, formData, selectedFile, taintedImages, createdImages])
+
+  const validateForm = useCallback(() => {
+    const newErrors: FormErrors = {}
+    let isValid = true
+
+    if (!formData?.name) {
+      newErrors.name = "Le nom du produit est obligatoire"
+      isValid = false
+    }
+    if (!formData?.type) {
+      newErrors.type = "Le type du produit est obligatoire"
+      isValid = false
+    }
+    if (!formData?.color) {
+      newErrors.color = "La couleur du produit est obligatoire"
+      isValid = false
+    }
+    if (!formData?.price) {
+      newErrors.price = "Le prix du produit est obligatoire"
+      isValid = false
+    }
+    if (!formData?.stock) {
+      newErrors.stock = "Le stock du produit est obligatoire"
+      isValid = false
+    }
+
+    setErrors(newErrors)
+    setIsFormValid(isValid)
+    return isValid
+  }, [formData])
+
+  useEffect(() => {
+    validateForm()
+  }, [formData, validateForm])
   
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { id, value } = e.target
@@ -78,7 +122,7 @@ export default function ProductForm({ productId }: { productId: string }) {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!isChanged) return
+    if (!isFormValid || !isChanged) return
   
     setIsSubmitting(true)
     try {
@@ -222,17 +266,17 @@ export default function ProductForm({ productId }: { productId: string }) {
         <div className="p-4 md:p-6 flex justify-end w-full">
         <Button 
             className={`
-              ${isChanged 
+              ${isChanged && isFormValid 
                 ? "bg-lime-300 hover:bg-lime-400" 
                 : "bg-gray-300 hover:bg-gray-400 cursor-not-allowed"
               }
             `}
             variant="secondary"
-            disabled={!isChanged || isSubmitting}
+            disabled={!isFormValid || !isChanged || isSubmitting}
             onClick={handleSubmit}
           >
             <DownloadIcon className="w-4 h-4 mr-2" />
-            {isSubmitting ? 'Updating...' : 'Valider'}
+            {isSubmitting ? 'Mise à jour...' : 'Valider'}
           </Button>
         </div>
       </div>
@@ -244,15 +288,21 @@ export default function ProductForm({ productId }: { productId: string }) {
           </div>
           <div className="mb-4">
             <Label htmlFor="name" className="text-base">Nom du produit</Label>
-            <Input id="name" value={formData?.name ?? ''} onChange={handleInputChange} className="w-full text-base" />
+            <Input 
+              id="name" 
+              value={formData?.name ?? ''} 
+              onChange={handleInputChange} 
+              className={`w-full text-base ${errors.name ? 'border-red-500' : ''}`} 
+            />
+            {errors.name && <p className="text-red-500 text-sm mt-1">{errors.name}</p>}
           </div>
           <div className="mb-4">
             <Label htmlFor="type" className="text-base">Type de produit</Label>
             <Select
               onValueChange={handleSelectChange}
-              defaultValue={formData?.type ?? ''}
+              value={formData?.type ?? ''}
             >
-              <SelectTrigger className="w-full">
+              <SelectTrigger className={`w-full ${errors.type ? 'border-red-500' : ''}`}>
                 <SelectValue placeholder="Select a product type" />
               </SelectTrigger>
               <SelectContent className="text-base">
@@ -263,14 +313,37 @@ export default function ProductForm({ productId }: { productId: string }) {
                 ))}
               </SelectContent>
             </Select>
+            {errors.type && <p className="text-red-500 text-sm mt-1">{errors.type}</p>}
           </div>
           <div className="mb-4">
             <Label htmlFor="color" className="text-base">Couleur du produit</Label>
-            <Input id="color" value={formData?.color ?? ''} onChange={handleInputChange} className="w-full text-base" />
+            <Input 
+              id="color" 
+              value={formData?.color ?? ''} 
+              onChange={handleInputChange} 
+              className={`w-full text-base ${errors.color ? 'border-red-500' : ''}`} 
+            />
+            {errors.color && <p className="text-red-500 text-sm mt-1">{errors.color}</p>}
           </div>
           <div className="mb-4">
             <Label htmlFor="price" className="text-base">Prix du produit</Label>
-            <Input id="price" value={formData?.price ?? ''} onChange={handleInputChange} className="w-full text-base" />
+            <Input 
+              id="price" 
+              value={formData?.price ?? ''} 
+              onChange={handleInputChange} 
+              className={`w-full text-base ${errors.price ? 'border-red-500' : ''}`} 
+            />
+            {errors.price && <p className="text-red-500 text-sm mt-1">{errors.price}</p>}
+          </div>
+          <div className="mb-4">
+            <Label htmlFor="stock" className="text-base">Stock du produit</Label>
+            <Input 
+              id="stock" 
+              value={formData?.stock ?? ''} 
+              onChange={handleInputChange} 
+              className={`w-full text-base ${errors.stock ? 'border-red-500' : ''}`} 
+            />
+            {errors.stock && <p className="text-red-500 text-sm mt-1">{errors.stock}</p>}
           </div>
           <div className="mb-4">
             <Label htmlFor="description" className="text-base">Description du produit</Label>
