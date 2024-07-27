@@ -242,7 +242,7 @@ export const columns: ColumnDef<Product>[] = [
           <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
             <AlertDialogContent>
               <AlertDialogHeader>
-                <AlertDialogTitle>Etes vous sure de vouloir supprimer ce produit ?</AlertDialogTitle>
+                <AlertDialogTitle>Êtes vous sûr de vouloir supprimer ce produit ?</AlertDialogTitle>
                 <AlertDialogDescription>
                   Cette action est irréversible. Cela supprimera définitivement le produit "{product.name}" et toutes ses données seront supprimées de nos serveurs.
                 </AlertDialogDescription>
