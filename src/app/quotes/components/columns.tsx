@@ -1,9 +1,19 @@
 "use client"
 
+import {
+    ArrowDownIcon,
+    ArrowUpIcon,
+    CaretSortIcon,
+    EyeNoneIcon,
+    MixerVerticalIcon,
+    Cross2Icon,
+    CheckIcon
+  } from "@radix-ui/react-icons"
 import { ColumnDef } from "@tanstack/react-table"
 import { MoreHorizontal } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
+import { ScrollArea } from "@/components/ui/scroll-area"
 import {
   DropdownMenu,
   DropdownMenuCheckboxItem,
@@ -24,12 +34,24 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
 import { useRouter } from 'next/navigation'
-import { Quote } from "@/utils/types/quotes"
+import { Quote, quoteStatus } from "@/utils/types/quotes"
 import { useCallback, useState } from "react"
 import { useQuotesContext } from "@/app/quotes/context/QuotesContext"
 import { toast } from "sonner"
 
 import { deleteQuote } from "@/services/quotes"
+import { cn } from "@/lib/utils"
+import { format } from 'date-fns';
+import { fr } from 'date-fns/locale';
+
+const formatPhoneNumber = (phoneNumber: string) => {
+    return phoneNumber.replace(/(\d{2})(?=\d)/g, '$1 ').trim();
+};
+
+const formatDate = (dateString: string) => {
+    const date = new Date(dateString);
+    return format(date, 'dd/MM/yyyy', { locale: fr });
+};
 
 export const columns: ColumnDef<Quote>[] = [
   {
@@ -56,19 +78,93 @@ export const columns: ColumnDef<Quote>[] = [
   },
   {
     accessorKey: "id",
-    header: "ID",
+    header: () => {
+      return (
+        <div className={cn("whitespace-nowrap overflow-hidden overflow-ellipsis")}>
+          <span>N° Devis</span>
+        </div>
+      );
+    },
+    cell: ({ row }) => {
+      const id = row.getValue("id") as string;
+      return <div className="text-center whitespace-nowrap overflow-hidden overflow-ellipsis">{id}</div>;
+    },
   },
   {
-    accessorKey: "first_name",
-    header: "Nom",
+    accessorKey: "status",
+    header: ({ column }) => {
+      return (
+        <div className={cn("flex items-center space-x-2")}>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="-ml-3 h-8 data-[state=open]:bg-accent"
+              >
+                <span>Statut</span>
+                <MixerVerticalIcon className="ml-2 h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="start" className="w-[200px]">
+              <ScrollArea className="h-[300px] w-full rounded-md">
+                {quoteStatus.map((status) => (
+                  <DropdownMenuCheckboxItem
+                    key={status.value}
+                    className="capitalize"
+                    checked={column.getFilterValue() === status.value}
+                    onCheckedChange={(value) => {
+                      if (value) {
+                        column.setFilterValue(status.value);
+                      } else {
+                        column.setFilterValue(null);
+                      }
+                    }}
+                  >
+                    <div className="flex items-center space-x-2">
+                      <div
+                        className="w-4 h-4 rounded-full flex-shrink-0"
+                        style={{ backgroundColor: status.color }}
+                      />
+                      <span className="flex-grow">{status.name}</span>
+                    </div>
+                  </DropdownMenuCheckboxItem>
+                ))}
+              </ScrollArea>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
+      );
+    },
+    cell: ({ row }) => {
+      const statusValue = row.getValue("status");
+      const status = quoteStatus.find(s => s.value === statusValue);
+      return status ? (
+        <div className="flex items-center space-x-2">
+          <div
+            className="w-3 h-3 rounded-full flex-shrink-0"
+            style={{ backgroundColor: status.color }}
+          />
+          <span className="whitespace-nowrap overflow-hidden overflow-ellipsis">{status.name}</span>
+        </div>
+      ) : null;
+    },
   },
   {
     accessorKey: "last_name",
+    header: "Nom",
+  },
+  {
+    accessorKey: "first_name",
     header: "Prénom",
   },
   {
     accessorKey: "phone_number",
     header: "Téléphone",
+    cell: ({ row }) => {
+      const phoneNumber = row.getValue("phone_number") as string;
+      return <div className="whitespace-nowrap overflow-hidden overflow-ellipsis">{formatPhoneNumber(phoneNumber)}</div>;
+    },
   },
   {
     accessorKey: "email",
@@ -76,15 +172,95 @@ export const columns: ColumnDef<Quote>[] = [
   },
   {
     accessorKey: "event_start_date",
-    header: "Date de début",
+    header: ({ column }) => {
+      return (
+        <div className={cn("flex items-center space-x-2")}>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="-ml-3 h-8 data-[state=open]:bg-accent"
+              >
+                <span>Date de début</span>
+                {column.getIsSorted() === "desc" ? (
+                  <ArrowDownIcon className="ml-2 h-4 w-4" />
+                ) : column.getIsSorted() === "asc" ? (
+                  <ArrowUpIcon className="ml-2 h-4 w-4" />
+                ) : (
+                  <CaretSortIcon className="ml-2 h-4 w-4" />
+                )}
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="start">
+              <DropdownMenuItem onClick={() => column.toggleSorting(false)}>
+                <ArrowUpIcon className="mr-2 h-3.5 w-3.5 text-muted-foreground/70" />
+                Asc
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => column.toggleSorting(true)}>
+                <ArrowDownIcon className="mr-2 h-3.5 w-3.5 text-muted-foreground/70" />
+                Desc
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={() => column.toggleVisibility(false)}>
+                <EyeNoneIcon className="mr-2 h-3.5 w-3.5 text-muted-foreground/70" />
+                Masquer
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
+      )
+    },
+    cell: ({ row }) => {
+      const dateString = row.getValue("event_start_date") as string;
+      return <div>{formatDate(dateString)}</div>;
+    },
   },
   {
     accessorKey: "event_end_date",
-    header: "Date de fin",
-  },
-  {
-    accessorKey: "status",
-    header: "Statut",
+    header: ({ column }) => {
+      return (
+        <div className={cn("flex items-center space-x-2")}>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="-ml-3 h-8 data-[state=open]:bg-accent"
+              >
+                <span>Date de fin</span>
+                {column.getIsSorted() === "desc" ? (
+                  <ArrowDownIcon className="ml-2 h-4 w-4" />
+                ) : column.getIsSorted() === "asc" ? (
+                  <ArrowUpIcon className="ml-2 h-4 w-4" />
+                ) : (
+                  <CaretSortIcon className="ml-2 h-4 w-4" />
+                )}
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="start">
+              <DropdownMenuItem onClick={() => column.toggleSorting(false)}>
+                <ArrowUpIcon className="mr-2 h-3.5 w-3.5 text-muted-foreground/70" />
+                Asc
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => column.toggleSorting(true)}>
+                <ArrowDownIcon className="mr-2 h-3.5 w-3.5 text-muted-foreground/70" />
+                Desc
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={() => column.toggleVisibility(false)}>
+                <EyeNoneIcon className="mr-2 h-3.5 w-3.5 text-muted-foreground/70" />
+                Masquer
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
+      )
+    },
+    cell: ({ row }) => {
+      const dateString = row.getValue("event_end_date") as string;
+      return <div>{formatDate(dateString)}</div>;
+    },
   },
   {
     accessorKey: "total_cost",
@@ -101,6 +277,18 @@ export const columns: ColumnDef<Quote>[] = [
   {
     accessorKey: "is_traiteur",
     header: "Traiteur",
+    cell: ({ row }) => {
+      const isTraiteur = row.getValue("is_traiteur") as boolean;
+      return (
+        <div className="flex justify-center">
+          {isTraiteur ? (
+            <CheckIcon className="h-5 w-5 text-[#bef264] border border-2 border-[#bef264] rounded-full" />
+          ) : (
+            <Cross2Icon className="h-5 w-5 text-red-500 border border-2 border-red-500 rounded-full" />
+          )}
+        </div>
+      );
+    },
   },
   {
     accessorKey: "description",
