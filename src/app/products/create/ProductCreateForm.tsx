@@ -75,7 +75,7 @@ export default function ProductCreateForm() {
 
   const validateForm = useCallback(() => {
     const newErrors: FormErrors = {}
-    let isValid = true
+    let isValid = false
 
     if (!formData.name && touched.name) {
       newErrors.name = "Le nom du produit est obligatoire"
@@ -100,6 +100,9 @@ export default function ProductCreateForm() {
     if (!selectedFile && touched.image_url) {
       newErrors.image_url = "L'image principale du produit est obligatoire"
       isValid = false
+    }
+    if(formData.name && formData.type && formData.color && formData.price && formData.stock && selectedFile) {
+      isValid = true
     }
 
     setErrors(newErrors)
