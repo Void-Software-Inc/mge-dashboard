@@ -6,17 +6,7 @@ export async function POST(request: NextRequest) {
     const { ids } = await request.json();
 
     for (const id of ids) {
-        // Delete the quote items first
-        const { error: deleteQuoteItemsError } = await supabase
-            .from('quote_items')
-            .delete()
-            .eq('quote_id', id);
-
-        if (deleteQuoteItemsError) {
-            console.error('Error deleting quote items:', deleteQuoteItemsError);
-            return NextResponse.json({ error: 'Failed to delete quote items' }, { status: 500 });
-        }
-
+        // The deletion of quoteItems is handled directly by the supabase trigger
         // Delete the quote
         const { error: deleteQuoteError } = await supabase
             .from('quotes')
