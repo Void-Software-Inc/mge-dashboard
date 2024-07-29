@@ -8,6 +8,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Button } from "@/components/ui/button";
 import { TrashIcon, Pencil1Icon } from '@radix-ui/react-icons';
 import { Input } from "@/components/ui/input";
+import { Skeleton } from "@/components/ui/skeleton";
 
 interface QuoteItemListProps {
     items: QuoteItem[];
@@ -15,9 +16,10 @@ interface QuoteItemListProps {
     editedItems: Map<number, number>;
     onItemTaint: (itemId: number) => void;
     onItemEdit: (itemId: number, quantity: number) => void;
+    isLoading: boolean;
 }
 
-export function QuoteItemList({ items, taintedItems, editedItems, onItemTaint, onItemEdit }: QuoteItemListProps) {
+export function QuoteItemList({ items, taintedItems, editedItems, onItemTaint, onItemEdit, isLoading }: QuoteItemListProps) {
   const [productDetails, setProductDetails] = useState<Record<number, Product>>({});
   const [editingId, setEditingId] = useState<number | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
@@ -69,6 +71,15 @@ export function QuoteItemList({ items, taintedItems, editedItems, onItemTaint, o
 
   const totalPages = Math.ceil(items.length / itemsPerPage);
 
+  if (isLoading) {
+    return (
+      <div className="space-y-2">
+        <Skeleton className="h-12 w-full" />
+        <Skeleton className="h-12 w-full" />
+        <Skeleton className="h-12 w-full" />
+      </div>
+    );
+  }
 
   return (
     <div>

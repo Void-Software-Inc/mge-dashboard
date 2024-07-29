@@ -13,7 +13,10 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
     // Update the quote item in the database
     const { data, error } = await supabase
         .from('quoteItems')
-        .update({ quantity })
+        .update({ 
+            quantity,
+            last_update: new Date().toISOString()
+        })
         .eq('id', quoteItemId)
         .eq('quote_id', quoteId)
         .single();
