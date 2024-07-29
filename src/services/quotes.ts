@@ -84,21 +84,41 @@ export async function updateQuote(formData: FormData): Promise<Quote> {
 }
 
 export async function deleteQuote(ids: number[]): Promise<void> {
-    try {
-      const url = `${API_URL}/quotes/delete`;
-      const response = await fetch(url, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ ids }),
-      });
-  
-      if (!response.ok) {
-        throw new Error('Failed to delete quote(s)');
-      }
-    } catch (error) {
-      console.error('Error deleting quote(s):', error);
-      throw error;
+  try {
+    const url = `${API_URL}/quotes/delete`;
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ ids }),
+    });
+
+    if (!response.ok) {
+      throw new Error('Failed to delete quote(s)');
     }
+  } catch (error) {
+    console.error('Error deleting quote(s):', error);
+    throw error;
   }
+}
+
+export async function deleteQuoteItem(quoteId: number, quoteItemId: number): Promise<void> {
+  try {
+    const url = `${API_URL}/quotes/${quoteId}/quoteItems/delete`;
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ quoteItemId }),
+    });
+
+    if (!response.ok) {
+      throw new Error('Failed to delete quote item');
+    }
+  } catch (error) {
+    console.error('Error deleting quote item:', error);
+    throw error;
+  }
+}

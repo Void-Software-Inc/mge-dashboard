@@ -6,12 +6,15 @@ import { Product } from "@/utils/types/products";
 import { getProduct } from "@/services/products";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
+import { Cross2Icon } from '@radix-ui/react-icons';
 
 interface QuoteItemListProps {
     items: QuoteItem[];
+    taintedItems: Set<number>;
+    onItemTaint: (itemId: number) => void;
 }
 
-export function QuoteItemList({ items }: QuoteItemListProps) {
+export function QuoteItemList({ items, taintedItems, onItemTaint }: QuoteItemListProps) {
   const [productDetails, setProductDetails] = useState<Record<number, Product>>({});
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
@@ -44,6 +47,7 @@ export function QuoteItemList({ items }: QuoteItemListProps) {
 
   const totalPages = Math.ceil(items.length / itemsPerPage);
 
+
   return (
     <div>
       <div className="overflow-x-auto">
@@ -55,13 +59,18 @@ export function QuoteItemList({ items }: QuoteItemListProps) {
               <TableHead className="w-1/6 whitespace-nowrap">Quantité</TableHead>
               <TableHead className="w-1/6 whitespace-nowrap">Prix unitaire</TableHead>
               <TableHead className="w-1/6 whitespace-nowrap">Total</TableHead>
+              <TableHead className="w-1/6 whitespace-nowrap">Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {currentItems.map((item) => {
               const product = productDetails[item.product_id];
+              const isTainted = taintedItems.has(item.id);
               return (
-                <TableRow key={item.product_id} className="h-20">
+                <TableRow 
+                  key={item.id} 
+                  className={`h-16 ${isTainted ? 'border-red-500 border-2' : ''}`}
+                >
                   <TableCell className="whitespace-nowrap">
                     {product && product.image_url && (
                       <Image src={product.image_url} alt={product.name} width={45} height={45} />
@@ -75,6 +84,21 @@ export function QuoteItemList({ items }: QuoteItemListProps) {
                     {product ? `${product.price} €` : 'Loading...'}
                   </TableCell>
                   <TableCell className="whitespace-nowrap">{`${calculateTotalPrice(item)} €`}</TableCell>
+                  <TableCell className="whitespace-nowrap">
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        console.log('Cross icon clicked for item:', item.id);
+                        onItemTaint(item.id);
+                      }}
+                      className={isTainted ? 'text-red-500' : ''}
+                    >
+                      <Cross2Icon className="h-4 w-4" />
+                    </Button>
+                  </TableCell>
                 </TableRow>
               );
             })}

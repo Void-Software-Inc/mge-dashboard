@@ -14,7 +14,7 @@ import { ChevronLeftIcon, DownloadIcon } from "@radix-ui/react-icons"
 
 import { useRouter } from 'next/navigation'
 import { useQuotesContext } from '../context/QuotesContext'
-import { getQuote, getQuoteItems, updateQuote } from "@/services/quotes"
+import { getQuote, getQuoteItems, updateQuote, deleteQuoteItem } from "@/services/quotes"
 import { Quote, quoteStatus, QuoteItem } from "@/utils/types/quotes"
 import { DatePicker } from "../components/date-picker"
 import { QuoteItemList } from "../components/quote-item-list"
@@ -41,6 +41,7 @@ export default function QuoteForm({ quoteId }: { quoteId: string }) {
   const [isLoading, setIsLoading] = useState(true)
   const [errors, setErrors] = useState<FormErrors>({})
   const [isFormValid, setIsFormValid] = useState(true)
+  const [taintedItems, setTaintedItems] = useState<Set<number>>(new Set());
 
   const [isChanged, setIsChanged] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -72,8 +73,8 @@ export default function QuoteForm({ quoteId }: { quoteId: string }) {
   }, [quoteId])
 
   useEffect(() => {
-    setIsChanged(JSON.stringify(quote) !== JSON.stringify(formData))
-  }, [quote, formData])
+    setIsChanged(JSON.stringify(quote) !== JSON.stringify(formData) || taintedItems.size > 0);
+  }, [quote, formData, taintedItems]);
 
   const validateForm = useCallback(() => {
     const newErrors: FormErrors = {}
@@ -156,48 +157,58 @@ export default function QuoteForm({ quoteId }: { quoteId: string }) {
     } : null)
   }
 
-  const handleSubmit = async (e: React.FormEvent) => {
-  e.preventDefault()
-  if (!isFormValid || !isChanged || !formData) return
-
-  setIsSubmitting(true)
-  try {
-    const formDataToSend = new FormData()
-    
-    // Append all form fields
-    Object.entries(formData).forEach(([key, value]) => {
-      if (value !== null && value !== undefined) {
-        formDataToSend.append(key, value.toString())
+  const handleItemTaint = (itemId: number) => {
+    setTaintedItems(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(itemId)) {
+        newSet.delete(itemId);
+      } else {
+        newSet.add(itemId);
       }
-    })
+      return newSet;
+    });
+  };
 
-    const response = await updateQuote(formDataToSend)
-    
-    console.log('Quote updated:', response)
-    setQuote(response)
-    setFormData(response)
-    setIsChanged(false)
-    setShouldRefetch(true)
-    toast.custom((t) => (
-      <div className="bg-lime-300 text-black px-6 py-4 rounded-md">
-        Devis mis à jour avec succès
-      </div>
-    ), {
-      duration: 3000,
-    })
-  } catch (error) {
-    console.error('Error updating quote:', error)
-    toast.custom((t) => (
-      <div className="bg-red-400 text-black px-6 py-4 rounded-md">
-        {error instanceof Error ? error.message : 'An error occurred'}
-      </div>
-    ), {
-      duration: 3000,
-    })
-  } finally {
-    setIsSubmitting(false)
-  }
-}
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!isFormValid || !isChanged || !formData) return;
+
+    setIsSubmitting(true);
+    try {
+      const formDataToSend = new FormData();
+      
+      // Append all form fields
+      Object.entries(formData).forEach(([key, value]) => {
+        if (value !== null && value !== undefined) {
+          formDataToSend.append(key, value.toString());
+        }
+      });
+
+      // Update the quote
+      const response = await updateQuote(formDataToSend);
+      
+      // Delete the tainted items
+      for (const itemId of Array.from(taintedItems)) {
+        await deleteQuoteItem(parseInt(quoteId), itemId);
+      }
+      
+      // Refresh quote items after deletion
+      const updatedQuoteItems = await getQuoteItems(parseInt(quoteId));
+      setQuoteItems(updatedQuoteItems);
+      setTaintedItems(new Set());
+      
+      setQuote(response);
+      setFormData(response);
+      setIsChanged(false);
+      setShouldRefetch(true);
+      toast.success('Devis mis à jour avec succès');
+    } catch (error) {
+      console.error('Error updating quote:', error);
+      toast.error('Erreur lors de la mise à jour du devis');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
   if (isLoading) {
     return (
@@ -371,7 +382,11 @@ export default function QuoteForm({ quoteId }: { quoteId: string }) {
           <div className="mb-4">
             <Label className="text-base">Produits du devis</Label>
             {quoteItems && quoteItems.length > 0 ? (
-              <QuoteItemList items={quoteItems} />
+              <QuoteItemList 
+                items={quoteItems}
+                taintedItems={taintedItems}
+                onItemTaint={handleItemTaint}
+              />
             ) : (
               <p className="text-sm text-gray-500">Aucun produit dans ce devis</p>
             )}
