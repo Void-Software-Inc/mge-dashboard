@@ -8,6 +8,7 @@ export async function GET(request: Request, { params }: { params: { id: string }
   const { data: quoteItems, error } = await supabase
     .from('quoteItems')
     .select('*')
+    .order('last_update', { ascending: false })
     .eq('quote_id', productId);
 
   if (error) {

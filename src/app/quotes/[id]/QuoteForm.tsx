@@ -37,6 +37,7 @@ export default function QuoteForm({ quoteId }: { quoteId: string }) {
 
   const [quote, setQuote] = useState<Quote | null>(null)
   const [quoteItems, setQuoteItems] = useState<QuoteItem[] | null>(null)
+  const [isQuoteItemsLoading, setIsQuoteItemsLoading] = useState(true)
   const [formData, setFormData] = useState<Quote | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [errors, setErrors] = useState<FormErrors>({})
@@ -51,17 +52,30 @@ export default function QuoteForm({ quoteId }: { quoteId: string }) {
   const handleGoBack = useCallback(() => {
     router.push('/quotes')
   }, [router])
+
+  const fetchQuoteItems = useCallback(async () => {
+    setIsQuoteItemsLoading(true)
+    try {
+      const fetchedQuoteItems = await getQuoteItems(parseInt(quoteId))
+      setQuoteItems(fetchedQuoteItems)
+    } catch (error) {
+      console.error('Error fetching quote items:', error)
+      toast.error('Failed to load quote items')
+    } finally {
+      setIsQuoteItemsLoading(false)
+    }
+  }, [quoteId])
   
   useEffect(() => {
     const fetchQuote = async () => {
+      setIsLoading(true)
       try {
-        const [fetchedQuote, fetchedQuoteItems] = await Promise.all([
-          getQuote(parseInt(quoteId)),
-          getQuoteItems(parseInt(quoteId))
+        const [fetchedQuote] = await Promise.all([
+          getQuote(parseInt(quoteId))
         ])
         setQuote(fetchedQuote)
         setFormData(fetchedQuote)
-        setQuoteItems(fetchedQuoteItems)
+        await fetchQuoteItems()
       } catch (error) {
         console.error('Error fetching quote:', error)
         toast.error('Failed to load quote')
@@ -71,7 +85,7 @@ export default function QuoteForm({ quoteId }: { quoteId: string }) {
     }
 
     fetchQuote()
-  }, [quoteId])
+  }, [quoteId, fetchQuoteItems])
 
   useEffect(() => {
     setIsChanged(JSON.stringify(quote) !== JSON.stringify(formData) || taintedItems.size > 0 || editedItems.size > 0);
@@ -195,7 +209,6 @@ export default function QuoteForm({ quoteId }: { quoteId: string }) {
     setIsSubmitting(true);
     try {
       const formDataToSend = new FormData();
-      let itemsModified = false;
       // Append all form fields
       Object.entries(formData).forEach(([key, value]) => {
         if (value !== null && value !== undefined) {
@@ -208,24 +221,18 @@ export default function QuoteForm({ quoteId }: { quoteId: string }) {
       
       // Delete the tainted items
       for (const itemId of Array.from(taintedItems)) {
-        itemsModified = true;
         await deleteQuoteItem(parseInt(quoteId), itemId);
       }
       // Update the edited items
       editedItems.forEach(async (quantity, itemId) => {
-        itemsModified = true;
         await updateQuoteItem(parseInt(quoteId), itemId, quantity);
       });
       
-      // Refresh quote items after deletion
-      // Refresh quote items if they were modified
-      if (itemsModified) {
-        const updatedQuoteItems = await getQuoteItems(parseInt(quoteId));
-        setQuoteItems(updatedQuoteItems);
-      }
       setTaintedItems(new Set());
       setEditedItems(new Map());
-      
+
+      fetchQuoteItems()
+
       setQuote(response);
       setFormData(response);
       setIsChanged(false);
@@ -410,13 +417,20 @@ export default function QuoteForm({ quoteId }: { quoteId: string }) {
           </div>
           <div className="mb-4">
             <Label className="text-base">Produits du devis</Label>
-            {quoteItems && quoteItems.length > 0 ? (
+            {isQuoteItemsLoading ? (
+              <div className="space-y-2">
+                <Skeleton className="h-12 w-full" />
+                <Skeleton className="h-12 w-full" />
+                <Skeleton className="h-12 w-full" />
+              </div>
+            ) : quoteItems && quoteItems.length > 0 ? (
               <QuoteItemList 
                 items={quoteItems}
                 taintedItems={taintedItems}
                 editedItems={editedItems}
                 onItemTaint={handleItemTaint}
                 onItemEdit={handleItemEdit}
+                isLoading={isQuoteItemsLoading}
               />
             ) : (
               <p className="text-sm text-gray-500">Aucun produit dans ce devis</p>
