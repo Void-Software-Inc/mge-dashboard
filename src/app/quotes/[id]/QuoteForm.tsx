@@ -16,10 +16,9 @@ import { useRouter } from 'next/navigation'
 import { useQuotesContext } from '../context/QuotesContext'
 import { getQuote, getQuoteItems, updateQuote } from "@/services/quotes"
 import { Quote, quoteStatus, QuoteItem } from "@/utils/types/quotes"
-import { DatePickerWithRange } from "../components/date-range-picker"
+import { DatePicker } from "../components/date-picker"
 import { QuoteItemList } from "../components/quote-item-list"
-import { DateRange } from "react-day-picker"
-import { format } from 'date-fns';
+import { format, parseISO } from 'date-fns';
 
 interface FormErrors {
   first_name?: string;
@@ -143,15 +142,18 @@ export default function QuoteForm({ quoteId }: { quoteId: string }) {
   const handleSwitchChange = (checked: boolean) => {
     setFormData(prev => prev ? { ...prev, is_traiteur: checked } : null);
   };
+  const handleStartDateChange = (date: Date | undefined) => {
+    setFormData(prev => prev ? { 
+      ...prev, 
+      event_start_date: date ? format(date, 'yyyy-MM-dd') : '' 
+    } : null)
+  }
 
-  const handleDateChange = (range: DateRange | undefined) => {
-    if (range?.from) {
-      setFormData(prev => prev ? { 
-        ...prev, 
-        event_start_date: format(range.from ?? new Date(), 'yyyy-MM-dd'),
-        event_end_date: range.to ? format(range.to, 'yyyy-MM-dd') : format(range.from ?? new Date(), 'yyyy-MM-dd')
-      } : null)
-    }
+  const handleEndDateChange = (date: Date | undefined) => {
+    setFormData(prev => prev ? { 
+      ...prev, 
+      event_end_date: date ? format(date, 'yyyy-MM-dd') : '' 
+    } : null)
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -318,17 +320,22 @@ export default function QuoteForm({ quoteId }: { quoteId: string }) {
             {errors.email && <p className="text-red-500 text-sm mt-1">{errors.email}</p>}
           </div>
           <div className="mb-4">
-            <Label className="text-base">Dates de l'événement</Label>
-            <DatePickerWithRange
-              startDate={formData?.event_start_date ? new Date(formData.event_start_date) : undefined}
-              endDate={formData?.event_end_date ? new Date(formData.event_end_date) : undefined}
-              onDateChange={handleDateChange}
+            <Label className="text-base">Date de début de l'événement</Label>
+            <DatePicker
+              date={formData?.event_start_date ? parseISO(formData.event_start_date) : undefined}
+              onDateChange={handleStartDateChange}
+              label="Choisir la date de début"
             />
-            {(errors.event_start_date || errors.event_end_date) && (
-              <p className="text-red-500 text-sm mt-1">
-                {errors.event_start_date || errors.event_end_date}
-              </p>
-            )}
+            {errors.event_start_date && <p className="text-red-500 text-sm mt-1">{errors.event_start_date}</p>}
+          </div>
+          <div className="mb-4">
+            <Label className="text-base">Date de fin de l'événement</Label>
+            <DatePicker
+              date={formData?.event_end_date ? parseISO(formData.event_end_date) : undefined}
+              onDateChange={handleEndDateChange}
+              label="Choisir la date de fin"
+            />
+            {errors.event_end_date && <p className="text-red-500 text-sm mt-1">{errors.event_end_date}</p>}
           </div>
           <div className="mb-4">
             <Label htmlFor="price" className="text-base">Prix total</Label>
