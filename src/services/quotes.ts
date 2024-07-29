@@ -103,6 +103,29 @@ export async function deleteQuote(ids: number[]): Promise<void> {
   }
 }
 
+export async function updateQuoteItem(quoteId: number, quoteItemId: number, quantity: number): Promise<QuoteItem> {
+  try {
+    const url = `${API_URL}/quotes/${quoteId}/quoteItems/update`;
+    const response = await fetch(url, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ quoteItemId, quantity }),
+    });
+
+    if (!response.ok) {
+      throw new Error('Failed to update quote item');
+    }
+
+    const result = await response.json();
+    return result.data;
+  } catch (error) {
+    console.error('Error updating quote item:', error);
+    throw error;
+  }
+}
+
 export async function deleteQuoteItem(quoteId: number, quoteItemId: number): Promise<void> {
   try {
     const url = `${API_URL}/quotes/${quoteId}/quoteItems/delete`;

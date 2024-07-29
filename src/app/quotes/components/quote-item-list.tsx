@@ -6,18 +6,23 @@ import { Product } from "@/utils/types/products";
 import { getProduct } from "@/services/products";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
-import { TrashIcon } from '@radix-ui/react-icons';
+import { TrashIcon, Pencil1Icon } from '@radix-ui/react-icons';
+import { Input } from "@/components/ui/input";
 
 interface QuoteItemListProps {
     items: QuoteItem[];
     taintedItems: Set<number>;
+    editedItems: Map<number, number>;
     onItemTaint: (itemId: number) => void;
+    onItemEdit: (itemId: number, quantity: number) => void;
 }
 
-export function QuoteItemList({ items, taintedItems, onItemTaint }: QuoteItemListProps) {
+export function QuoteItemList({ items, taintedItems, editedItems, onItemTaint, onItemEdit }: QuoteItemListProps) {
   const [productDetails, setProductDetails] = useState<Record<number, Product>>({});
+  const [editingId, setEditingId] = useState<number | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
+  
 
   useEffect(() => {
     const fetchProductDetails = async () => {
@@ -39,6 +44,23 @@ export function QuoteItemList({ items, taintedItems, onItemTaint }: QuoteItemLis
   const calculateTotalPrice = (item: QuoteItem) => {
     const product = productDetails[item.product_id];
     return product ? item.quantity * product.price : 0;
+  };
+
+  const handleEditStart = (itemId: number) => {
+    if (!taintedItems.has(itemId)) {
+      setEditingId(itemId);
+    }
+  };
+
+  const handleQuantityChange = (itemId: number, value: string) => {
+    const numValue = parseInt(value, 10);
+    if (!isNaN(numValue) && numValue >= 0) {
+      onItemEdit(itemId, numValue);
+    }
+  };
+
+  const handleEditEnd = () => {
+    setEditingId(null);
   };
 
   const indexOfLastItem = currentPage * itemsPerPage;
@@ -66,10 +88,13 @@ export function QuoteItemList({ items, taintedItems, onItemTaint }: QuoteItemLis
             {currentItems.map((item) => {
               const product = productDetails[item.product_id];
               const isTainted = taintedItems.has(item.id);
+              const isEdited = editedItems.has(item.id);
+              const currentQuantity = editedItems.get(item.id) ?? item.quantity;
               return (
                 <TableRow 
                   key={item.id} 
-                  className={`h-16 ${isTainted ? 'bg-red-50 hover:bg-red-50' : ''}`}
+                  className={`h-16 ${isTainted ? 'bg-red-50 hover:bg-red-50' : 
+                                     isEdited ? 'bg-blue-50 hover:bg-blue-50' : ''}`}
                 >
                   <TableCell className="whitespace-nowrap">
                     {product && product.image_url && (
@@ -79,7 +104,32 @@ export function QuoteItemList({ items, taintedItems, onItemTaint }: QuoteItemLis
                   <TableCell className="whitespace-nowrap overflow-hidden text-ellipsis">
                     {product ? product.name : 'Loading...'}
                   </TableCell>
-                  <TableCell className="whitespace-nowrap">{item.quantity}</TableCell>
+                  <TableCell className="whitespace-nowrap">
+                    {editingId === item.id ? (
+                      <Input
+                        type="number"
+                        value={currentQuantity}
+                        onChange={(e) => handleQuantityChange(item.id, e.target.value)}
+                        onBlur={handleEditEnd}
+                        className="w-20"
+                        min="0"
+                      />
+                    ) : (
+                      <div className="flex items-center">
+                        <span className="mr-2">{currentQuantity}</span>
+                        {!isTainted && (
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => handleEditStart(item.id)}
+                            className="text-blue-500 hover:text-blue-700"
+                          >
+                            <Pencil1Icon className="h-4 w-4" />
+                          </Button>
+                        )}
+                      </div>
+                    )}
+                  </TableCell>
                   <TableCell className="whitespace-nowrap">
                     {product ? `${product.price} €` : 'Loading...'}
                   </TableCell>
@@ -92,6 +142,7 @@ export function QuoteItemList({ items, taintedItems, onItemTaint }: QuoteItemLis
                         e.preventDefault();
                         e.stopPropagation();
                         onItemTaint(item.id);
+                        handleEditEnd();
                       }}
                       className={isTainted ? 'text-red-500 hover:text-red-500 hover:bg-red-50' : 'text-black hover:text-red-500 hover:bg-gray-50'}
                     >
