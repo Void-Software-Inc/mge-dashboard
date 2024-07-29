@@ -32,6 +32,57 @@ export async function getQuotes(): Promise<Quote[]> {
   }
 }
 
+export async function getQuote(id: number): Promise<Quote> {
+  try {
+    const url = `${API_URL}/quotes/${id}`
+
+    const response = await fetch(url);
+    if (!response.ok) {
+      throw new Error(`Failed to fetch quote with id ${id}`);
+    }
+    return await response.json();
+  } catch (error) {
+    console.error(`Error fetching quote with id ${id}:`, error);
+    throw error;
+  }
+}
+
+export async function getQuoteItems(id: number): Promise<QuoteItem[]> {
+  try {
+    const url = `${API_URL}/quotes/${id}/quoteItems`;
+    const response = await fetch(url);
+    if (!response.ok) {
+      throw new Error(`Failed to fetch quote items for quote with id ${id}`);
+    }
+    const data = await response.json();
+    return data.quoteItems;
+  } catch (error) {
+    console.error(`Error fetching quote items for quote with id ${id}:`, error);
+    throw error;
+  }
+}
+
+export async function updateQuote(formData: FormData): Promise<Quote> {
+  try {
+    const url = `${API_URL}/quotes/update`;
+
+    const response = await fetch(url, {
+      method: 'PUT',
+      body: formData,
+    });
+
+    if (!response.ok) {
+      throw new Error('Failed to update quote');
+    }
+
+    const result = await response.json();
+    return result.data;
+  } catch (error) {
+    console.error('Error updating quote:', error);
+    throw error;
+  }
+}
+
 export async function deleteQuote(ids: number[]): Promise<void> {
     try {
       const url = `${API_URL}/quotes/delete`;

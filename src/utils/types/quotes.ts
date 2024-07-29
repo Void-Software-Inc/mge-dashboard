@@ -10,7 +10,7 @@ export type Quote = {
   total_cost: number;
   is_traiteur: boolean;
   created_at: string;
-  updated_at: string;
+  last_update: string;
   description: string;
 };
 
