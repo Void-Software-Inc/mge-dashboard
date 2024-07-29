@@ -6,7 +6,7 @@ import { Product } from "@/utils/types/products";
 import { getProduct } from "@/services/products";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
-import { Cross2Icon } from '@radix-ui/react-icons';
+import { TrashIcon } from '@radix-ui/react-icons';
 
 interface QuoteItemListProps {
     items: QuoteItem[];
@@ -93,9 +93,9 @@ export function QuoteItemList({ items, taintedItems, onItemTaint }: QuoteItemLis
                         e.stopPropagation();
                         onItemTaint(item.id);
                       }}
-                      className={isTainted ? 'text-red-500 hover:text-red-600 hover:bg-red-50' : 'text-red-500 hover:text-red-600 hover:bg-gray-50'}
+                      className={isTainted ? 'text-red-500 hover:text-red-500 hover:bg-red-50' : 'text-black hover:text-red-500 hover:bg-gray-50'}
                     >
-                      <Cross2Icon className="h-4 w-4" />
+                      <TrashIcon className="h-4 w-4" />
                     </Button>
                   </TableCell>
                 </TableRow>
