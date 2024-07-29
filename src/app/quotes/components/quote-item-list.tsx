@@ -69,7 +69,7 @@ export function QuoteItemList({ items, taintedItems, onItemTaint }: QuoteItemLis
               return (
                 <TableRow 
                   key={item.id} 
-                  className={`h-16 ${isTainted ? 'border-red-500 border-2' : ''}`}
+                  className={`h-16 ${isTainted ? 'bg-red-50 hover:bg-red-50' : ''}`}
                 >
                   <TableCell className="whitespace-nowrap">
                     {product && product.image_url && (
@@ -91,10 +91,9 @@ export function QuoteItemList({ items, taintedItems, onItemTaint }: QuoteItemLis
                       onClick={(e) => {
                         e.preventDefault();
                         e.stopPropagation();
-                        console.log('Cross icon clicked for item:', item.id);
                         onItemTaint(item.id);
                       }}
-                      className={isTainted ? 'text-red-500' : ''}
+                      className={isTainted ? 'text-red-500 hover:text-red-600 hover:bg-red-50' : 'text-red-500 hover:text-red-600 hover:bg-gray-50'}
                     >
                       <Cross2Icon className="h-4 w-4" />
                     </Button>
