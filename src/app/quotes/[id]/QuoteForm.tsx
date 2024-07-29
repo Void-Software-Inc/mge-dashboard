@@ -17,6 +17,7 @@ import { useQuotesContext } from '../context/QuotesContext'
 import { getQuote, getQuoteItems, updateQuote } from "@/services/quotes"
 import { Quote, quoteStatus, QuoteItem } from "@/utils/types/quotes"
 import { DatePickerWithRange } from "../components/date-range-picker"
+import { QuoteItemList } from "../components/quote-item-list"
 import { DateRange } from "react-day-picker"
 import { format } from 'date-fns';
 
@@ -359,6 +360,14 @@ export default function QuoteForm({ quoteId }: { quoteId: string }) {
           <div className="mb-4">
             <Label htmlFor="description" className="text-base">Description du devis</Label>
             <Textarea id="description" value={formData?.description ?? ''} onChange={handleInputChange} className="w-full text-base" />
+          </div>
+          <div className="mb-4">
+            <Label className="text-base">Produits du devis</Label>
+            {quoteItems && quoteItems.length > 0 ? (
+              <QuoteItemList items={quoteItems} />
+            ) : (
+              <p className="text-sm text-gray-500">Aucun produit dans ce devis</p>
+            )}
           </div>
           <div className="mb-4">
             <Label className="text-base">Date de création du devis</Label>
