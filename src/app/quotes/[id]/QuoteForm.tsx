@@ -14,7 +14,7 @@ import { ChevronLeftIcon, DownloadIcon } from "@radix-ui/react-icons"
 
 import { useRouter } from 'next/navigation'
 import { useQuotesContext } from '../context/QuotesContext'
-import { getQuote, getQuoteItems, updateQuote, deleteQuoteItem } from "@/services/quotes"
+import { getQuote, getQuoteItems, updateQuote, deleteQuoteItem, updateQuoteItem } from "@/services/quotes"
 import { Quote, quoteStatus, QuoteItem } from "@/utils/types/quotes"
 import { DatePicker } from "../components/date-picker"
 import { QuoteItemList } from "../components/quote-item-list"
@@ -42,6 +42,7 @@ export default function QuoteForm({ quoteId }: { quoteId: string }) {
   const [errors, setErrors] = useState<FormErrors>({})
   const [isFormValid, setIsFormValid] = useState(true)
   const [taintedItems, setTaintedItems] = useState<Set<number>>(new Set());
+  const [editedItems, setEditedItems] = useState<Map<number, number>>(new Map());
 
   const [isChanged, setIsChanged] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -73,8 +74,8 @@ export default function QuoteForm({ quoteId }: { quoteId: string }) {
   }, [quoteId])
 
   useEffect(() => {
-    setIsChanged(JSON.stringify(quote) !== JSON.stringify(formData) || taintedItems.size > 0);
-  }, [quote, formData, taintedItems]);
+    setIsChanged(JSON.stringify(quote) !== JSON.stringify(formData) || taintedItems.size > 0 || editedItems.size > 0);
+  }, [quote, formData, taintedItems, editedItems]);
 
   const validateForm = useCallback(() => {
     const newErrors: FormErrors = {}
@@ -167,6 +168,24 @@ export default function QuoteForm({ quoteId }: { quoteId: string }) {
       }
       return newSet;
     });
+    // Remove from edited items if it was being edited
+    setEditedItems(prev => {
+      const newMap = new Map(prev);
+      newMap.delete(itemId);
+      return newMap;
+    });
+  };
+
+  const handleItemEdit = (itemId: number, quantity: number) => {
+    setEditedItems(prev => {
+      const newMap = new Map(prev);
+      if (quantity !== quoteItems?.find(item => item.id === itemId)?.quantity) {
+        newMap.set(itemId, quantity);
+      } else {
+        newMap.delete(itemId);
+      }
+      return newMap;
+    });
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -176,7 +195,7 @@ export default function QuoteForm({ quoteId }: { quoteId: string }) {
     setIsSubmitting(true);
     try {
       const formDataToSend = new FormData();
-      
+      let itemsModified = false;
       // Append all form fields
       Object.entries(formData).forEach(([key, value]) => {
         if (value !== null && value !== undefined) {
@@ -189,13 +208,23 @@ export default function QuoteForm({ quoteId }: { quoteId: string }) {
       
       // Delete the tainted items
       for (const itemId of Array.from(taintedItems)) {
+        itemsModified = true;
         await deleteQuoteItem(parseInt(quoteId), itemId);
       }
+      // Update the edited items
+      editedItems.forEach(async (quantity, itemId) => {
+        itemsModified = true;
+        await updateQuoteItem(parseInt(quoteId), itemId, quantity);
+      });
       
       // Refresh quote items after deletion
-      const updatedQuoteItems = await getQuoteItems(parseInt(quoteId));
-      setQuoteItems(updatedQuoteItems);
+      // Refresh quote items if they were modified
+      if (itemsModified) {
+        const updatedQuoteItems = await getQuoteItems(parseInt(quoteId));
+        setQuoteItems(updatedQuoteItems);
+      }
       setTaintedItems(new Set());
+      setEditedItems(new Map());
       
       setQuote(response);
       setFormData(response);
@@ -385,7 +414,9 @@ export default function QuoteForm({ quoteId }: { quoteId: string }) {
               <QuoteItemList 
                 items={quoteItems}
                 taintedItems={taintedItems}
+                editedItems={editedItems}
                 onItemTaint={handleItemTaint}
+                onItemEdit={handleItemEdit}
               />
             ) : (
               <p className="text-sm text-gray-500">Aucun produit dans ce devis</p>
