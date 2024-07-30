@@ -38,6 +38,7 @@ export default function QuoteForm({ quoteId }: { quoteId: string }) {
   const [quote, setQuote] = useState<Quote | null>(null)
   const [quoteItems, setQuoteItems] = useState<QuoteItem[] | null>(null)
   const [isQuoteItemsLoading, setIsQuoteItemsLoading] = useState(true)
+  const [shouldReloadItems, setShouldReloadItems] = useState(false)
 
   const [formData, setFormData] = useState<Quote | null>(null)
   const [isLoading, setIsLoading] = useState(true)
@@ -179,8 +180,10 @@ export default function QuoteForm({ quoteId }: { quoteId: string }) {
       const newSet = new Set(prev);
       if (newSet.has(itemId)) {
         newSet.delete(itemId);
+        setShouldReloadItems(false);
       } else {
         newSet.add(itemId);
+        setShouldReloadItems(true);
       }
       return newSet;
     });
@@ -197,8 +200,10 @@ export default function QuoteForm({ quoteId }: { quoteId: string }) {
       const newMap = new Map(prev);
       if (quantity !== quoteItems?.find(item => item.id === itemId)?.quantity) {
         newMap.set(itemId, quantity);
+        setShouldReloadItems(true);
       } else {
         newMap.delete(itemId);
+        setShouldReloadItems(false);
       }
       return newMap;
     });
@@ -237,7 +242,9 @@ export default function QuoteForm({ quoteId }: { quoteId: string }) {
       setTaintedItems(new Set());
       setEditedItems(new Map());
 
-      await fetchQuoteItems();
+      if (shouldReloadItems) {
+        await fetchQuoteItems();
+      }
       
       setQuote(response);
       setFormData(response);
