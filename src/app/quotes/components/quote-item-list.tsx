@@ -122,12 +122,12 @@ export function QuoteItemList({ items, taintedItems, editedItems, onItemTaint, o
                         value={currentQuantity}
                         onChange={(e) => handleQuantityChange(item.id, e.target.value)}
                         onBlur={handleEditEnd}
-                        className="w-20"
+                        className="w-20 text-base"
                         min="0"
                       />
                     ) : (
                       <div className="flex items-center">
-                        <span className="mr-2">{currentQuantity}</span>
+                        <span className="mr-2 text-base">{currentQuantity}</span>
                         {!isTainted && (
                           <Button
                             variant="ghost"
