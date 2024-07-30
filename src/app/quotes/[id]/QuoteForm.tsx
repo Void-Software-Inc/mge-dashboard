@@ -38,10 +38,12 @@ export default function QuoteForm({ quoteId }: { quoteId: string }) {
   const [quote, setQuote] = useState<Quote | null>(null)
   const [quoteItems, setQuoteItems] = useState<QuoteItem[] | null>(null)
   const [isQuoteItemsLoading, setIsQuoteItemsLoading] = useState(true)
+
   const [formData, setFormData] = useState<Quote | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [errors, setErrors] = useState<FormErrors>({})
   const [isFormValid, setIsFormValid] = useState(true)
+  
   const [taintedItems, setTaintedItems] = useState<Set<number>>(new Set());
   const [editedItems, setEditedItems] = useState<Map<number, number>>(new Map());
 
@@ -218,21 +220,25 @@ export default function QuoteForm({ quoteId }: { quoteId: string }) {
 
       // Update the quote
       const response = await updateQuote(formDataToSend);
+
+      const updatePromises = [];
       
       // Delete the tainted items
       for (const itemId of Array.from(taintedItems)) {
-        await deleteQuoteItem(parseInt(quoteId), itemId);
+        updatePromises.push(deleteQuoteItem(parseInt(quoteId), itemId));
       }
       // Update the edited items
-      editedItems.forEach(async (quantity, itemId) => {
-        await updateQuoteItem(parseInt(quoteId), itemId, quantity);
+      editedItems.forEach((quantity, itemId) => {
+        updatePromises.push(updateQuoteItem(parseInt(quoteId), itemId, quantity));
       });
-      
+
+      await Promise.all(updatePromises);
+
       setTaintedItems(new Set());
       setEditedItems(new Map());
 
-      fetchQuoteItems()
-
+      await fetchQuoteItems();
+      
       setQuote(response);
       setFormData(response);
       setIsChanged(false);
