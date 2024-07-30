@@ -183,22 +183,10 @@ export default function ProductForm({ productId }: { productId: string }) {
       setPreviewUrl(null)
       setSelectedFile(null)
       setShouldRefetch(true)
-      toast.custom((t) => (
-        <div className="bg-lime-300 text-black px-6 py-4 rounded-md">
-          Produit mis à jour avec succès
-        </div>
-      ), {
-        duration: 3000,
-      })
+      toast.success('Produit mis à jour avec succès')
     } catch (error) {
       console.error('Error updating product:', error)
-      toast.custom((t) => (
-        <div className="bg-red-400 text-black px-6 py-4 rounded-md">
-          {error instanceof Error ? error.message : 'An error occurred'}
-        </div>
-      ), {
-        duration: 3000,
-      })
+      toast.error(error instanceof Error ? error.message : 'An error occurred')
     } finally {
       setIsSubmitting(false)
     }

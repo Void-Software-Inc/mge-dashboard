@@ -255,6 +255,7 @@ export default function QuoteForm({ quoteId }: { quoteId: string }) {
       console.error('Error updating quote:', error);
       toast.error('Erreur lors de la mise à jour du devis');
     } finally {
+      setShouldReloadItems(false);
       setIsSubmitting(false);
     }
   };
