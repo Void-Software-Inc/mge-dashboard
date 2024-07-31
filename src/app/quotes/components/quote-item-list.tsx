@@ -3,7 +3,7 @@ import React, { useCallback, useEffect, useState } from 'react';
 import Image from 'next/image';
 import { QuoteItem } from "@/utils/types/quotes";
 import { Product } from "@/utils/types/products";
-import { getProduct, getProducts } from "@/services/products";
+import { getProduct } from "@/services/products";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { TrashIcon, Pencil1Icon, PlusIcon } from '@radix-ui/react-icons';
@@ -11,6 +11,7 @@ import { Drawer, DrawerTrigger, DrawerContent, DrawerHeader, DrawerTitle, Drawer
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ProductSimplifiedDataTable } from './product-simplified-data-table';
+import { getAvailableProducts } from '@/services/quotes';
 
 interface QuoteItemListProps {
     items: QuoteItem[];
@@ -19,14 +20,15 @@ interface QuoteItemListProps {
     onItemTaint: (itemId: number) => void;
     onItemEdit: (itemId: number, quantity: number) => void;
     isLoading: boolean;
+    quoteId: number;
 }
 
-export function QuoteItemList({ items, taintedItems, editedItems, onItemTaint, onItemEdit, isLoading }: QuoteItemListProps) {
+export function QuoteItemList({ items, taintedItems, editedItems, onItemTaint, onItemEdit, isLoading, quoteId }: QuoteItemListProps) {
   const [productDetails, setProductDetails] = useState<Record<number, Product>>({});
   const [editingId, setEditingId] = useState<number | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
-  const [allProducts, setAllProducts] = useState<Product[]>([]);
+  const [neededProducts, setNeededProducts] = useState<Product[]>([]);
   const [isProductsLoading, setIsProductsLoading] = useState(false);
   const itemsPerPage = 10;
   
@@ -48,23 +50,23 @@ export function QuoteItemList({ items, taintedItems, editedItems, onItemTaint, o
     fetchProductDetails();
   }, [items]);
 
-  const fetchAllProducts = useCallback(async () => {
-    if (allProducts.length > 0) return; // Don't fetch if we already have products
+  const fetchNeededProducts = useCallback(async () => {
+    if (neededProducts.length > 0) return; // Don't fetch if we already have products
     setIsProductsLoading(true);
     try {
-      const products = await getProducts();
-      setAllProducts(products);
+      const products = await getAvailableProducts(quoteId);
+      setNeededProducts(products);
     } catch (error) {
-      console.error('Failed to fetch all products:', error);
+      console.error('Failed to fetch needed products:', error);
     } finally {
       setIsProductsLoading(false);
     }
-  }, [allProducts]);
+  }, [neededProducts]);
 
   const handleDrawerOpen = useCallback(() => {
     setIsDrawerOpen(true);
-    fetchAllProducts();
-  }, [fetchAllProducts]);
+    fetchNeededProducts();
+  }, [fetchNeededProducts]);
 
   const calculateTotalPrice = (item: QuoteItem) => {
     const product = productDetails[item.product_id];
@@ -226,8 +228,7 @@ export function QuoteItemList({ items, taintedItems, editedItems, onItemTaint, o
             </DrawerHeader>
             <div className="p-4 pb-0 overflow-x-auto">
               <ProductSimplifiedDataTable 
-                products={allProducts}
-                existingItems={currentItems}
+                products={neededProducts}
                 isLoading={isProductsLoading}
                 onProductsSelected={(selectedProducts) => {
                   console.log(selectedProducts);
