@@ -224,9 +224,10 @@ export function QuoteItemList({ items, taintedItems, editedItems, onItemTaint, o
                 Sélectionnez les produits que vous souhaitez ajouter au devis.
               </DrawerDescription>
             </DrawerHeader>
-            <div className="p-4 pb-0">
+            <div className="p-4 pb-0 overflow-x-auto">
               <ProductSimplifiedDataTable 
                 products={allProducts}
+                existingItems={currentItems}
                 isLoading={isProductsLoading}
                 onProductsSelected={(selectedProducts) => {
                   console.log(selectedProducts);
