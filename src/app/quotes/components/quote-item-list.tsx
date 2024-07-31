@@ -6,9 +6,11 @@ import { Product } from "@/utils/types/products";
 import { getProduct } from "@/services/products";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
-import { TrashIcon, Pencil1Icon } from '@radix-ui/react-icons';
+import { TrashIcon, Pencil1Icon, PlusIcon } from '@radix-ui/react-icons';
+import { Drawer, DrawerTrigger, DrawerContent, DrawerHeader, DrawerTitle, DrawerDescription, DrawerFooter, DrawerClose } from "@/components/ui/drawer";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
+import { ProductSimplifiedDataTable } from './product-simplified-data-table';
 
 interface QuoteItemListProps {
     items: QuoteItem[];
@@ -23,6 +25,7 @@ export function QuoteItemList({ items, taintedItems, editedItems, onItemTaint, o
   const [productDetails, setProductDetails] = useState<Record<number, Product>>({});
   const [editingId, setEditingId] = useState<number | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
+  const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const itemsPerPage = 10;
   
 
@@ -182,6 +185,36 @@ export function QuoteItemList({ items, taintedItems, editedItems, onItemTaint, o
         >
           Suivant
         </Button>
+      </div>
+      <div className="mb-4 mt-4">
+        <Drawer open={isDrawerOpen} onOpenChange={setIsDrawerOpen}>
+          <DrawerTrigger asChild>
+            <Button variant='outline' className="text-lime-500 hover:text-lime-700 w-full">
+              <PlusIcon className="mr-2 h-4 w-4" /> Ajouter un produit
+            </Button>
+          </DrawerTrigger>
+          <DrawerContent>
+            <DrawerHeader>
+              <DrawerTitle className="text-center">Ajouter un produit au devis</DrawerTitle>
+              <DrawerDescription className="text-center">
+                Sélectionnez les produits que vous souhaitez ajouter au devis.
+              </DrawerDescription>
+            </DrawerHeader>
+            <div className="p-4 pb-0">
+              <ProductSimplifiedDataTable 
+                onProductsSelected={(selectedProducts) => {
+                  console.log(selectedProducts);
+                  setIsDrawerOpen(false);
+                }} 
+              />
+            </div>
+            <DrawerFooter>
+              <DrawerClose asChild>
+                <Button variant="outline">Annuler</Button>
+              </DrawerClose>
+            </DrawerFooter>
+          </DrawerContent>
+        </Drawer>
       </div>
     </div>
   );
