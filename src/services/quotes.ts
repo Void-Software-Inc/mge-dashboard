@@ -103,6 +103,29 @@ export async function deleteQuote(ids: number[]): Promise<void> {
   }
 }
 
+export async function createQuoteItem(quoteId: number, productId: number, quantity: number): Promise<QuoteItem> {
+  try {
+    const url = `${API_URL}/quotes/${quoteId}/quoteItems/create`;
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ productId, quantity }),
+    });
+
+    if (!response.ok) {
+      throw new Error('Failed to create quote item');
+    }
+
+    const result = await response.json();
+    return result.data;
+  } catch (error) {
+    console.error('Error creating quote item:', error);
+    throw error;
+  }
+}
+
 export async function updateQuoteItem(quoteId: number, quoteItemId: number, quantity: number): Promise<QuoteItem> {
   try {
     const url = `${API_URL}/quotes/${quoteId}/quoteItems/update`;
