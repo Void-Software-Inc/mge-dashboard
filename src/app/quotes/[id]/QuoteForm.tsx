@@ -445,6 +445,7 @@ export default function QuoteForm({ quoteId }: { quoteId: string }) {
                 onItemTaint={handleItemTaint}
                 onItemEdit={handleItemEdit}
                 isLoading={isQuoteItemsLoading}
+                quoteId={quote.id}
               />
             ) : (
               <p className="text-sm text-gray-500">Aucun produit dans ce devis</p>
