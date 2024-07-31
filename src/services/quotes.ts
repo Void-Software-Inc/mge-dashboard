@@ -1,4 +1,5 @@
 import { Quote, QuoteItem } from "@/utils/types/quotes";
+import { Product } from "@/utils/types/products";
 
 const API_URL = '/api';
 
@@ -165,6 +166,21 @@ export async function deleteQuoteItem(quoteId: number, quoteItemId: number): Pro
     }
   } catch (error) {
     console.error('Error deleting quote item:', error);
+    throw error;
+  }
+}
+
+export async function getAvailableProducts(quoteId: number): Promise<Product[]> {
+  try {
+    const url = `${API_URL}/quotes/${quoteId}/availableProducts`;
+    const response = await fetch(url);
+    if (!response.ok) {
+      throw new Error(`Failed to fetch available products for quote with id ${quoteId}`);
+    }
+    const data = await response.json();
+    return data.availableProducts;
+  } catch (error) {
+    console.error(`Error fetching available products for quote with id ${quoteId}:`, error);
     throw error;
   }
 }
