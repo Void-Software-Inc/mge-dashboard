@@ -1,9 +1,9 @@
 'use client'
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import Image from 'next/image';
 import { QuoteItem } from "@/utils/types/quotes";
 import { Product } from "@/utils/types/products";
-import { getProduct } from "@/services/products";
+import { getProduct, getProducts } from "@/services/products";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { TrashIcon, Pencil1Icon, PlusIcon } from '@radix-ui/react-icons';
@@ -26,6 +26,8 @@ export function QuoteItemList({ items, taintedItems, editedItems, onItemTaint, o
   const [editingId, setEditingId] = useState<number | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
+  const [allProducts, setAllProducts] = useState<Product[]>([]);
+  const [isProductsLoading, setIsProductsLoading] = useState(false);
   const itemsPerPage = 10;
   
 
@@ -45,6 +47,24 @@ export function QuoteItemList({ items, taintedItems, editedItems, onItemTaint, o
 
     fetchProductDetails();
   }, [items]);
+
+  const fetchAllProducts = useCallback(async () => {
+    if (allProducts.length > 0) return; // Don't fetch if we already have products
+    setIsProductsLoading(true);
+    try {
+      const products = await getProducts();
+      setAllProducts(products);
+    } catch (error) {
+      console.error('Failed to fetch all products:', error);
+    } finally {
+      setIsProductsLoading(false);
+    }
+  }, [allProducts]);
+
+  const handleDrawerOpen = useCallback(() => {
+    setIsDrawerOpen(true);
+    fetchAllProducts();
+  }, [fetchAllProducts]);
 
   const calculateTotalPrice = (item: QuoteItem) => {
     const product = productDetails[item.product_id];
@@ -189,19 +209,25 @@ export function QuoteItemList({ items, taintedItems, editedItems, onItemTaint, o
       <div className="mb-4 mt-4">
         <Drawer open={isDrawerOpen} onOpenChange={setIsDrawerOpen}>
           <DrawerTrigger asChild>
-            <Button variant='outline' className="text-lime-500 hover:text-lime-700 w-full">
+            <Button 
+              variant='outline' 
+              className="text-lime-500 hover:text-lime-700 w-full"
+              onClick={handleDrawerOpen}
+            >
               <PlusIcon className="mr-2 h-4 w-4" /> Ajouter un produit
             </Button>
           </DrawerTrigger>
           <DrawerContent>
             <DrawerHeader>
-              <DrawerTitle className="text-center">Ajouter un produit au devis</DrawerTitle>
-              <DrawerDescription className="text-center">
+              <DrawerTitle>Ajouter un produit au devis</DrawerTitle>
+              <DrawerDescription>
                 Sélectionnez les produits que vous souhaitez ajouter au devis.
               </DrawerDescription>
             </DrawerHeader>
             <div className="p-4 pb-0">
               <ProductSimplifiedDataTable 
+                products={allProducts}
+                isLoading={isProductsLoading}
                 onProductsSelected={(selectedProducts) => {
                   console.log(selectedProducts);
                   setIsDrawerOpen(false);
