@@ -1,8 +1,7 @@
 'use client'
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import Image from 'next/image';
 import { Product } from "@/utils/types/products";
-import { getProducts } from "@/services/products";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
@@ -11,32 +10,17 @@ import { Button } from "@/components/ui/button";
 import { Search } from 'lucide-react';
 
 interface ProductSimplifiedDataTableProps {
+    products: Product[];
+    isLoading: boolean;
     onProductsSelected: (selectedProducts: { productId: number; quantity: number }[]) => void;
 }
 
-export function ProductSimplifiedDataTable({ onProductsSelected }: ProductSimplifiedDataTableProps) {
-    const [products, setProducts] = useState<Product[]>([]);
+export function ProductSimplifiedDataTable({ products, isLoading, onProductsSelected }: ProductSimplifiedDataTableProps) {
     const [selectedProducts, setSelectedProducts] = useState<Set<number>>(new Set());
     const [quantities, setQuantities] = useState<Record<number, number>>({});
-    const [isLoading, setIsLoading] = useState(true);
     const [currentPage, setCurrentPage] = useState(1);
     const [searchTerm, setSearchTerm] = useState('');
     const itemsPerPage = 3;
-
-    useEffect(() => {
-        const fetchProducts = async () => {
-            try {
-                const fetchedProducts = await getProducts();
-                setProducts(fetchedProducts);
-            } catch (error) {
-                console.error('Error fetching products:', error);
-            } finally {
-                setIsLoading(false);
-            }
-        };
-
-        fetchProducts();
-    }, []);
 
     const filteredProducts = useMemo(() => {
         return products.filter(product =>
@@ -75,7 +59,7 @@ export function ProductSimplifiedDataTable({ onProductsSelected }: ProductSimpli
     const indexOfFirstItem = indexOfLastItem - itemsPerPage;
     const currentProducts = filteredProducts.slice(indexOfFirstItem, indexOfLastItem);
 
-    const totalPages = Math.ceil(products.length / itemsPerPage);
+    const totalPages = Math.ceil(filteredProducts.length / itemsPerPage);
 
     if (isLoading) {
         return (
