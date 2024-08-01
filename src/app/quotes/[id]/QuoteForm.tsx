@@ -14,7 +14,7 @@ import { ChevronLeftIcon, DownloadIcon } from "@radix-ui/react-icons"
 
 import { useRouter } from 'next/navigation'
 import { useQuotesContext } from '../context/QuotesContext'
-import { getQuote, getQuoteItems, updateQuote, deleteQuoteItem, updateQuoteItem } from "@/services/quotes"
+import { getQuote, getQuoteItems, updateQuote, deleteQuoteItem, updateQuoteItem, createQuoteItem } from "@/services/quotes"
 import { Quote, quoteStatus, QuoteItem } from "@/utils/types/quotes"
 import { DatePicker } from "../components/date-picker"
 import { QuoteItemList } from "../components/quote-item-list"
@@ -47,6 +47,7 @@ export default function QuoteForm({ quoteId }: { quoteId: string }) {
   
   const [taintedItems, setTaintedItems] = useState<Set<number>>(new Set());
   const [editedItems, setEditedItems] = useState<Map<number, number>>(new Map());
+  const [createdItems, setCreatedItems] = useState<QuoteItem[]>([]);
 
   const [isChanged, setIsChanged] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -91,8 +92,16 @@ export default function QuoteForm({ quoteId }: { quoteId: string }) {
   }, [quoteId, fetchQuoteItems])
 
   useEffect(() => {
-    setIsChanged(JSON.stringify(quote) !== JSON.stringify(formData) || taintedItems.size > 0 || editedItems.size > 0);
-  }, [quote, formData, taintedItems, editedItems]);
+    setIsChanged(JSON.stringify(quote) !== JSON.stringify(formData) || taintedItems.size > 0 || editedItems.size > 0 || createdItems.length > 0);
+  }, [quote, formData, taintedItems, editedItems, createdItems]);
+
+  useEffect(() => {
+    if (createdItems.length > 0 || taintedItems.size > 0 || editedItems.size > 0) {
+      setShouldReloadItems(true);
+    } else {
+      setShouldReloadItems(false);
+    }
+  }, [taintedItems, editedItems, createdItems]);
 
   const validateForm = useCallback(() => {
     const newErrors: FormErrors = {}
@@ -180,10 +189,8 @@ export default function QuoteForm({ quoteId }: { quoteId: string }) {
       const newSet = new Set(prev);
       if (newSet.has(itemId)) {
         newSet.delete(itemId);
-        setShouldReloadItems(false);
       } else {
         newSet.add(itemId);
-        setShouldReloadItems(true);
       }
       return newSet;
     });
@@ -200,13 +207,32 @@ export default function QuoteForm({ quoteId }: { quoteId: string }) {
       const newMap = new Map(prev);
       if (quantity !== quoteItems?.find(item => item.id === itemId)?.quantity) {
         newMap.set(itemId, quantity);
-        setShouldReloadItems(true);
       } else {
         newMap.delete(itemId);
-        setShouldReloadItems(false);
       }
       return newMap;
     });
+  };
+
+  const handleItemCreate = (newItems: QuoteItem[]) => {
+    setCreatedItems(prevItems => {
+      const updatedItems = [...prevItems];
+      newItems.forEach(newItem => {
+        const index = updatedItems.findIndex(item => item.id === newItem.id);
+        if (index !== -1) {
+          // Update existing created item
+          updatedItems[index] = newItem;
+        } else {
+          // Add new created item
+          updatedItems.push(newItem);
+        }
+      });
+      return updatedItems;
+    });
+  };
+
+  const handleItemRemove = (itemId: number) => {
+    setCreatedItems(prev => prev.filter(item => item.id !== itemId));
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -237,10 +263,15 @@ export default function QuoteForm({ quoteId }: { quoteId: string }) {
         updatePromises.push(updateQuoteItem(parseInt(quoteId), itemId, quantity));
       });
 
+      createdItems.forEach(item => {
+        updatePromises.push(createQuoteItem(parseInt(quoteId), item.product_id, item.quantity));
+      });
+
       await Promise.all(updatePromises);
 
       setTaintedItems(new Set());
       setEditedItems(new Map());
+      setCreatedItems([]);
 
       if (shouldReloadItems) {
         await fetchQuoteItems();
@@ -437,19 +468,19 @@ export default function QuoteForm({ quoteId }: { quoteId: string }) {
                 <Skeleton className="h-12 w-full" />
                 <Skeleton className="h-12 w-full" />
               </div>
-            ) : quoteItems && quoteItems.length > 0 ? (
-              <QuoteItemList 
-                items={quoteItems}
+            ) : <QuoteItemList 
+                items={quoteItems ?? []}
                 taintedItems={taintedItems}
                 editedItems={editedItems}
+                createdItems={createdItems}
                 onItemTaint={handleItemTaint}
                 onItemEdit={handleItemEdit}
+                onItemCreate={handleItemCreate}
+                onItemRemove={handleItemRemove}
                 isLoading={isQuoteItemsLoading}
                 quoteId={quote.id}
               />
-            ) : (
-              <p className="text-sm text-gray-500">Aucun produit dans ce devis</p>
-            )}
+            }
           </div>
           <div className="mb-4">
             <Label className="text-base">Date de création du devis</Label>
