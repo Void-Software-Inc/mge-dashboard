@@ -2,6 +2,7 @@
 import React, { useMemo, useState } from 'react';
 import Image from 'next/image';
 import { Product } from "@/utils/types/products";
+import { QuoteItem } from "@/utils/types/quotes";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
@@ -11,16 +12,19 @@ import { Search } from 'lucide-react';
 
 interface ProductSimplifiedDataTableProps {
     products: Product[];
+    existingItems: QuoteItem[];
     isLoading: boolean;
     onProductsSelected: (selectedProducts: { productId: number; quantity: number }[]) => void;
 }
 
-export function ProductSimplifiedDataTable({ products, isLoading, onProductsSelected }: ProductSimplifiedDataTableProps) {
+export function ProductSimplifiedDataTable({ products, existingItems, isLoading, onProductsSelected }: ProductSimplifiedDataTableProps) {
     const [selectedProducts, setSelectedProducts] = useState<Set<number>>(new Set());
     const [quantities, setQuantities] = useState<Record<number, number>>({});
     const [currentPage, setCurrentPage] = useState(1);
     const [searchTerm, setSearchTerm] = useState('');
     const itemsPerPage = 3;
+
+    const existingProductIds = useMemo(() => new Set(existingItems.map(item => item.product_id)), [existingItems]);
 
 
     const filteredProducts = useMemo(() => {
@@ -30,6 +34,7 @@ export function ProductSimplifiedDataTable({ products, isLoading, onProductsSele
     }, [products, searchTerm]);
 
     const handleProductSelect = (productId: number) => {
+        if (existingProductIds.has(productId)) return;
         setSelectedProducts(prev => {
             const newSet = new Set(prev);
             if (newSet.has(productId)) {
@@ -42,6 +47,7 @@ export function ProductSimplifiedDataTable({ products, isLoading, onProductsSele
     };
 
     const handleQuantityChange = (productId: number, value: string) => {
+        if (existingProductIds.has(productId)) return;
         const numValue = parseInt(value, 10);
         if (!isNaN(numValue) && numValue >= 0) {
             setQuantities(prev => ({ ...prev, [productId]: numValue }));
@@ -97,37 +103,46 @@ export function ProductSimplifiedDataTable({ products, isLoading, onProductsSele
                     </TableHeader>
                     <TableBody>
                         {currentProducts.map((product) => {
+                            const isExisting = existingProductIds.has(product.id);
                             return (
                                 <TableRow 
                                     key={product.id} 
-                                    className={`h-16`}
+                                    className={`h-16 ${isExisting ? 'bg-gray-100' : ''}`}
                                 >
                                     <TableCell>
-                                        <Checkbox
-                                            checked={selectedProducts.has(product.id)}
-                                            onCheckedChange={() => handleProductSelect(product.id)}
-                                        />
+                                        {isExisting ? (
+                                            <span className="text-sm text-gray-500 whitespace-nowrap overflow-hidden text-ellipsis">Déjà ajouté</span>
+                                        ) : (
+                                            <Checkbox
+                                                checked={selectedProducts.has(product.id)}
+                                                onCheckedChange={() => handleProductSelect(product.id)}
+                                            />
+                                        )}
                                     </TableCell>
                                     <TableCell>
                                         {product.image_url && (
                                             <Image src={product.image_url} alt={product.name} width={45} height={45} />
                                         )}
                                     </TableCell>
-                                    <TableCell className={`whitespace-nowrap overflow-hidden text-ellipsis`}>
+                                    <TableCell className={`whitespace-nowrap overflow-hidden text-ellipsis ${isExisting ? 'text-gray-500' : ''}`}>
                                         {product.name}
                                     </TableCell>
-                                    <TableCell>
+                                    <TableCell className={isExisting ? 'text-gray-500' : ''}>
                                         {`${product.price} €`}
                                     </TableCell>
                                     <TableCell>
-                                        <Input
-                                            type="number"
-                                            value={quantities[product.id] || ''}
-                                            onChange={(e) => handleQuantityChange(product.id, e.target.value)}
-                                            className="w-20 text-base"
-                                            min="0"
-                                            disabled={!selectedProducts.has(product.id)}
-                                        />
+                                        {isExisting ? (
+                                            <span className="text-sm text-gray-500">-</span>
+                                        ) : (
+                                            <Input
+                                                type="number"
+                                                value={quantities[product.id] || ''}
+                                                onChange={(e) => handleQuantityChange(product.id, e.target.value)}
+                                                className="w-20 text-base"
+                                                min="0"
+                                                disabled={!selectedProducts.has(product.id)}
+                                            />
+                                        )}
                                     </TableCell>
                                 </TableRow>
                             );

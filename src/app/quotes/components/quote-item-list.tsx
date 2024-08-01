@@ -1,5 +1,5 @@
 'use client'
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import Image from 'next/image';
 import { QuoteItem } from "@/utils/types/quotes";
 import { Product } from "@/utils/types/products";
@@ -17,41 +17,72 @@ interface QuoteItemListProps {
     items: QuoteItem[];
     taintedItems: Set<number>;
     editedItems: Map<number, number>;
+    createdItems: QuoteItem[];
     onItemTaint: (itemId: number) => void;
     onItemEdit: (itemId: number, quantity: number) => void;
+    onItemCreate: (items: QuoteItem[]) => void;
+    onItemRemove: (itemId: number) => void;
     isLoading: boolean;
     quoteId: number;
 }
 
-export function QuoteItemList({ items, taintedItems, editedItems, onItemTaint, onItemEdit, isLoading, quoteId }: QuoteItemListProps) {
+export function QuoteItemList({ 
+  items, 
+  taintedItems, 
+  editedItems,
+  createdItems,
+  onItemTaint, 
+  onItemEdit, 
+  onItemCreate,
+  onItemRemove,
+  isLoading, 
+  quoteId 
+}: QuoteItemListProps) {
   const [productDetails, setProductDetails] = useState<Record<number, Product>>({});
   const [editingId, setEditingId] = useState<number | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [neededProducts, setNeededProducts] = useState<Product[]>([]);
   const [isProductsLoading, setIsProductsLoading] = useState(false);
+
+  const allItems = useMemo(() => [...items, ...createdItems], [items, createdItems]);
+  
   const itemsPerPage = 10;
   
 
-  useEffect(() => {
-    const fetchProductDetails = async () => {
-      const details: Record<number, Product> = {};
-      for (const item of items) {
+  const fetchProductDetails = useCallback(async (productIds: number[]) => {
+    const newDetails: Record<number, Product> = { ...productDetails };
+    let hasNewDetails = false;
+
+    for (const productId of productIds) {
+      if (!newDetails[productId]) {
         try {
-          const product = await getProduct(item.product_id);
-          details[item.product_id] = product;
+          const product = await getProduct(productId);
+          newDetails[productId] = product;
+          hasNewDetails = true;
         } catch (error) {
-          console.error(`Failed to fetch details for product ${item.product_id}:`, error);
+          console.error(`Failed to fetch details for product ${productId}:`, error);
         }
       }
-      setProductDetails(details);
-    };
+    }
 
-    fetchProductDetails();
-  }, [items]);
+    if (hasNewDetails) {
+      setProductDetails(newDetails);
+    }
+  }, [productDetails]);
+
+  useEffect(() => {
+    const missingProductIds = allItems
+      .map(item => item.product_id)
+      .filter(id => !productDetails[id]);
+
+    if (missingProductIds.length > 0) {
+      fetchProductDetails(missingProductIds);
+    }
+  }, [allItems, productDetails, fetchProductDetails]);
 
   const fetchNeededProducts = useCallback(async () => {
-    if (neededProducts.length > 0) return; // Don't fetch if we already have products
+    if (neededProducts.length > 0) return;
     setIsProductsLoading(true);
     try {
       const products = await getAvailableProducts(quoteId);
@@ -61,7 +92,7 @@ export function QuoteItemList({ items, taintedItems, editedItems, onItemTaint, o
     } finally {
       setIsProductsLoading(false);
     }
-  }, [neededProducts]);
+  }, [neededProducts, quoteId]);
 
   const handleDrawerOpen = useCallback(() => {
     setIsDrawerOpen(true);
@@ -82,8 +113,27 @@ export function QuoteItemList({ items, taintedItems, editedItems, onItemTaint, o
   const handleQuantityChange = (itemId: number, value: string) => {
     const numValue = parseInt(value, 10);
     if (!isNaN(numValue) && numValue >= 0) {
-      onItemEdit(itemId, numValue);
+      const isCreatedItem = createdItems.some(item => item.id === itemId);
+      if (isCreatedItem) {
+        // Update the quantity of the existing created item
+        onItemCreate(createdItems.map(item => 
+          item.id === itemId ? { ...item, quantity: numValue } : item
+        ));
+      } else {
+        onItemEdit(itemId, numValue);
+      }
     }
+  };
+
+  const handleProductsSelected = (selectedProducts: { productId: number; quantity: number }[]) => {
+    const newItems = selectedProducts.map(product => ({
+      id: Math.random(), // Temporary ID for new items
+      product_id: product.productId,
+      quantity: product.quantity,
+      quote_id: quoteId,
+    }));
+    onItemCreate(newItems);
+    setIsDrawerOpen(false);
   };
 
   const handleEditEnd = () => {
@@ -109,28 +159,36 @@ export function QuoteItemList({ items, taintedItems, editedItems, onItemTaint, o
   return (
     <div>
       <div className="overflow-x-auto">
-        <Table className="w-full">
-          <TableHeader>
-            <TableRow className="h-12">
-              <TableHead className="w-1/6 whitespace-nowrap">Image</TableHead>
-              <TableHead className="w-1/3 whitespace-nowrap">Nom</TableHead>
-              <TableHead className="w-1/6 whitespace-nowrap">Quantité</TableHead>
-              <TableHead className="w-1/6 whitespace-nowrap">Prix unitaire</TableHead>
-              <TableHead className="w-1/6 whitespace-nowrap">Total</TableHead>
-              <TableHead className="w-1/6 whitespace-nowrap">Actions</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {currentItems.map((item) => {
+        {allItems.length > 0 ? (
+          <Table className="w-full">
+            <TableHeader>
+              <TableRow className="h-12">
+                <TableHead className="w-1/6 whitespace-nowrap">Image</TableHead>
+                <TableHead className="w-1/3 whitespace-nowrap">Nom</TableHead>
+                <TableHead className="w-1/6 whitespace-nowrap">Quantité</TableHead>
+                <TableHead className="w-1/6 whitespace-nowrap">Prix unitaire</TableHead>
+                <TableHead className="w-1/6 whitespace-nowrap">Total</TableHead>
+                <TableHead className="w-1/6 whitespace-nowrap">Actions</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+            {allItems.map((item) => {
               const product = productDetails[item.product_id];
               const isTainted = taintedItems.has(item.id);
               const isEdited = editedItems.has(item.id);
-              const currentQuantity = editedItems.get(item.id) ?? item.quantity;
+              const isCreated = createdItems.some(createdItem => createdItem.id === item.id);
+              const currentQuantity = isCreated 
+                ? item.quantity 
+                : (editedItems.get(item.id) ?? item.quantity);
+
               return (
                 <TableRow 
                   key={item.id} 
-                  className={`h-16 ${isTainted ? 'bg-red-50 hover:bg-red-50' : 
-                                     isEdited ? 'bg-blue-50 hover:bg-blue-50' : ''}`}
+                  className={`h-16 ${
+                    isTainted ? 'bg-red-50 hover:bg-red-50' : 
+                    isCreated ? 'bg-green-50 hover:bg-green-50' :
+                    isEdited ? 'bg-blue-50 hover:bg-blue-50' : ''
+                  }`}
                 >
                   <TableCell className="whitespace-nowrap">
                     {product && product.image_url && (
@@ -177,10 +235,14 @@ export function QuoteItemList({ items, taintedItems, editedItems, onItemTaint, o
                       onClick={(e) => {
                         e.preventDefault();
                         e.stopPropagation();
-                        onItemTaint(item.id);
+                        if (isCreated) {
+                          onItemRemove(item.id);
+                        } else {
+                          onItemTaint(item.id);
+                        }
                         handleEditEnd();
                       }}
-                      className={isTainted ? 'text-red-500 hover:text-red-500 hover:bg-red-50' : 'text-black hover:text-red-500 hover:bg-gray-50'}
+                      className={isTainted || isCreated ? 'text-red-500 hover:text-red-500 hover:bg-red-50' : 'text-black hover:text-red-500 hover:bg-gray-50'}
                     >
                       <TrashIcon className="h-4 w-4" />
                     </Button>
@@ -188,25 +250,34 @@ export function QuoteItemList({ items, taintedItems, editedItems, onItemTaint, o
                 </TableRow>
               );
             })}
-          </TableBody>
-        </Table>
+            </TableBody>
+          </Table>
+        ) : (
+          <div className="justify-center text-center text-sm text-gray-400 pt-8">
+            Aucun produit ajouté au devis.
+          </div>
+        )}
       </div>
       <div className="flex items-center justify-between mt-4">
-        <Button 
-          onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
-          disabled={currentPage === 1}
-          variant='outline'
-        >
-          Précédent
-        </Button>
-        <span className='text-sm text-gray-500'>Page {currentPage} sur {totalPages}</span>
-        <Button 
-          onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
-          disabled={currentPage === totalPages}
-          variant='outline'
-        >
-          Suivant
-        </Button>
+        {items.length > 0 && (
+          <>
+            <Button 
+              onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+              disabled={currentPage === 1}
+              variant='outline'
+            >
+              Précédent
+            </Button>
+            <span className='text-sm text-gray-500'>Page {currentPage} sur {totalPages}</span>
+            <Button 
+              onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+              disabled={currentPage === totalPages}
+              variant='outline'
+            >
+              Suivant
+            </Button>
+          </>
+        )}
       </div>
       <div className="mb-4 mt-4">
         <Drawer open={isDrawerOpen} onOpenChange={setIsDrawerOpen}>
@@ -229,11 +300,9 @@ export function QuoteItemList({ items, taintedItems, editedItems, onItemTaint, o
             <div className="p-4 pb-0 overflow-x-auto">
               <ProductSimplifiedDataTable 
                 products={neededProducts}
+                existingItems={[...items, ...createdItems]}
                 isLoading={isProductsLoading}
-                onProductsSelected={(selectedProducts) => {
-                  console.log(selectedProducts);
-                  setIsDrawerOpen(false);
-                }} 
+                onProductsSelected={handleProductsSelected} 
               />
             </div>
             <DrawerFooter>
