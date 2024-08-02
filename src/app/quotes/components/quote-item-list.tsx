@@ -24,6 +24,7 @@ interface QuoteItemListProps {
     onItemRemove: (itemId: number) => void;
     isLoading: boolean;
     quoteId: number;
+    onTotalCostChange: (totalCost: number) => void;
 }
 
 export function QuoteItemList({ 
@@ -36,7 +37,8 @@ export function QuoteItemList({
   onItemCreate,
   onItemRemove,
   isLoading, 
-  quoteId 
+  quoteId,
+  onTotalCostChange
 }: QuoteItemListProps) {
   const [productDetails, setProductDetails] = useState<Record<number, Product>>({});
   const [editingId, setEditingId] = useState<number | null>(null);
@@ -104,6 +106,23 @@ export function QuoteItemList({
     return product ? item.quantity * product.price : 0;
   };
 
+  const calculateTotalCost = useCallback(() => {
+    const totalCost = allItems.reduce((sum, item) => {
+      if (taintedItems.has(item.id)) {
+        return sum;
+      }
+      const product = productDetails[item.product_id];
+      const quantity = editedItems.get(item.id) ?? item.quantity;
+      return sum + (product ? quantity * product.price : 0);
+    }, 0);
+    return totalCost;
+  }, [allItems, productDetails, taintedItems, editedItems]);
+
+  useEffect(() => {
+    const totalCost = calculateTotalCost();
+    onTotalCostChange(totalCost); 
+  }, [calculateTotalCost, onTotalCostChange]);
+
   const handleEditStart = (itemId: number) => {
     if (!taintedItems.has(itemId)) {
       setEditingId(itemId);
@@ -140,11 +159,7 @@ export function QuoteItemList({
     setEditingId(null);
   };
 
-  const indexOfLastItem = currentPage * itemsPerPage;
-  const indexOfFirstItem = indexOfLastItem - itemsPerPage;
-  const currentItems = items.slice(indexOfFirstItem, indexOfLastItem);
-
-  const totalPages = Math.ceil(items.length / itemsPerPage);
+  const totalPages = Math.ceil(allItems.length / itemsPerPage);
 
   if (isLoading) {
     return (
@@ -259,7 +274,7 @@ export function QuoteItemList({
         )}
       </div>
       <div className="flex items-center justify-between mt-4">
-        {items.length > 0 && (
+        {allItems.length > 0 && (
           <>
             <Button 
               onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
