@@ -63,15 +63,16 @@ export async function getQuoteItems(id: number): Promise<QuoteItem[]> {
   }
 }
 
-export async function createQuote(quoteData: Partial<Quote>, quoteItems?: { productId: number; quantity: number }[]): Promise<{ quote: Quote; quoteItems?: QuoteItem[] }> {
+export async function createQuote(quoteData: Partial<Quote>, quoteItems?: QuoteItem[]): Promise<{ quote: Quote; quoteItems?: QuoteItem[] }> {
   try {
-    const url = `${API_URL}/quotes/create-with-items`;
+    const url = `${API_URL}/quotes/create`;
+    const cleanedQuoteItems = quoteItems?.map(({ id, ...item }) => item);
     const response = await fetch(url, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({ quoteData, quoteItems }),
+      body: JSON.stringify({ quoteData, quoteItems: cleanedQuoteItems }),
     });
 
     if (!response.ok) {
