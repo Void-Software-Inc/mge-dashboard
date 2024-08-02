@@ -63,6 +63,29 @@ export async function getQuoteItems(id: number): Promise<QuoteItem[]> {
   }
 }
 
+export async function createQuote(quoteData: Partial<Quote>, quoteItems?: { productId: number; quantity: number }[]): Promise<{ quote: Quote; quoteItems?: QuoteItem[] }> {
+  try {
+    const url = `${API_URL}/quotes/create-with-items`;
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ quoteData, quoteItems }),
+    });
+
+    if (!response.ok) {
+      throw new Error('Failed to create quote');
+    }
+
+    const result = await response.json();
+    return result;
+  } catch (error) {
+    console.error('Error creating quote:', error);
+    throw error;
+  }
+}
+
 export async function updateQuote(formData: FormData): Promise<Quote> {
   try {
     const url = `${API_URL}/quotes/update`;
