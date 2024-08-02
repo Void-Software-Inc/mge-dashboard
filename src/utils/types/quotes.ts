@@ -9,6 +9,8 @@ export type Quote = {
   status: string;
   total_cost: number;
   is_traiteur: boolean;
+  traiteur_price: number;
+  other_expenses: number;
   created_at: string;
   last_update: string;
   description: string;

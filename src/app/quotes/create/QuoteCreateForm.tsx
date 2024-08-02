@@ -1,21 +1,20 @@
-'use client'
-
-import { useCallback, useEffect, useState } from 'react'
-import { useRouter } from 'next/navigation'
-import { Quote, QuoteItem, quoteStatus } from "@/utils/types/quotes"
-import { Input } from "@/components/ui/input"
-import { Textarea } from "@/components/ui/textarea"
-import { Label } from "@/components/ui/label"
-import { Button } from "@/components/ui/button"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Switch } from "@/components/ui/switch"
-import { Toaster, toast } from 'sonner'
-import { ChevronLeftIcon, PlusIcon } from "@radix-ui/react-icons"
-import { DatePicker } from "../components/date-picker"
-import { QuoteItemList } from "../components/quote-item-list"
-import { createQuote } from "@/services/quotes"
-import { useQuotesContext } from '../context/QuotesContext'
-import { format } from 'date-fns'
+'use client';
+import { useCallback, useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { Quote, QuoteItem, quoteStatus } from "@/utils/types/quotes";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
+import { Button } from "@/components/ui/button";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Switch } from "@/components/ui/switch";
+import { Toaster, toast } from 'sonner';
+import { ChevronLeftIcon, PlusIcon } from "@radix-ui/react-icons";
+import { DatePicker } from "../components/date-picker";
+import { QuoteItemList } from "../components/quote-item-list";
+import { createQuote } from "@/services/quotes";
+import { useQuotesContext } from '../context/QuotesContext';
+import { format } from 'date-fns';
 
 interface FormErrors {
   first_name?: string;
@@ -26,6 +25,8 @@ interface FormErrors {
   event_end_date?: string;
   status?: string;
   total_cost?: string;
+  traiteur_price?: string;
+  other_expenses?: string;
 }
 
 interface TouchedFields {
@@ -37,6 +38,8 @@ interface TouchedFields {
   event_end_date: boolean;
   status: boolean;
   total_cost: boolean;
+  traiteur_price: boolean;
+  other_expenses: boolean;
 }
 
 const initialQuote: Partial<Quote> = {
@@ -50,18 +53,21 @@ const initialQuote: Partial<Quote> = {
   total_cost: 0,
   is_traiteur: false,
   description: '',
-}
+  traiteur_price: 0,
+  other_expenses: 0,
+};
 
 export default function QuoteCreateForm() {
-  const router = useRouter()
-  const { setShouldRefetch } = useQuotesContext()
+  const router = useRouter();
+  const { setShouldRefetch } = useQuotesContext();
 
-  const [formData, setFormData] = useState(initialQuote)
-  const [createdItems, setCreatedItems] = useState<QuoteItem[]>([])
-  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [formData, setFormData] = useState(initialQuote);
+  const [createdItems, setCreatedItems] = useState<QuoteItem[]>([]);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [totalCostFromItems, setTotalCostFromItems] = useState(0);
 
-  const [errors, setErrors] = useState<FormErrors>({})
-  const [isFormValid, setIsFormValid] = useState(false)
+  const [errors, setErrors] = useState<FormErrors>({});
+  const [isFormValid, setIsFormValid] = useState(false);
   const [touched, setTouched] = useState<TouchedFields>({
     first_name: false,
     last_name: false,
@@ -71,50 +77,51 @@ export default function QuoteCreateForm() {
     event_end_date: false,
     status: false,
     total_cost: false,
-  })
+    traiteur_price: false,
+    other_expenses: false,
+  });
 
-  const handleGoBack = useCallback(() => router.push('/quotes'), [router])
+  const handleGoBack = useCallback(() => router.push('/quotes'), [router]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-    const { id, value } = e.target
-    if (id === 'total_cost') {
-      // Only allow numeric input for total_cost
-      if (!/^\d*$/.test(value)) return
-      // Convert to number or null if empty
-      const numValue = value === '' ? null : parseInt(value, 10)
-      // @ts-ignore
-      setFormData(prev => ({ ...prev, [id]: numValue }))
-    } else {
-      setFormData(prev => ({ ...prev, [id]: value }))
-    }
-    setTouched(prev => ({ ...prev, [id]: true }))
-  }
+    const { id, value } = e.target;
+    const numValue = value === '' ? 0 : parseInt(value, 10);
+    setFormData(prev => {
+      const updatedFormData = { ...prev, [id]: id === 'traiteur_price' || id === 'other_expenses' ? numValue : value };
+      return updatedFormData;
+    });
+    setTouched(prev => ({ ...prev, [id]: true }));
+  };
 
   const handleSelectChange = (value: string, field: string) => {
-    setFormData(prev => ({ ...prev, [field]: value }))
-    setTouched(prev => ({ ...prev, [field]: true }))
-  }
+    setFormData(prev => ({ ...prev, [field]: value }));
+    setTouched(prev => ({ ...prev, [field]: true }));
+  };
 
   const handleStartDateChange = (date: Date | undefined) => {
     setFormData(prev => ({ 
       ...prev, 
       event_start_date: date ? format(date, 'yyyy-MM-dd') : '' 
-    }))
-    setTouched(prev => ({ ...prev, event_start_date: true }))
-  }
+    }));
+    setTouched(prev => ({ ...prev, event_start_date: true }));
+  };
 
   const handleEndDateChange = (date: Date | undefined) => {
     setFormData(prev => ({ 
       ...prev, 
       event_end_date: date ? format(date, 'yyyy-MM-dd') : '' 
-    }))
-    setTouched(prev => ({ ...prev, event_end_date: true }))
-  }
+    }));
+    setTouched(prev => ({ ...prev, event_end_date: true }));
+  };
 
   const handleSwitchChange = (checked: boolean) => {
-    setFormData(prev => ({ ...prev, is_traiteur: checked }))
-    setTouched(prev => ({ ...prev, is_traiteur: true }))
-  }
+    setFormData(prev => ({ 
+      ...prev, 
+      is_traiteur: checked,
+      traiteur_price: checked ? formData.traiteur_price : 0
+    }));
+    setTouched(prev => ({ ...prev, is_traiteur: true }));
+  };
 
   const handleItemCreate = (newItems: QuoteItem[]) => {
     setCreatedItems(prevItems => {
@@ -129,77 +136,96 @@ export default function QuoteCreateForm() {
       });
       return updatedItems;
     });
-  }
+  };
 
   const handleItemRemove = (itemId: number) => {
-    setCreatedItems(prev => prev.filter(item => item.id !== itemId))
-  }
+    setCreatedItems(prev => prev.filter(item => item.id !== itemId));
+  };
 
-  const validateForm = useCallback(() => {
-    const newErrors: FormErrors = {}
-    let isValid = false
-
-    if (!formData.first_name && touched.first_name) {
-      newErrors.first_name = "Le prénom est obligatoire"
-      isValid = false
-    }
-    if (!formData.last_name && touched.last_name) {
-      newErrors.last_name = "Le nom est obligatoire"
-      isValid = false
-    }
-    if (!formData.phone_number && touched.phone_number) {
-      newErrors.phone_number = "Le numéro de téléphone est obligatoire"
-      isValid = false
-    }
-    if (!formData.email && touched.email) {
-      newErrors.email = "L'email est obligatoire"
-      isValid = false
-    }
-    if (!formData.event_start_date && touched.event_start_date) {
-      newErrors.event_start_date = "La date de début de l'événement est obligatoire"
-      isValid = false
-    }
-    if (!formData.event_end_date && touched.event_end_date) {
-      newErrors.event_end_date = "La date de fin de l'événement est obligatoire"
-      isValid = false
-    }
-    if (!formData.status && touched.status) {
-      newErrors.status = "Le statut est obligatoire"
-      isValid = false
-    }
-    if (formData.total_cost === null || formData.total_cost === undefined || formData.total_cost < 0 && touched.total_cost) {
-      newErrors.total_cost = "Le prix total est invalide"
-      isValid = false
-    }
-    if(formData.first_name && formData.last_name && formData.phone_number && formData.email && formData.event_start_date && formData.event_end_date && formData.status && formData.total_cost) {
-      isValid = true
-    }
-    setErrors(newErrors)
-    setIsFormValid(isValid)
-    return isValid
-  }, [formData])
+  const handleTotalCostChange = useCallback((totalCost: number) => {
+    setTotalCostFromItems(totalCost);
+  }, []);
 
   useEffect(() => {
-    validateForm()
-  }, [formData, validateForm])
+    setFormData(prev => ({
+      ...prev,
+      total_cost: totalCostFromItems + (prev.traiteur_price ?? 0) + (prev.other_expenses ?? 0)
+    }));
+  }, [totalCostFromItems, formData.traiteur_price, formData.other_expenses]);
+
+  const validateForm = useCallback(() => {
+    const newErrors: FormErrors = {};
+    let isValid = false;
+
+    if (!formData.first_name && touched.first_name) {
+      newErrors.first_name = "Le prénom est obligatoire";
+      isValid = false;
+    }
+    if (!formData.last_name && touched.last_name) {
+      newErrors.last_name = "Le nom est obligatoire";
+      isValid = false;
+    }
+    if (!formData.phone_number && touched.phone_number) {
+      newErrors.phone_number = "Le numéro de téléphone est obligatoire";
+      isValid = false;
+    }
+    if (!formData.email && touched.email) {
+      newErrors.email = "L'email est obligatoire";
+      isValid = false;
+    }
+    if (!formData.event_start_date && touched.event_start_date) {
+      newErrors.event_start_date = "La date de début de l'événement est obligatoire";
+      isValid = false;
+    }
+    if (!formData.event_end_date && touched.event_end_date) {
+      newErrors.event_end_date = "La date de fin de l'événement est obligatoire";
+      isValid = false;
+    }
+    if (!formData.status && touched.status) {
+      newErrors.status = "Le statut est obligatoire";
+      isValid = false;
+    }
+    if (formData.total_cost === null || formData.total_cost === undefined || formData.total_cost < 0 && touched.total_cost) {
+      newErrors.total_cost = "Le prix total est invalide";
+      isValid = false;
+    }
+    if (formData.traiteur_price === null || formData.traiteur_price === undefined || formData.traiteur_price < 0 && touched.traiteur_price) {
+      newErrors.traiteur_price = "Le prix du traiteur est invalide";
+      isValid = false;
+    }
+    if (formData.other_expenses === null || formData.other_expenses === undefined || formData.other_expenses < 0 && touched.other_expenses) {
+      newErrors.other_expenses = "Les frais additionnels sont invalides";
+      isValid = false;
+    }
+    if(formData.first_name && formData.last_name && formData.phone_number && formData.email && formData.event_start_date && formData.event_end_date && formData.status && formData.total_cost) {
+      isValid = true;
+    }
+    setErrors(newErrors);
+    setIsFormValid(isValid);
+    return isValid;
+  }, [formData, touched]);
+
+  useEffect(() => {
+    validateForm();
+  }, [formData, validateForm]);
 
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    if (!validateForm()) return
+    e.preventDefault();
+    if (!validateForm()) return;
 
-    setIsSubmitting(true)
+    setIsSubmitting(true);
     try {
-      const result = await createQuote(formData as Quote, createdItems)
-      setShouldRefetch(true)
-      toast.success('Devis créé avec succès')
-      router.push(`/quotes/${result.quote.id}`)
+      const result = await createQuote(formData as Quote, createdItems);
+      setShouldRefetch(true);
+      toast.success('Devis créé avec succès');
+      router.push(`/quotes/${result.quote.id}`);
     } catch (error) {
-      console.error('Error creating quote:', error)
-      toast.error('Erreur lors de la création du devis')
+      console.error('Error creating quote:', error);
+      toast.error('Erreur lors de la création du devis');
     } finally {
-      setIsSubmitting(false)
+      setIsSubmitting(false);
     }
-  }
+  };
 
   return (
     <>
@@ -311,17 +337,6 @@ export default function QuoteCreateForm() {
             />
             {errors.event_end_date && <p className="text-red-500 text-sm mt-1">{errors.event_end_date}</p>}
           </div>
-          <div className="mb-4">
-            <Label htmlFor="total_cost" className="text-base">Prix total</Label>
-            <Input 
-              id="total_cost" 
-              type="number"
-              value={formData.total_cost ?? ''} 
-              onChange={handleInputChange} 
-              className={`w-full text-base ${errors.total_cost ? 'border-red-500' : ''}`} 
-            />
-            {errors.total_cost && <p className="text-red-500 text-sm mt-1">{errors.total_cost}</p>}
-          </div>
           <div className="mb-4 flex items-center space-x-2">
             <Switch
               id="is_traiteur"
@@ -329,6 +344,39 @@ export default function QuoteCreateForm() {
               onCheckedChange={handleSwitchChange}
             />
             <Label htmlFor="is_traiteur" className="text-base">Service traiteur</Label>
+          </div>
+          <div className="mb-4">
+            <Label htmlFor="traiteur_price" className="text-base">Prix traiteur</Label>
+            <Input 
+              id="traiteur_price" 
+              type="number"
+              value={formData.traiteur_price ?? ''} 
+              onChange={handleInputChange} 
+              className={`w-full text-base ${errors.traiteur_price ? 'border-red-500' : ''}`} 
+              disabled={!formData.is_traiteur}
+            />
+            {errors.traiteur_price && <p className="text-red-500 text-sm mt-1">{errors.traiteur_price}</p>}
+          </div>
+          <div className="mb-4">
+            <Label htmlFor="other_expenses" className="text-base">Autres charges</Label>
+            <Input 
+              id="other_expenses" 
+              type="number"
+              value={formData.other_expenses ?? ''} 
+              onChange={handleInputChange} 
+              className={`w-full text-base ${errors.other_expenses ? 'border-red-500' : ''}`} 
+            />
+            {errors.other_expenses && <p className="text-red-500 text-sm mt-1">{errors.other_expenses}</p>}
+          </div>
+          <div className="mb-4">
+            <Label htmlFor="total_cost" className="text-base">Prix total</Label>
+            <Input 
+              id="total_cost" 
+              type="number"
+              value={formData.total_cost ?? ''} 
+              className="w-full text-base" 
+              disabled
+            />
           </div>
           <div className="mb-4">
             <Label htmlFor="description" className="text-base">Description</Label>
@@ -352,11 +400,12 @@ export default function QuoteCreateForm() {
               onItemRemove={handleItemRemove}
               isLoading={false}
               quoteId={0}
+              onTotalCostChange={handleTotalCostChange} // Pass the callback
             />
           </div>
         </div>
       </form>
       <Toaster />
     </>
-  )
+  );
 }

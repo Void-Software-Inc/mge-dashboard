@@ -30,6 +30,8 @@ interface FormErrors {
   status?: string;
   total_cost?: string;
   is_traiteur?: string;
+  traiteur_price?: string;
+  other_expenses?: string;
 }
 
 export default function QuoteForm({ quoteId }: { quoteId: string }) {
@@ -52,6 +54,7 @@ export default function QuoteForm({ quoteId }: { quoteId: string }) {
   const [isChanged, setIsChanged] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const { setShouldRefetch } = useQuotesContext()
+  const [totalCostFromItems, setTotalCostFromItems] = useState(0);
 
   const handleGoBack = useCallback(() => {
     router.push('/quotes')
@@ -135,9 +138,17 @@ export default function QuoteForm({ quoteId }: { quoteId: string }) {
       newErrors.status = "Le statut est obligatoire"
       isValid = false
     }
-    if (!formData?.total_cost) {
-      newErrors.total_cost = "Le prix total est invalide"
-      isValid = false
+    if (formData?.total_cost !== undefined && (formData.total_cost === null || formData.total_cost < 0)) {
+      newErrors.total_cost = "Le prix total est invalide";
+      isValid = false;
+    }
+    if (formData?.traiteur_price !== undefined && (formData.traiteur_price === null || formData.traiteur_price < 0)) {
+      newErrors.traiteur_price = "Le prix du traiteur est invalide";
+      isValid = false;
+    }
+    if (formData?.other_expenses !== undefined && (formData.other_expenses === null || formData.other_expenses < 0)) {
+      newErrors.other_expenses = "Les frais additionnels sont invalides";
+      isValid = false;
     }
 
     setErrors(newErrors)
@@ -151,7 +162,7 @@ export default function QuoteForm({ quoteId }: { quoteId: string }) {
   
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { id, value } = e.target
-    if (id === 'total_cost') {
+    if (id === 'traiteur_price' || id === 'other_expenses') {
       // Only allow numeric input for total_cost
       if (!/^\d*$/.test(value)) return
       // Convert to number or null if empty
@@ -168,8 +179,13 @@ export default function QuoteForm({ quoteId }: { quoteId: string }) {
   }
 
   const handleSwitchChange = (checked: boolean) => {
-    setFormData(prev => prev ? { ...prev, is_traiteur: checked } : null);
+    setFormData(prev => prev ? { 
+      ...prev, 
+      is_traiteur: checked, 
+      traiteur_price: checked ? prev.traiteur_price : 0 
+    } : null);
   };
+
   const handleStartDateChange = (date: Date | undefined) => {
     setFormData(prev => prev ? { 
       ...prev, 
@@ -234,6 +250,17 @@ export default function QuoteForm({ quoteId }: { quoteId: string }) {
   const handleItemRemove = (itemId: number) => {
     setCreatedItems(prev => prev.filter(item => item.id !== itemId));
   };
+
+  const handleTotalCostChange = useCallback((totalCost: number) => {
+    setTotalCostFromItems(totalCost);
+  }, []);
+
+  useEffect(() => {
+    setFormData(prev => prev ? ({
+      ...prev,
+      total_cost: totalCostFromItems + (prev.traiteur_price ?? 0) + (prev.other_expenses ?? 0)
+    }) : null);
+  }, [totalCostFromItems, formData?.traiteur_price, formData?.other_expenses]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -429,6 +456,37 @@ export default function QuoteForm({ quoteId }: { quoteId: string }) {
             />
             {errors.event_end_date && <p className="text-red-500 text-sm mt-1">{errors.event_end_date}</p>}
           </div>
+          <div className="mb-4 flex items-center space-x-2">
+            <Switch
+              id="is_traiteur"
+              checked={formData?.is_traiteur ?? false}
+              onCheckedChange={handleSwitchChange}
+            />
+            <Label htmlFor="is_traiteur" className="text-base">Service traiteur</Label>
+          </div>
+          <div className="mb-4">
+            <Label htmlFor="traiteur_price" className="text-base">Prix traiteur</Label>
+            <Input 
+              id="traiteur_price" 
+              type="number"
+              value={formData?.traiteur_price ?? ''} 
+              onChange={handleInputChange} 
+              className={`w-full text-base ${errors.traiteur_price ? 'border-red-500' : ''}`} 
+              disabled={!formData?.is_traiteur}
+            />
+            {errors.traiteur_price && <p className="text-red-500 text-sm mt-1">{errors.traiteur_price}</p>}
+          </div>
+          <div className="mb-4">
+            <Label htmlFor="other_expenses" className="text-base">Frais supplémentaires</Label>
+            <Input 
+              id="other_expenses" 
+              type="number"
+              value={formData?.other_expenses ?? ''} 
+              onChange={handleInputChange} 
+              className={`w-full text-base ${errors.other_expenses ? 'border-red-500' : ''}`} 
+            />
+            {errors.other_expenses && <p className="text-red-500 text-sm mt-1">{errors.other_expenses}</p>}
+          </div>
           <div className="mb-4">
             <Label htmlFor="price" className="text-base">Prix total</Label>
             <Input 
@@ -439,23 +497,10 @@ export default function QuoteForm({ quoteId }: { quoteId: string }) {
               value={formData?.total_cost ?? ''} 
               onChange={handleInputChange} 
               className={`w-full text-base ${errors.total_cost ? 'border-red-500' : ''}`} 
+              disabled
             />
             {errors.total_cost && <p className="text-red-500 text-sm mt-1">{errors.total_cost}</p>}
           </div>
-          <div className="mb-4 flex items-center justify-between">
-            <div className="flex flex-col">
-              <Label htmlFor="is_traiteur" className="text-base mb-1">Service traiteur</Label>
-              <p className="text-sm text-gray-500">
-                {formData?.is_traiteur ? 'Inclus' : 'Non inclus'}
-              </p>
-            </div>
-            <Switch
-              id="is_traiteur"
-              checked={formData?.is_traiteur ?? false}
-              onCheckedChange={handleSwitchChange}
-            />
-          </div>
-          {errors.is_traiteur && <p className="text-red-500 text-sm mt-1">{errors.is_traiteur}</p>}
           <div className="mb-4">
             <Label htmlFor="description" className="text-base">Description du devis</Label>
             <Textarea id="description" value={formData?.description ?? ''} onChange={handleInputChange} className="w-full text-base" />
@@ -479,6 +524,7 @@ export default function QuoteForm({ quoteId }: { quoteId: string }) {
                 onItemRemove={handleItemRemove}
                 isLoading={isQuoteItemsLoading}
                 quoteId={quote.id}
+                onTotalCostChange={handleTotalCostChange}
               />
             }
           </div>
