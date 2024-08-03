@@ -456,6 +456,33 @@ export default function QuoteForm({ quoteId }: { quoteId: string }) {
             />
             {errors.event_end_date && <p className="text-red-500 text-sm mt-1">{errors.event_end_date}</p>}
           </div>
+          <div className="mb-4">
+            <Label htmlFor="description" className="text-base">Description du devis</Label>
+            <Textarea id="description" value={formData?.description ?? ''} onChange={handleInputChange} className="w-full text-base" />
+          </div>
+          <div className="mb-4">
+            <Label className="text-base">Produits du devis</Label>
+            {isQuoteItemsLoading ? (
+              <div className="space-y-2">
+                <Skeleton className="h-12 w-full" />
+                <Skeleton className="h-12 w-full" />
+                <Skeleton className="h-12 w-full" />
+              </div>
+            ) : <QuoteItemList 
+                items={quoteItems ?? []}
+                taintedItems={taintedItems}
+                editedItems={editedItems}
+                createdItems={createdItems}
+                onItemTaint={handleItemTaint}
+                onItemEdit={handleItemEdit}
+                onItemCreate={handleItemCreate}
+                onItemRemove={handleItemRemove}
+                isLoading={isQuoteItemsLoading}
+                quoteId={quote.id}
+                onTotalCostChange={handleTotalCostChange}
+              />
+            }
+          </div>
           <div className="mb-4 flex items-center space-x-2">
             <Switch
               id="is_traiteur"
@@ -500,33 +527,6 @@ export default function QuoteForm({ quoteId }: { quoteId: string }) {
               disabled
             />
             {errors.total_cost && <p className="text-red-500 text-sm mt-1">{errors.total_cost}</p>}
-          </div>
-          <div className="mb-4">
-            <Label htmlFor="description" className="text-base">Description du devis</Label>
-            <Textarea id="description" value={formData?.description ?? ''} onChange={handleInputChange} className="w-full text-base" />
-          </div>
-          <div className="mb-4">
-            <Label className="text-base">Produits du devis</Label>
-            {isQuoteItemsLoading ? (
-              <div className="space-y-2">
-                <Skeleton className="h-12 w-full" />
-                <Skeleton className="h-12 w-full" />
-                <Skeleton className="h-12 w-full" />
-              </div>
-            ) : <QuoteItemList 
-                items={quoteItems ?? []}
-                taintedItems={taintedItems}
-                editedItems={editedItems}
-                createdItems={createdItems}
-                onItemTaint={handleItemTaint}
-                onItemEdit={handleItemEdit}
-                onItemCreate={handleItemCreate}
-                onItemRemove={handleItemRemove}
-                isLoading={isQuoteItemsLoading}
-                quoteId={quote.id}
-                onTotalCostChange={handleTotalCostChange}
-              />
-            }
           </div>
           <div className="mb-4">
             <Label className="text-base">Date de création du devis</Label>
