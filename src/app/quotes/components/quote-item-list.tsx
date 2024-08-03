@@ -306,25 +306,27 @@ export function QuoteItemList({
             </Button>
           </DrawerTrigger>
           <DrawerContent>
-            <DrawerHeader>
-              <DrawerTitle>Ajouter un produit au devis</DrawerTitle>
-              <DrawerDescription>
-                Sélectionnez les produits que vous souhaitez ajouter au devis.
-              </DrawerDescription>
-            </DrawerHeader>
-            <div className="p-4 pb-0 overflow-x-auto">
-              <ProductSimplifiedDataTable 
-                products={neededProducts}
-                existingItems={[...items, ...createdItems]}
-                isLoading={isProductsLoading}
-                onProductsSelected={handleProductsSelected} 
-              />
+            <div className="mx-auto w-full max-w-4xl">
+              <DrawerHeader>
+                <DrawerTitle>Ajouter un produit au devis</DrawerTitle>
+                <DrawerDescription>
+                  Sélectionnez les produits que vous souhaitez ajouter au devis.
+                </DrawerDescription>
+              </DrawerHeader>
+              <div className="p-4 pb-0 overflow-x-auto">
+                <ProductSimplifiedDataTable 
+                  products={neededProducts}
+                  existingItems={[...items, ...createdItems]}
+                  isLoading={isProductsLoading}
+                  onProductsSelected={handleProductsSelected} 
+                />
+              </div>
+              <DrawerFooter>
+                <DrawerClose className="" asChild>
+                  <Button variant="outline">Annuler</Button>
+                </DrawerClose>
+              </DrawerFooter>
             </div>
-            <DrawerFooter>
-              <DrawerClose asChild>
-                <Button variant="outline">Annuler</Button>
-              </DrawerClose>
-            </DrawerFooter>
           </DrawerContent>
         </Drawer>
       </div>

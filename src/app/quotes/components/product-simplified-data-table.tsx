@@ -79,7 +79,7 @@ export function ProductSimplifiedDataTable({ products, existingItems, isLoading,
     }
 
     return (
-        <div className="w-full max-w-3xl mx-auto">
+        <div className="w-full max-w-4xl mx-auto">
             <div className="mb-4 relative">
                 <Input
                     type="text"
