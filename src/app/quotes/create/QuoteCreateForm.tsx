@@ -337,6 +337,31 @@ export default function QuoteCreateForm() {
             />
             {errors.event_end_date && <p className="text-red-500 text-sm mt-1">{errors.event_end_date}</p>}
           </div>
+          <div className="mb-4">
+            <Label htmlFor="description" className="text-base">Description</Label>
+            <Textarea 
+              id="description" 
+              value={formData.description} 
+              onChange={handleInputChange} 
+              className="w-full text-base" 
+            />
+          </div>
+          <div className="mb-4">
+            <Label className="text-base">Produits du devis</Label>
+            <QuoteItemList 
+              items={[]}
+              taintedItems={new Set()}
+              editedItems={new Map()}
+              createdItems={createdItems}
+              onItemTaint={() => {}}
+              onItemEdit={() => {}}
+              onItemCreate={handleItemCreate}
+              onItemRemove={handleItemRemove}
+              isLoading={false}
+              quoteId={0}
+              onTotalCostChange={handleTotalCostChange} // Pass the callback
+            />
+          </div>
           <div className="mb-4 flex items-center space-x-2">
             <Switch
               id="is_traiteur"
@@ -376,31 +401,6 @@ export default function QuoteCreateForm() {
               value={formData.total_cost ?? ''} 
               className="w-full text-base" 
               disabled
-            />
-          </div>
-          <div className="mb-4">
-            <Label htmlFor="description" className="text-base">Description</Label>
-            <Textarea 
-              id="description" 
-              value={formData.description} 
-              onChange={handleInputChange} 
-              className="w-full text-base" 
-            />
-          </div>
-          <div className="mb-4">
-            <Label className="text-base">Produits du devis</Label>
-            <QuoteItemList 
-              items={[]}
-              taintedItems={new Set()}
-              editedItems={new Map()}
-              createdItems={createdItems}
-              onItemTaint={() => {}}
-              onItemEdit={() => {}}
-              onItemCreate={handleItemCreate}
-              onItemRemove={handleItemRemove}
-              isLoading={false}
-              quoteId={0}
-              onTotalCostChange={handleTotalCostChange} // Pass the callback
             />
           </div>
         </div>

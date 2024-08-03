@@ -273,6 +273,11 @@ export function QuoteItemList({
           </div>
         )}
       </div>
+      {allItems.length > 0 && (
+      <div className="text-center text-sm text-gray-400 pt-4">
+          Prix total des produits : {calculateTotalCost()} €
+        </div>
+      )}
       <div className="flex items-center justify-between mt-4">
         {allItems.length > 0 && (
           <>
