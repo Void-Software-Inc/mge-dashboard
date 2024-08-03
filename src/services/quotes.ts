@@ -25,6 +25,7 @@ export async function getQuotes(): Promise<Quote[]> {
       total_cost: quote.total_cost,
       is_traiteur: quote.is_traiteur,
       description: quote.description,
+      created_at: quote.created_at,
     }))
     return cleanQuotes;
   } catch (error) {

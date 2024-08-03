@@ -124,7 +124,7 @@ export const columns: ColumnDef<Quote>[] = [
             variant="ghost"
             onClick={() => setIsDeleteDialogOpen(true)}
             size="icon"
-            className="text-red-500 hover:text-red-700 hover:bg-gray-50"
+            className="text-black hover:text-red-500 hover:bg-gray-50"
           >
             <TrashIcon className="h-4 w-4" />
           </Button>
