@@ -6,6 +6,8 @@ import {
   CaretSortIcon,
   EyeNoneIcon,
   MixerVerticalIcon,
+  Pencil1Icon,
+  TrashIcon
 } from "@radix-ui/react-icons"
 import { ColumnDef } from "@tanstack/react-table"
 import { MoreHorizontal } from "lucide-react"
@@ -43,7 +45,7 @@ import { toast } from "sonner"
 import { deleteProduct } from "@/services/products"
 
 export const columns: ColumnDef<Product>[] = [
-  {
+  /*{
     id: "select",
     header: ({ table }) => (
       <Checkbox
@@ -62,6 +64,75 @@ export const columns: ColumnDef<Product>[] = [
         aria-label="Select row"
       />
     ),
+    enableSorting: false,
+    enableHiding: false,
+  },*/
+  {
+    id: "actions",
+    header: () => {
+      return (
+        <div className={cn("text-center whitespace-nowrap overflow-hidden overflow-ellipsis")}>
+          <span>Actions</span>
+        </div>
+      );
+    },
+    cell: ({ row }) => {
+      const product = row.original
+      const router = useRouter()
+      const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
+      const { setShouldRefetch } = useProductsContext()
+
+      const handleDeleteProduct = async () => {
+        try {
+          await deleteProduct([product.id]);
+          setShouldRefetch(true);
+          toast.success('Product deleted successfully');
+        } catch (error) {
+          console.error('Error deleting product:', error);
+          toast.error('Failed to delete product');
+        } finally {
+          setIsDeleteDialogOpen(false);
+        }
+      };
+
+      return (
+        <div className="flex space-x-2">
+          <Button
+            variant="ghost"
+            onClick={() => router.push(`/products/${product.id}`)}
+            size="icon"
+            className="text-blue-500 hover:text-blue-700 hover:bg-gray-50"
+          >
+            <Pencil1Icon className="h-4 w-4" />
+          </Button>
+          <Button
+            variant="ghost"
+            onClick={() => setIsDeleteDialogOpen(true)}
+            size="icon"
+            className="text-red-500 hover:text-red-700 hover:bg-gray-50"
+          >
+            <TrashIcon className="h-4 w-4" />
+          </Button>
+
+          <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Êtes vous sûr de vouloir supprimer ce produit ?</AlertDialogTitle>
+                <AlertDialogDescription>
+                  Cette action est irréversible. Cela supprimera définitivement le produit "{product.id}" et toutes ses données seront supprimées de nos serveurs.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Annuler</AlertDialogCancel>
+                <AlertDialogAction onClick={handleDeleteProduct}>
+                  Supprimer
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+        </div>
+      )
+    },
     enableSorting: false,
     enableHiding: false,
   },
@@ -270,71 +341,6 @@ export const columns: ColumnDef<Product>[] = [
     header: "Description",
     cell: ({ row }) => {
       return <div className="whitespace-nowrap overflow-hidden overflow-ellipsis">{row.getValue("description")}</div>
-    },
-  },
-  {
-    id: "actions",
-    cell: ({ row }) => {
-      const product = row.original
-      const router = useRouter()
-      const { setShouldRefetch } = useProductsContext()
-      const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
-
-      const handleViewProduct = useCallback(() => {
-        router.push(`/products/${product.id}`)
-      }, [router, product.id])
-
-      const handleDeleteProduct = useCallback(async () => {
-        try {
-          await deleteProduct([product.id]);
-          setShouldRefetch(true);
-          toast.success('Product deleted successfully');
-        } catch (error) {
-          console.error('Error deleting product:', error);
-          toast.error('Failed to delete product');
-        } finally {
-          setIsDeleteDialogOpen(false);
-        }
-      }, [product.id, setShouldRefetch]);
-
-      return (
-        <>
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="ghost" className="h-8 w-8 p-0">
-                <span className="sr-only">Open menu</span>
-                <MoreHorizontal className="h-4 w-4" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuLabel>Actions</DropdownMenuLabel>
-              <DropdownMenuItem onClick={handleViewProduct}>
-                Voir le produit
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => setIsDeleteDialogOpen(true)}>
-                Supprimer le produit
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-
-          <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
-            <AlertDialogContent>
-              <AlertDialogHeader>
-                <AlertDialogTitle>Êtes vous sûr de vouloir supprimer ce produit ?</AlertDialogTitle>
-                <AlertDialogDescription>
-                  Cette action est irréversible. Cela supprimera définitivement le produit "{product.name}" et toutes ses données seront supprimées de nos serveurs.
-                </AlertDialogDescription>
-              </AlertDialogHeader>
-              <AlertDialogFooter>
-                <AlertDialogCancel>Cancel</AlertDialogCancel>
-                <AlertDialogAction onClick={handleDeleteProduct}>
-                  Supprimer
-                </AlertDialogAction>
-              </AlertDialogFooter>
-            </AlertDialogContent>
-          </AlertDialog>
-        </>
-      )
     },
   },
 ]

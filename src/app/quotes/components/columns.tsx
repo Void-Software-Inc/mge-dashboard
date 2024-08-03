@@ -7,7 +7,9 @@ import {
     EyeNoneIcon,
     MixerVerticalIcon,
     Cross2Icon,
-    CheckIcon
+    CheckIcon,
+    Pencil1Icon,
+    TrashIcon
   } from "@radix-ui/react-icons"
 import { ColumnDef } from "@tanstack/react-table"
 import { MoreHorizontal } from "lucide-react"
@@ -53,8 +55,12 @@ const formatDate = (dateString: string) => {
     return format(date, 'dd/MM/yyyy', { locale: fr });
 };
 
+export const onRowClick = (row: Quote, router: ReturnType<typeof useRouter>) => {
+  router.push(`/quotes/${row.id}`)
+}
+
 export const columns: ColumnDef<Quote>[] = [
-  {
+  /*Implementation later{
     id: "select",
     header: ({ table }) => (
       <Checkbox
@@ -73,6 +79,75 @@ export const columns: ColumnDef<Quote>[] = [
         aria-label="Select row"
       />
     ),
+    enableSorting: false,
+    enableHiding: false,
+  },*/
+  {
+    id: "actions",
+    header: () => {
+      return (
+        <div className={cn("text-center whitespace-nowrap overflow-hidden overflow-ellipsis")}>
+          <span>Actions</span>
+        </div>
+      );
+    },
+    cell: ({ row }) => {
+      const quote = row.original
+      const router = useRouter()
+      const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
+      const { setShouldRefetch } = useQuotesContext()
+
+      const handleDeleteQuote = async () => {
+        try {
+          await deleteQuote([quote.id]);
+          setShouldRefetch(true);
+          toast.success('Quote deleted successfully');
+        } catch (error) {
+          console.error('Error deleting quote:', error);
+          toast.error('Failed to delete quote');
+        } finally {
+          setIsDeleteDialogOpen(false);
+        }
+      };
+
+      return (
+        <div className="flex space-x-2">
+          <Button
+            variant="ghost"
+            onClick={() => router.push(`/quotes/${quote.id}`)}
+            size="icon"
+            className="text-blue-500 hover:text-blue-700 hover:bg-gray-50"
+          >
+            <Pencil1Icon className="h-4 w-4" />
+          </Button>
+          <Button
+            variant="ghost"
+            onClick={() => setIsDeleteDialogOpen(true)}
+            size="icon"
+            className="text-red-500 hover:text-red-700 hover:bg-gray-50"
+          >
+            <TrashIcon className="h-4 w-4" />
+          </Button>
+
+          <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Êtes vous sûr de vouloir supprimer ce devis ?</AlertDialogTitle>
+                <AlertDialogDescription>
+                  Cette action est irréversible. Cela supprimera définitivement le devis "{quote.id}" et toutes ses données seront supprimées de nos serveurs.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Annuler</AlertDialogCancel>
+                <AlertDialogAction onClick={handleDeleteQuote}>
+                  Supprimer
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+        </div>
+      )
+    },
     enableSorting: false,
     enableHiding: false,
   },
@@ -295,71 +370,6 @@ export const columns: ColumnDef<Quote>[] = [
     header: "Description",
     cell: ({ row }) => {
       return <div className="whitespace-nowrap overflow-hidden overflow-ellipsis">{row.getValue("description")}</div>
-    },
-  },
-  {
-    id: "actions",
-    cell: ({ row }) => {
-      const quote = row.original
-      const router = useRouter()
-      const { setShouldRefetch } = useQuotesContext()
-      const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
-
-      const handleViewQuote = useCallback(() => {
-        router.push(`/quotes/${quote.id}`)
-      }, [router, quote.id])
-
-      const handleDeleteQuote = useCallback(async () => {
-        try {
-          await deleteQuote([quote.id]);
-          setShouldRefetch(true);
-          toast.success('Quote deleted successfully');
-        } catch (error) {
-          console.error('Error deleting quote:', error);
-          toast.error('Failed to delete quote');
-        } finally {
-          setIsDeleteDialogOpen(false);
-        }
-      }, [quote.id, setShouldRefetch]);
-
-      return (
-        <>
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="ghost" className="h-8 w-8 p-0">
-                <span className="sr-only">Open menu</span>
-                <MoreHorizontal className="h-4 w-4" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuLabel>Actions</DropdownMenuLabel>
-              <DropdownMenuItem onClick={handleViewQuote}>
-                Voir le devis
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => setIsDeleteDialogOpen(true)}>
-                Supprimer le devis
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-
-          <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
-            <AlertDialogContent>
-              <AlertDialogHeader>
-                <AlertDialogTitle>Êtes vous sr de vouloir supprimer ce devis ?</AlertDialogTitle>
-                <AlertDialogDescription>
-                  Cette action est irréversible. Cela supprimera définitivement le devis "{quote.id}" et toutes ses données seront supprimées de nos serveurs.
-                </AlertDialogDescription>
-              </AlertDialogHeader>
-              <AlertDialogFooter>
-                <AlertDialogCancel>Cancel</AlertDialogCancel>
-                <AlertDialogAction onClick={handleDeleteQuote}>
-                  Supprimer
-                </AlertDialogAction>
-              </AlertDialogFooter>
-            </AlertDialogContent>
-          </AlertDialog>
-        </>
-      )
     },
   },
 ]
