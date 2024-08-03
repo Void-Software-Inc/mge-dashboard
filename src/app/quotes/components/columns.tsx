@@ -111,7 +111,7 @@ export const columns: ColumnDef<Quote>[] = [
       };
 
       return (
-        <div className="flex space-x-2">
+        <div className="flex justify-center">
           <Button
             variant="ghost"
             onClick={() => router.push(`/quotes/${quote.id}`)}

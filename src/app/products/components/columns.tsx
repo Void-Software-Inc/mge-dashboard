@@ -96,7 +96,7 @@ export const columns: ColumnDef<Product>[] = [
       };
 
       return (
-        <div className="flex space-x-2">
+        <div className="flex justify-center">
           <Button
             variant="ghost"
             onClick={() => router.push(`/products/${product.id}`)}
@@ -326,14 +326,14 @@ export const columns: ColumnDef<Product>[] = [
   },
   {
     accessorKey: "price",
-    header: () => <div className="text-right">Prix</div>,
+    header: () => <div className="">Prix</div>,
     cell: ({ row }) => {
       const price = parseFloat(row.getValue("price"))
       const formatted = new Intl.NumberFormat("en-US", {
         style: "currency",
         currency: "EUR",
       }).format(price)
-       return <div className="text-right font-medium">{formatted}</div>
+       return <div className="font-medium">{formatted}</div>
     },
   },
   {
