@@ -1,5 +1,7 @@
 import { createClient } from '@/utils/supabase/server'
 import { redirect } from 'next/navigation';
+import QuoteCreationChart from '@/components/stats/QuoteCreationChart';
+import ProductTypesChart from '@/components/stats/ProductTypesChart';
 
 export default async function Home() {
   const supabase = createClient()
@@ -9,8 +11,16 @@ export default async function Home() {
     redirect('/login')
   }
   return (
-    <main className="flex min-h-screen flex-col items-center justify-between p-24">
-      <h1 className="text-4xl">You are logged in</h1>
+    <main className="flex min-h-screen flex-col items-center p-3">
+      <h1 className="text-4xl mt-10 mb-8">Dashboard</h1>
+      <div className='w-full grid grid-cols-1 md:grid-cols-2 gap-4'>
+        <div className='w-full px-4 md:px-0'>
+          <ProductTypesChart />
+        </div>
+        <div className='w-full px-4 md:px-0'>
+          <QuoteCreationChart />
+        </div>
+      </div>
     </main>
   );
 }
