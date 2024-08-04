@@ -13,7 +13,7 @@ import { ChevronLeftIcon, PlusIcon } from "@radix-ui/react-icons";
 import { DatePicker } from "../components/date-picker";
 import { QuoteItemList } from "../components/quote-item-list";
 import { createQuote } from "@/services/quotes";
-import { useQuotesContext } from '../context/QuotesContext';
+import { useAppContext } from "@/app/context/AppContext";
 import { format } from 'date-fns';
 
 interface FormErrors {
@@ -59,7 +59,7 @@ const initialQuote: Partial<Quote> = {
 
 export default function QuoteCreateForm() {
   const router = useRouter();
-  const { setShouldRefetch } = useQuotesContext();
+  const { setQuotesShouldRefetch } = useAppContext();
 
   const [formData, setFormData] = useState(initialQuote);
   const [createdItems, setCreatedItems] = useState<QuoteItem[]>([]);
@@ -216,7 +216,7 @@ export default function QuoteCreateForm() {
     setIsSubmitting(true);
     try {
       const result = await createQuote(formData as Quote, createdItems);
-      setShouldRefetch(true);
+      setQuotesShouldRefetch(true);
       toast.success('Devis créé avec succès');
       router.push(`/quotes/${result.quote.id}`);
     } catch (error) {

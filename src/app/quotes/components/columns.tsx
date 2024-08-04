@@ -12,7 +12,6 @@ import {
     TrashIcon
   } from "@radix-ui/react-icons"
 import { ColumnDef } from "@tanstack/react-table"
-import { MoreHorizontal } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
 import { ScrollArea } from "@/components/ui/scroll-area"
@@ -37,8 +36,8 @@ import {
 } from "@/components/ui/alert-dialog"
 import { useRouter } from 'next/navigation'
 import { Quote, quoteStatus } from "@/utils/types/quotes"
-import { useCallback, useState } from "react"
-import { useQuotesContext } from "@/app/quotes/context/QuotesContext"
+import { useState } from "react"
+import { useAppContext } from "@/app/context/AppContext"
 import { toast } from "sonner"
 
 import { deleteQuote } from "@/services/quotes"
@@ -95,12 +94,12 @@ export const columns: ColumnDef<Quote>[] = [
       const quote = row.original
       const router = useRouter()
       const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
-      const { setShouldRefetch } = useQuotesContext()
+      const { setQuotesShouldRefetch } = useAppContext()
 
       const handleDeleteQuote = async () => {
         try {
           await deleteQuote([quote.id]);
-          setShouldRefetch(true);
+          setQuotesShouldRefetch(true);
           toast.success('Quote deleted successfully');
         } catch (error) {
           console.error('Error deleting quote:', error);

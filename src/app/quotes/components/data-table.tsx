@@ -37,7 +37,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Quote } from "@/utils/types/quotes"
 import { Skeleton } from "@/components/ui/skeleton"
-import { useQuotesContext } from "@/app/quotes/context/QuotesContext"
+import { useAppContext } from "@/app/context/AppContext"
 import { useRouter } from 'next/navigation'
 import { PlusIcon } from "@radix-ui/react-icons"
 
@@ -52,7 +52,7 @@ export function DataTable({
 
   const [quotes, setQuotes] = React.useState<Quote[]>([])
   const [isLoading, setIsLoading] = React.useState(true)
-  const { shouldRefetch, setShouldRefetch } = useQuotesContext()
+  const { quotesShouldRefetch, setQuotesShouldRefetch } = useAppContext()
   const [isMounted, setIsMounted] = React.useState(false)
 
   const [sorting, setSorting] = React.useState<SortingState>([])
@@ -71,13 +71,13 @@ export function DataTable({
     } catch (error) {
       console.error('Error fetching quotes:', error)
     }
-    setShouldRefetch(false)
+    setQuotesShouldRefetch(false)
     setIsLoading(false)
   }
 
   React.useEffect(() => {
     setIsMounted(true)
-    if (shouldRefetch) {
+    if (quotesShouldRefetch) {
       fetchQuotes()
     } else {
       if (typeof window !== 'undefined') {
@@ -90,7 +90,7 @@ export function DataTable({
         }
       }
     }
-  }, [shouldRefetch])
+  }, [quotesShouldRefetch])
 
   const memoizedQuotes = React.useMemo(() => quotes, [quotes])
   

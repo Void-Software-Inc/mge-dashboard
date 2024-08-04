@@ -12,7 +12,7 @@ import { Skeleton } from "@/components/ui/skeleton"
 import { ChevronLeftIcon, DownloadIcon, Cross2Icon, UploadIcon } from "@radix-ui/react-icons"
 
 import { useRouter } from 'next/navigation'
-import { useProductsContext } from '../context/ProductsContext'
+import { useAppContext } from '@/app/context/AppContext'
 import { getProduct, getProductImages, updateProduct, deleteProductImage, createProductImage } from "@/services/products"
 import { Product, productTypes, ProductImage, productColors } from "@/utils/types/products"
 
@@ -38,7 +38,7 @@ export default function ProductForm({ productId }: { productId: string }) {
 
   const [isChanged, setIsChanged] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
-  const { setShouldRefetch } = useProductsContext()
+  const { setProductsShouldRefetch } = useAppContext()
 
   const [selectedFile, setSelectedFile] = useState<File | null>(null)
   const [previewUrl, setPreviewUrl] = useState<string | null>(null)
@@ -182,7 +182,7 @@ export default function ProductForm({ productId }: { productId: string }) {
       // Reset main image state
       setPreviewUrl(null)
       setSelectedFile(null)
-      setShouldRefetch(true)
+      setProductsShouldRefetch(true)
       toast.success('Produit mis à jour avec succès')
     } catch (error) {
       console.error('Error updating product:', error)

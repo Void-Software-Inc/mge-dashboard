@@ -13,7 +13,7 @@ import { Switch } from "@/components/ui/switch"
 import { ChevronLeftIcon, DownloadIcon } from "@radix-ui/react-icons"
 
 import { useRouter } from 'next/navigation'
-import { useQuotesContext } from '../context/QuotesContext'
+import { useAppContext } from "@/app/context/AppContext"
 import { getQuote, getQuoteItems, updateQuote, deleteQuoteItem, updateQuoteItem, createQuoteItem } from "@/services/quotes"
 import { Quote, quoteStatus, QuoteItem } from "@/utils/types/quotes"
 import { DatePicker } from "../components/date-picker"
@@ -53,7 +53,7 @@ export default function QuoteForm({ quoteId }: { quoteId: string }) {
 
   const [isChanged, setIsChanged] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
-  const { setShouldRefetch } = useQuotesContext()
+  const { setQuotesShouldRefetch } = useAppContext()
   const [totalCostFromItems, setTotalCostFromItems] = useState(0);
 
   const handleGoBack = useCallback(() => {
@@ -307,7 +307,7 @@ export default function QuoteForm({ quoteId }: { quoteId: string }) {
       setQuote(response);
       setFormData(response);
       setIsChanged(false);
-      setShouldRefetch(true);
+      setQuotesShouldRefetch(true);
       toast.success('Devis mis à jour avec succès');
     } catch (error) {
       console.error('Error updating quote:', error);
