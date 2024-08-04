@@ -150,14 +150,14 @@ const QuoteCreationChart = () => {
 
   return (
     <Card className='w-full h-[350px] flex flex-col'>
-      <CardHeader className="flex items-center sm:flex-row border-b p-0">
-        <div className="flex flex-1 flex-col justify-center gap-1 px-6 py-5">
-          <CardTitle>Devis créés</CardTitle>
-          <CardDescription>
+      <CardHeader className="flex items-center justify-center sm:flex-row border-b p-0">
+        <div className="flex flex-1 flex-col justify-center gap-1 px-2 py-2 md:py-2">
+          <CardTitle className='text-lg md:text-xl text-center'>Devis créés</CardTitle>
+          <CardDescription className='text-sm text-center'>
             Nombre total de devis créés : {total}
           </CardDescription>
         </div>
-        <div className="flex px-6 py-3">
+        <div className="hidden md:flex px-2 py-2">
           <Select value={timeRange} onValueChange={setTimeRange}>
             <SelectTrigger
               className="w-[160px] rounded-lg sm:ml-auto"
@@ -182,7 +182,7 @@ const QuoteCreationChart = () => {
       <CardContent className="flex-1 p-0">
         <ChartContainer
           config={chartConfig}
-          className="h-[260px] w-full"
+          className="h-[275px] w-full"
         >
           <BarChart
             data={data}
