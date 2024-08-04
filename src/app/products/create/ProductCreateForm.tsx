@@ -17,7 +17,7 @@ import {
 import { Toaster, toast } from 'sonner'
 import { ChevronLeftIcon, PlusIcon, Cross2Icon, UploadIcon, InfoCircledIcon } from "@radix-ui/react-icons"
 import { useRouter } from 'next/navigation'
-import { useProductsContext } from '../context/ProductsContext'
+import { useAppContext } from "@/app/context/AppContext"
 import { createProduct, createProductImage } from '@/services/products'
 
 interface FormErrors {
@@ -52,7 +52,7 @@ export default function ProductCreateForm() {
   const router = useRouter()
   const [formData, setFormData] = useState(initialProduct)
   const [isSubmitting, setIsSubmitting] = useState(false)
-  const { setShouldRefetch } = useProductsContext()
+  const { setProductsShouldRefetch } = useAppContext()
 
   const [selectedFile, setSelectedFile] = useState<File | null>(null)
   const [previewUrl, setPreviewUrl] = useState<string | null>(null)
@@ -183,7 +183,7 @@ export default function ProductCreateForm() {
         )
       }
 
-      setShouldRefetch(true)
+      setProductsShouldRefetch(true)
 
     console.log('Product created:', result)
     toast.custom((t) => (

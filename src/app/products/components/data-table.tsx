@@ -37,7 +37,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Product } from "@/utils/types/products"
 import { Skeleton } from "@/components/ui/skeleton"
-import { useProductsContext } from '../context/ProductsContext'
+import { useAppContext } from "@/app/context/AppContext"
 import { useRouter } from 'next/navigation'
 import { PlusIcon } from "@radix-ui/react-icons"
 
@@ -52,7 +52,7 @@ export function DataTable({
 
   const [products, setProducts] = React.useState<Product[]>([])
   const [isLoading, setIsLoading] = React.useState(true)
-  const { shouldRefetch, setShouldRefetch } = useProductsContext()
+  const { productsShouldRefetch, setProductsShouldRefetch } = useAppContext()
   const [isMounted, setIsMounted] = React.useState(false)
 
   const [sorting, setSorting] = React.useState<SortingState>([])
@@ -71,13 +71,13 @@ export function DataTable({
     } catch (error) {
       console.error('Error fetching products:', error)
     }
-    setShouldRefetch(false)
+    setProductsShouldRefetch(false)
     setIsLoading(false)
   }
 
   React.useEffect(() => {
     setIsMounted(true)
-    if (shouldRefetch) {
+    if (productsShouldRefetch) {
       fetchProducts()
     } else {
       if (typeof window !== 'undefined') {
@@ -90,7 +90,7 @@ export function DataTable({
         }
       }
     }
-  }, [shouldRefetch])
+  }, [productsShouldRefetch])
 
   const memoizedProducts = React.useMemo(() => products, [products])
   

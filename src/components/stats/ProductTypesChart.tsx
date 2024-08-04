@@ -2,7 +2,6 @@
 
 import React, { useState, useEffect } from 'react'
 import { Label, Pie, PieChart } from 'recharts'
-import { TrendingUp } from 'lucide-react'
 import { getProducts } from '@/services/products'
 import { Product } from '@/utils/types/products'
 import {
@@ -19,6 +18,7 @@ import {
   ChartTooltip,
   ChartTooltipContent,
 } from "@/components/ui/chart"
+import { useAppContext } from '@/app/context/AppContext'
 
 const chartConfig: ChartConfig = {
   products: {
@@ -37,17 +37,35 @@ const colors = [
 const ProductTypesChart = () => {
   const [data, setData] = useState<{ type: string; count: number; fill: string }[]>([])
   const [totalProducts, setTotalProducts] = useState(0)
+  const { productsShouldRefetch, setProductsShouldRefetch} = useAppContext()
+
+  const fetchData = async () => {
+    const products = await getProducts()
+    if (typeof window !== 'undefined') {
+      sessionStorage.setItem('cachedProducts', JSON.stringify(products))
+    }
+    const groupedData = groupProductsByType(products)
+    setData(groupedData)
+    setTotalProducts(products.length)
+    setProductsShouldRefetch(false)
+  }
 
   useEffect(() => {
-    const fetchData = async () => {
-      const products = await getProducts()
-      const groupedData = groupProductsByType(products)
-      setData(groupedData)
-      setTotalProducts(products.length)
+    if (productsShouldRefetch) {
+      fetchData()
+    } else {
+      if (typeof window !== 'undefined') {
+        const cachedStatsProducts = sessionStorage.getItem('cachedProducts')
+        if (cachedStatsProducts) {
+          const groupedData = groupProductsByType(JSON.parse(cachedStatsProducts))
+          setData(groupedData)
+          setTotalProducts(JSON.parse(cachedStatsProducts).length)
+        } else {
+          fetchData()
+        }
+      }
     }
-
-    fetchData()
-  }, [])
+  }, [productsShouldRefetch])
 
   const groupProductsByType = (products: Product[]) => {
     const groupedData: { [key: string]: number } = {}
@@ -65,7 +83,7 @@ const ProductTypesChart = () => {
   }
 
   return (
-    <Card className="flex flex-col">
+    <Card className="flex flex-col h-[350px]">
       <CardHeader className="items-center pb-0">
         <CardTitle>Types de Produits</CardTitle>
         <CardDescription>Répartition des produits par type</CardDescription>
@@ -73,7 +91,7 @@ const ProductTypesChart = () => {
       <CardContent className="flex-1 pb-0">
         <ChartContainer
           config={chartConfig}
-          className="mx-auto aspect-square max-h-[250px] h-[250px]"
+          className="mx-auto aspect-square max-h-[200px]"
         >
           <PieChart>
             <ChartTooltip
@@ -122,7 +140,7 @@ const ProductTypesChart = () => {
       </CardContent>
       <CardFooter className="flex-col gap-2 text-sm">
         <div className="flex items-center gap-2 font-medium leading-none">
-          {data.length} types de produits différents
+          {totalProducts} produits en stock
         </div>
         <div className="leading-none text-muted-foreground">
           Affichage de tous les produits en stock

@@ -10,7 +10,6 @@ import {
   TrashIcon
 } from "@radix-ui/react-icons"
 import { ColumnDef } from "@tanstack/react-table"
-import { MoreHorizontal } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Badge } from "@/components/ui/badge"
@@ -38,8 +37,8 @@ import { cn } from "@/lib/utils"
 import { useRouter } from 'next/navigation'
 import Image from "next/image"
 import { Product, productTypes, productColors } from "@/utils/types/products"
-import { useCallback, useState } from "react"
-import { useProductsContext } from '../context/ProductsContext'
+import { useState } from "react"
+import { useAppContext } from "@/app/context/AppContext"
 import { toast } from "sonner"
 
 import { deleteProduct } from "@/services/products"
@@ -80,12 +79,12 @@ export const columns: ColumnDef<Product>[] = [
       const product = row.original
       const router = useRouter()
       const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
-      const { setShouldRefetch } = useProductsContext()
+      const { setProductsShouldRefetch } = useAppContext()
 
       const handleDeleteProduct = async () => {
         try {
           await deleteProduct([product.id]);
-          setShouldRefetch(true);
+          setProductsShouldRefetch(true);
           toast.success('Product deleted successfully');
         } catch (error) {
           console.error('Error deleting product:', error);
