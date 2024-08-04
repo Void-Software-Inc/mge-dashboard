@@ -19,6 +19,7 @@ import {
   ChartTooltipContent,
 } from "@/components/ui/chart"
 import { useAppContext } from '@/app/context/AppContext'
+import { Skeleton } from '../ui/skeleton'
 
 const chartConfig: ChartConfig = {
   products: {
@@ -38,16 +39,24 @@ const ProductTypesChart = () => {
   const [data, setData] = useState<{ type: string; count: number; fill: string }[]>([])
   const [totalProducts, setTotalProducts] = useState(0)
   const { productsShouldRefetch, setProductsShouldRefetch} = useAppContext()
+  const [isLoading, setIsLoading] = useState(true)
 
   const fetchData = async () => {
-    const products = await getProducts()
-    if (typeof window !== 'undefined') {
-      sessionStorage.setItem('cachedProducts', JSON.stringify(products))
+    setIsLoading(true)
+    try {
+      const products = await getProducts()
+      if (typeof window !== 'undefined') {
+        sessionStorage.setItem('cachedProducts', JSON.stringify(products))
+      }
+      const groupedData = groupProductsByType(products)
+      setData(groupedData)
+      setTotalProducts(products.length)
+      setProductsShouldRefetch(false)
+    } catch (error) {
+      setIsLoading(false)
+    } finally {
+      setIsLoading(false)
     }
-    const groupedData = groupProductsByType(products)
-    setData(groupedData)
-    setTotalProducts(products.length)
-    setProductsShouldRefetch(false)
   }
 
   useEffect(() => {
@@ -60,6 +69,7 @@ const ProductTypesChart = () => {
           const groupedData = groupProductsByType(JSON.parse(cachedStatsProducts))
           setData(groupedData)
           setTotalProducts(JSON.parse(cachedStatsProducts).length)
+          setIsLoading(false)
         } else {
           fetchData()
         }
@@ -82,7 +92,23 @@ const ProductTypesChart = () => {
       }))
   }
 
-  return (
+  return isLoading ? 
+  <>
+    <Card className="flex flex-col h-[350px]">
+      <CardHeader className="items-center pb-0">
+        <Skeleton className="h-6 w-3/4" />
+        <Skeleton className="h-4 w-1/2 mt-2" />
+      </CardHeader>
+      <CardContent className="flex-1 mt-2 pb-0">
+        <Skeleton className="h-[200px] w-full" />
+      </CardContent>
+      <CardFooter className="flex-col gap-2">
+        <Skeleton className="h-4 w-3/4" />
+        <Skeleton className="h-4 w-1/2" />
+      </CardFooter>
+    </Card>
+  </>
+   : (
     <Card className="flex flex-col h-[350px]">
       <CardHeader className="items-center pb-0">
         <CardTitle>Types de Produits</CardTitle>
