@@ -12,6 +12,7 @@ import {
   CardDescription,
   CardHeader,
   CardTitle,
+  CardFooter,
 } from "@/components/ui/card"
 import {
   ChartConfig,
@@ -27,6 +28,7 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { useAppContext } from '@/app/context/AppContext'
+import { Skeleton } from '../ui/skeleton'
 
 const chartConfig: ChartConfig = {
   quotes: {
@@ -39,28 +41,38 @@ const QuoteCreationChart = () => {
   const [timeRange, setTimeRange] = useState("90j")
   const [data, setData] = useState<any[]>([])
   const { quotesShouldRefetch, setQuotesShouldRefetch } = useAppContext()
+  const [isLoading, setIsLoading] = useState(true)
+
+
   
 
   const fetchData = async () => {
-    const quotes = await getQuotes()
-    if (typeof window !== 'undefined') {
-      sessionStorage.setItem('cachedQuotes', JSON.stringify(quotes))
+    setIsLoading(true)
+    try {
+      const quotes = await getQuotes()
+      if (typeof window !== 'undefined') {
+        sessionStorage.setItem('cachedQuotes', JSON.stringify(quotes))
+      }
+      const now = new Date()
+      let startDate = subMonths(now, 3)
+
+      if (timeRange === "30j") {
+        startDate = subDays(now, 30)
+      } else if (timeRange === "7j") {
+        startDate = subDays(now, 7)
+      }
+
+      const filteredQuotes = quotes.filter(quote => 
+        new Date(quote.created_at) >= startDate && new Date(quote.created_at) <= now
+      )
+
+      const groupedData = groupQuotesByDate(filteredQuotes)
+      setData(groupedData)
+    } catch (error) {
+      setIsLoading(false)
+    } finally {
+      setIsLoading(false)
     }
-    const now = new Date()
-    let startDate = subMonths(now, 3)
-
-    if (timeRange === "30j") {
-      startDate = subDays(now, 30)
-    } else if (timeRange === "7j") {
-      startDate = subDays(now, 7)
-    }
-
-    const filteredQuotes = quotes.filter(quote => 
-      new Date(quote.created_at) >= startDate && new Date(quote.created_at) <= now
-    )
-
-    const groupedData = groupQuotesByDate(filteredQuotes)
-    setData(groupedData)
   }
 
   useEffect(() => {
@@ -86,6 +98,7 @@ const QuoteCreationChart = () => {
 
           const groupedData = groupQuotesByDate(filteredQuotes)
           setData(groupedData)
+          setIsLoading(false)
         } else {
           fetchData()
         }
@@ -148,7 +161,22 @@ const QuoteCreationChart = () => {
 
   const total = data.reduce((acc, curr) => acc + curr.quotes, 0)
 
-  return (
+  return isLoading ? 
+  <>
+    <Card className="flex flex-col h-[350px]">
+      <CardHeader className="items-center pb-0">
+        <Skeleton className="h-6 w-3/4" />
+        <Skeleton className="h-4 w-1/2 mt-2" />
+      </CardHeader>
+      <CardContent className="flex-1 mt-2 pb-0">
+        <Skeleton className="h-[200px] w-full" />
+      </CardContent>
+      <CardFooter className="flex-col gap-2">
+        <Skeleton className="h-4 w-3/4" />
+        <Skeleton className="h-4 w-1/2" />
+      </CardFooter>
+    </Card>
+  </> : (
     <Card className='w-full h-[350px] flex flex-col'>
       <CardHeader className="flex items-center justify-center sm:flex-row border-b p-0">
         <div className="flex flex-1 flex-col justify-center gap-1 px-2 py-2 md:py-2">
