@@ -131,7 +131,10 @@ export function QuoteItemList({
 
   const handleQuantityChange = (itemId: number, value: string) => {
     const numValue = parseInt(value, 10);
-    if (!isNaN(numValue) && numValue >= 0) {
+    const item = allItems.find(i => i.id === itemId);
+    const product = item ? productDetails[item.product_id] : null;
+    
+    if (product && !isNaN(numValue) && numValue >= 0 && numValue <= product.stock) {
       const isCreatedItem = createdItems.some(item => item.id === itemId);
       if (isCreatedItem) {
         // Update the quantity of the existing created item
@@ -215,14 +218,18 @@ export function QuoteItemList({
                   </TableCell>
                   <TableCell className="whitespace-nowrap">
                     {editingId === item.id ? (
-                      <Input
-                        type="number"
-                        value={currentQuantity}
-                        onChange={(e) => handleQuantityChange(item.id, e.target.value)}
-                        onBlur={handleEditEnd}
-                        className="w-20 text-base"
-                        min="0"
-                      />
+                      <div className="flex items-center space-x-2">
+                        <Input
+                          type="number"
+                          value={currentQuantity}
+                          onChange={(e) => handleQuantityChange(item.id, e.target.value)}
+                          onBlur={handleEditEnd}
+                          className="w-20 text-base"
+                          min="0"
+                          max={product ? product.stock : undefined}
+                        />
+                        <span className="text-sm text-gray-500">/ {product ? product.stock : 'N/A'}</span>
+                      </div>
                     ) : (
                       <div className="flex items-center">
                         <span className="mr-2 text-base">{currentQuantity}</span>
@@ -236,6 +243,7 @@ export function QuoteItemList({
                             <Pencil1Icon className="h-4 w-4" />
                           </Button>
                         )}
+                        <span className="ml-2 text-sm text-gray-500">/ {product ? product.stock : 'N/A'}</span>
                       </div>
                     )}
                   </TableCell>

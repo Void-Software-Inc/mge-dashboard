@@ -49,8 +49,9 @@ export function ProductSimplifiedDataTable({ products, existingItems, isLoading,
     const handleQuantityChange = (productId: number, value: string) => {
         if (existingProductIds.has(productId)) return;
         const numValue = parseInt(value, 10);
-        if (!isNaN(numValue) && numValue >= 0) {
-            setQuantities(prev => ({ ...prev, [productId]: numValue }));
+        const product = products.find(p => p.id === productId);
+        if (product && !isNaN(numValue) && numValue >= 0 && numValue <= product.stock) {
+          setQuantities(prev => ({ ...prev, [productId]: numValue }));
         }
     };
 
@@ -134,14 +135,18 @@ export function ProductSimplifiedDataTable({ products, existingItems, isLoading,
                                         {isExisting ? (
                                             <span className="text-sm text-gray-500">-</span>
                                         ) : (
-                                            <Input
-                                                type="number"
-                                                value={quantities[product.id] || ''}
-                                                onChange={(e) => handleQuantityChange(product.id, e.target.value)}
-                                                className="w-20 text-base"
-                                                min="0"
-                                                disabled={!selectedProducts.has(product.id)}
-                                            />
+                                          <div className="flex items-center space-x-2">
+                                          <Input
+                                              type="number"
+                                              value={quantities[product.id] || ''}
+                                              onChange={(e) => handleQuantityChange(product.id, e.target.value)}
+                                              className="w-20 text-base"
+                                              min="0"
+                                              max={product.stock}
+                                              disabled={!selectedProducts.has(product.id)}
+                                          />
+                                            <span className="text-sm text-gray-500">/ {product.stock}</span>
+                                          </div>
                                         )}
                                     </TableCell>
                                 </TableRow>
