@@ -34,6 +34,8 @@ export const AppProvider = ({ children }: { children: React.ReactNode }) => {
 
     const productsChannel = supabase.channel('products_changes')
     const quotesChannel = supabase.channel('quotes_changes')
+    const productsRecordsChannel = supabase.channel('products_records_changes')
+    const quotesRecordsChannel = supabase.channel('quotes_records_changes')
 
     productsChannel
       .on('postgres_changes', { event: '*', schema: 'public', table: 'products' }, () => {
@@ -47,9 +49,25 @@ export const AppProvider = ({ children }: { children: React.ReactNode }) => {
       })
       .subscribe()
 
+    productsRecordsChannel
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'products_records' }, () => {
+        setProductsRecordsShouldRefetch(true)
+        setProductsShouldRefetch(true)
+      })
+      .subscribe()
+
+    quotesRecordsChannel
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'quotes_records' }, () => {
+        setQuotesRecordsShouldRefetch(true)
+        setQuotesShouldRefetch(true)
+      })
+      .subscribe()
+
     return () => {
       supabase.removeChannel(productsChannel)
       supabase.removeChannel(quotesChannel)
+      supabase.removeChannel(productsRecordsChannel)
+      supabase.removeChannel(quotesRecordsChannel)
     }
   }, [])
 
