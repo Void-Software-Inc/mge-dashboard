@@ -8,8 +8,8 @@ import {
     MixerVerticalIcon,
     Cross2Icon,
     CheckIcon,
-    Pencil1Icon,
-    TrashIcon
+    SymbolIcon,
+    Cross1Icon,
   } from "@radix-ui/react-icons"
 import { ColumnDef } from "@tanstack/react-table"
 import { Button } from "@/components/ui/button"
@@ -34,13 +34,12 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
-import { useRouter } from 'next/navigation'
-import { Quote, quoteStatus } from "@/utils/types/quotes"
+import { quoteStatus, QuoteRecord } from "@/utils/types/quotes"
+import { deleteQuoteRecord, restoreQuoteRecord } from "@/services/quotes"
 import { useState } from "react"
 import { useAppContext } from "@/app/context/AppContext"
 import { toast } from "sonner"
 
-import { deleteQuote } from "@/services/quotes"
 import { cn } from "@/lib/utils"
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
@@ -54,11 +53,7 @@ const formatDate = (dateString: string) => {
     return format(date, 'dd/MM/yyyy', { locale: fr });
 };
 
-export const onRowClick = (row: Quote, router: ReturnType<typeof useRouter>) => {
-  router.push(`/quotes/${row.id}`)
-}
-
-export const columns: ColumnDef<Quote>[] = [
+export const columns: ColumnDef<QuoteRecord>[] = [
   /*Implementation later{
     id: "select",
     header: ({ table }) => (
@@ -91,20 +86,33 @@ export const columns: ColumnDef<Quote>[] = [
       );
     },
     cell: ({ row }) => {
-      const quote = row.original
-      const router = useRouter()
+      const quoteRecord = row.original
+      const [isRestoreDialogOpen, setIsRestoreDialogOpen] = useState(false)
       const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
       const { setQuotesShouldRefetch, setQuotesRecordsShouldRefetch } = useAppContext()
 
-      const handleDeleteQuote = async () => {
+      const handleRestoreQuote = async () => {
         try {
-          await deleteQuote([quote.id]);
+          await restoreQuoteRecord([quoteRecord.id]);
           setQuotesShouldRefetch(true);
           setQuotesRecordsShouldRefetch(true);
-          toast.success('Quote deleted successfully');
+          toast.success('Devis restauré avec succès');
         } catch (error) {
-          console.error('Error deleting quote:', error);
-          toast.error('Failed to delete quote');
+          console.error('Erreur lors de la restauration du devis:', error);
+          toast.error('Erreur lors de la restauration du devis');
+        } finally {
+          setIsRestoreDialogOpen(false);
+        }
+      };
+
+      const handleDeleteQuote = async () => {
+        try {
+          await deleteQuoteRecord([quoteRecord.id]);
+          setQuotesRecordsShouldRefetch(true);
+          toast.success('Devis supprimé avec succès');
+        } catch (error) {
+          console.error('Erreur lors de la suppression du devis:', error);
+          toast.error('Erreur lors de la suppression du devis');
         } finally {
           setIsDeleteDialogOpen(false);
         }
@@ -114,19 +122,37 @@ export const columns: ColumnDef<Quote>[] = [
         <div className="flex justify-center">
           <Button
             variant="ghost"
-            onClick={() => router.push(`/quotes/${quote.id}`)}
+            onClick={() => setIsRestoreDialogOpen(true)}
             size="icon"
-            className="text-blue-500 hover:text-blue-700 hover:bg-gray-50"
+            className="text-black hover:text-green-500 hover:bg-gray-50"
           >
-            <Pencil1Icon className="h-4 w-4" />
+            <SymbolIcon className="h-4 w-4" />
           </Button>
+
+          <AlertDialog open={isRestoreDialogOpen} onOpenChange={setIsRestoreDialogOpen}>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Êtes vous sûr de vouloir restaurer ce devis ?</AlertDialogTitle>
+                <AlertDialogDescription>
+                  Cette action restaurera le devis.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Annuler</AlertDialogCancel>
+                <AlertDialogAction onClick={handleRestoreQuote}>
+                  Restaurer
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+
           <Button
             variant="ghost"
             onClick={() => setIsDeleteDialogOpen(true)}
             size="icon"
             className="text-black hover:text-red-500 hover:bg-gray-50"
           >
-            <TrashIcon className="h-4 w-4" />
+            <Cross1Icon className="h-4 w-4" />
           </Button>
 
           <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
@@ -134,7 +160,7 @@ export const columns: ColumnDef<Quote>[] = [
               <AlertDialogHeader>
                 <AlertDialogTitle>Êtes vous sûr de vouloir supprimer ce devis ?</AlertDialogTitle>
                 <AlertDialogDescription>
-                  Cela supprimera le devis "{quote.id}" et le déplacera dans les archives.
+                  Cette action supprimera définitivement le devis et toutes les données associées.
                 </AlertDialogDescription>
               </AlertDialogHeader>
               <AlertDialogFooter>

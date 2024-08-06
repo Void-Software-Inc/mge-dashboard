@@ -1,9 +1,10 @@
-import { Quote, QuoteItem } from "@/utils/types/quotes";
+import { Quote, QuoteItem, QuoteRecord } from "@/utils/types/quotes";
 import { Product } from "@/utils/types/products";
 
 const API_URL = '/api';
 
 
+/***************************** Quotes *****************************/
 
 export async function getQuotes(): Promise<Quote[]> {
   try {
@@ -45,21 +46,6 @@ export async function getQuote(id: number): Promise<Quote> {
     return await response.json();
   } catch (error) {
     console.error(`Error fetching quote with id ${id}:`, error);
-    throw error;
-  }
-}
-
-export async function getQuoteItems(id: number): Promise<QuoteItem[]> {
-  try {
-    const url = `${API_URL}/quotes/${id}/quoteItems`;
-    const response = await fetch(url);
-    if (!response.ok) {
-      throw new Error(`Failed to fetch quote items for quote with id ${id}`);
-    }
-    const data = await response.json();
-    return data.quoteItems;
-  } catch (error) {
-    console.error(`Error fetching quote items for quote with id ${id}:`, error);
     throw error;
   }
 }
@@ -125,6 +111,38 @@ export async function deleteQuote(ids: number[]): Promise<void> {
     }
   } catch (error) {
     console.error('Error deleting quote(s):', error);
+    throw error;
+  }
+}
+
+export async function getAvailableProducts(quoteId: number): Promise<Product[]> {
+  try {
+    const url = `${API_URL}/quotes/${quoteId}/availableProducts`;
+    const response = await fetch(url);
+    if (!response.ok) {
+      throw new Error(`Failed to fetch available products for quote with id ${quoteId}`);
+    }
+    const data = await response.json();
+    return data.availableProducts;
+  } catch (error) {
+    console.error(`Error fetching available products for quote with id ${quoteId}:`, error);
+    throw error;
+  }
+}
+
+/***************************** QuoteItems *****************************/
+
+export async function getQuoteItems(id: number): Promise<QuoteItem[]> {
+  try {
+    const url = `${API_URL}/quotes/${id}/quoteItems`;
+    const response = await fetch(url);
+    if (!response.ok) {
+      throw new Error(`Failed to fetch quote items for quote with id ${id}`);
+    }
+    const data = await response.json();
+    return data.quoteItems;
+  } catch (error) {
+    console.error(`Error fetching quote items for quote with id ${id}:`, error);
     throw error;
   }
 }
@@ -195,17 +213,73 @@ export async function deleteQuoteItem(quoteId: number, quoteItemId: number): Pro
   }
 }
 
-export async function getAvailableProducts(quoteId: number): Promise<Product[]> {
+/***************************** QuoteRecords *****************************/
+
+export async function getQuotesRecords(): Promise<QuoteRecord[]> {
   try {
-    const url = `${API_URL}/quotes/${quoteId}/availableProducts`;
+    const url = `${API_URL}/records/quotes`
     const response = await fetch(url);
     if (!response.ok) {
-      throw new Error(`Failed to fetch available products for quote with id ${quoteId}`);
+      throw new Error('Failed to fetch quotes records');
     }
-    const data = await response.json();
-    return data.availableProducts;
+    const { quotes_records } = await response.json();
+    const cleanQuotesRecords = quotes_records.map((quotes: QuoteRecord) => ({
+      id: quotes.id,
+      first_name: quotes.first_name,
+      last_name: quotes.last_name,
+      phone_number: quotes.phone_number,
+      email: quotes.email,
+      event_start_date: quotes.event_start_date,
+      event_end_date: quotes.event_end_date,
+      status: quotes.status,
+      total_cost: quotes.total_cost,
+      is_traiteur: quotes.is_traiteur,
+      description: quotes.description,
+      deleted_at: quotes.deleted_at,
+    }))
+    return cleanQuotesRecords;
   } catch (error) {
-    console.error(`Error fetching available products for quote with id ${quoteId}:`, error);
+    console.error('Error fetching quotes records:', error);
+    throw error;
+  }
+}
+
+export async function restoreQuoteRecord(ids: number[]): Promise<void> {
+  try {
+    const url = `${API_URL}/records/quotes/restore`;
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ ids }),
+    });
+
+    if (!response.ok) {
+      throw new Error('Failed to restore quote(s)');
+    }
+  } catch (error) {
+    console.error('Error restoring quote(s):', error);
+    throw error;
+  }
+}
+
+export async function deleteQuoteRecord(ids: number[]): Promise<void> {
+  try {
+    const url = `${API_URL}/records/quotes/delete`;
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ ids }),
+    });
+
+    if (!response.ok) {
+      throw new Error('Failed to delete quote(s) from records');
+    }
+  } catch (error) {
+    console.error('Error deleting quote(s) from records:', error);
     throw error;
   }
 }

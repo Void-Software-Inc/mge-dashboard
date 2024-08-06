@@ -10,6 +10,8 @@ const AppContext = createContext<{
   setQuotesShouldRefetch: React.Dispatch<React.SetStateAction<boolean>>;
   productsRecordsShouldRefetch: boolean;
   setProductsRecordsShouldRefetch: React.Dispatch<React.SetStateAction<boolean>>;
+  quotesRecordsShouldRefetch: boolean;
+  setQuotesRecordsShouldRefetch: React.Dispatch<React.SetStateAction<boolean>>;
 }>({
   productsShouldRefetch: false,
   setProductsShouldRefetch: () => {},
@@ -17,12 +19,15 @@ const AppContext = createContext<{
   setQuotesShouldRefetch: () => {},
   productsRecordsShouldRefetch: false,
   setProductsRecordsShouldRefetch: () => {},
+  quotesRecordsShouldRefetch: false,
+  setQuotesRecordsShouldRefetch: () => {},
 })
 
 export const AppProvider = ({ children }: { children: React.ReactNode }) => {
   const [productsShouldRefetch, setProductsShouldRefetch] = useState(false)
   const [quotesShouldRefetch, setQuotesShouldRefetch] = useState(false)
   const [productsRecordsShouldRefetch, setProductsRecordsShouldRefetch] = useState(false)
+  const [quotesRecordsShouldRefetch, setQuotesRecordsShouldRefetch] = useState(false)
 
   useEffect(() => {
     const supabase = createClient()
@@ -49,7 +54,16 @@ export const AppProvider = ({ children }: { children: React.ReactNode }) => {
   }, [])
 
   return (
-    <AppContext.Provider value={{ productsShouldRefetch, setProductsShouldRefetch, quotesShouldRefetch, setQuotesShouldRefetch, productsRecordsShouldRefetch, setProductsRecordsShouldRefetch }}>
+    <AppContext.Provider value={{ 
+      productsShouldRefetch, 
+      setProductsShouldRefetch, 
+      quotesShouldRefetch, 
+      setQuotesShouldRefetch, 
+      productsRecordsShouldRefetch, 
+      setProductsRecordsShouldRefetch,
+      quotesRecordsShouldRefetch,
+      setQuotesRecordsShouldRefetch
+    }}>
       {children}
     </AppContext.Provider>
   )
