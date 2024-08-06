@@ -148,7 +148,7 @@ export const columns: ColumnDef<ProductRecord>[] = [
               <AlertDialogHeader>
                 <AlertDialogTitle>Êtes vous sûr de vouloir supprimer ce produit ?</AlertDialogTitle>
                 <AlertDialogDescription>
-                  Cette action supprimera le produit.
+                  Cette action supprimera définitivement le produit et toutes les données associées.
                 </AlertDialogDescription>
               </AlertDialogHeader>
               <AlertDialogFooter>

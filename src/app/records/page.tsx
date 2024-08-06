@@ -1,7 +1,9 @@
 import { createClient } from '@/utils/supabase/server'
 import { redirect } from 'next/navigation';
-import { DataTable } from './components/productComponents/data-table';
-import { columns } from './components/productComponents/columns';
+import { DataTable as ProductDataTable } from './components/productComponents/data-table';
+import { columns as productColumns } from './components/productComponents/columns';
+import { DataTable as QuoteDataTable } from './components/quoteComponents/data-table';
+import { columns as quoteColumns } from './components/quoteComponents/columns';
 import {
   Tabs,
   TabsContent,
@@ -24,10 +26,10 @@ export default async function Settings() {
         <TabsTrigger value="devis">Devis</TabsTrigger>
       </TabsList>
       <TabsContent className="p-2 md:p-8" value="produits">
-        <DataTable columns={columns} />
+        <ProductDataTable columns={productColumns} />
       </TabsContent>
-      <TabsContent className="w-full flex justify-center items-center" value="devis">
-        <h1>Devis</h1>
+      <TabsContent className="p-2 md:p-8" value="devis">
+        <QuoteDataTable columns={quoteColumns} />
       </TabsContent>
     </Tabs>
   )
