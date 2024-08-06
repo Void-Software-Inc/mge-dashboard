@@ -6,83 +6,108 @@ export async function POST(request: NextRequest) {
     const { ids } = await request.json();
 
     for (const id of ids) {
-        // Fetch all secondary images for the product
-        const { data: images, error: fetchError } = await supabase
-            .from('productImages')
-            .select('id, url')
-            .eq('product_id', id);
+        let createdProductRecord = null;
+        let createdProductImagesRecords = [];
 
-        if (fetchError) {
-            console.error('Error fetching product images:', fetchError);
-            return NextResponse.json({ error: 'Failed to fetch product images' }, { status: 500 });
-        }
+        try {
+            // Fetch the product data
+            const { data: product, error: productError } = await supabase
+                .from('products')
+                .select('*')
+                .eq('id', id)
+                .single();
 
-        // Delete secondary images from storage
-        if (images && images.length > 0) {
-            const imagePaths = images.map(image => {
-                const url = new URL(image.url);
-                return url.pathname.split('/').slice(-1)[0];
-            });
+            if (productError) throw new Error('Failed to fetch product');
 
-            const { error: deleteStorageError } = await supabase
-                .storage
-                .from('mge-product-images')
-                .remove(imagePaths);
+            // Fetch all productImages for the product
+            const { data: productImages, error: productImagesError } = await supabase
+                .from('productImages')
+                .select('*')
+                .eq('product_id', id);
 
-            if (deleteStorageError) {
-                console.error('Error deleting secondary images from storage:', deleteStorageError);
-                return NextResponse.json({ error: 'Failed to delete secondary images from storage' }, { status: 500 });
+            if (productImagesError) throw new Error('Failed to fetch product images');
+
+            // Create a new record in products_records
+            const { data: productsRecord, error: productsRecordError } = await supabase
+                .from('products_records')
+                .insert({
+                    id: product.id,
+                    name: product.name,
+                    type: product.type,
+                    color: product.color,
+                    stock: product.stock,
+                    price: product.price,
+                    description: product.description,
+                    image_url: product.image_url,
+                    deleted_at: new Date().toISOString()
+                })
+                .select()
+                .single();
+
+            if (productsRecordError) throw new Error('Failed to create products_records');
+
+            createdProductRecord = productsRecord;
+
+            // Create new records in productImages_records
+            if (productImages && productImages.length > 0) {
+                const { data: insertedImagesRecords, error: productImagesRecordError } = await supabase
+                    .from('productImages_records')
+                    .insert(productImages.map(img => ({
+                        id: img.id,
+                        product_record_id: productsRecord.id,
+                        url: img.url
+                    })))
+                    .select();
+
+                if (productImagesRecordError) throw new Error('Failed to create productImages_records');
+
+                createdProductImagesRecords = insertedImagesRecords;
             }
 
-            // Delete secondary image records from the database
-            const { error: deleteImagesError } = await supabase
+            // Delete productImages
+            const { error: deleteProductImagesError } = await supabase
                 .from('productImages')
                 .delete()
                 .eq('product_id', id);
 
-            if (deleteImagesError) {
-                console.error('Error deleting secondary image records:', deleteImagesError);
-                return NextResponse.json({ error: 'Failed to delete secondary image records' }, { status: 500 });
+            if (deleteProductImagesError) throw new Error('Failed to delete productImages');
+
+            // Delete the product
+            const { error: deleteProductError } = await supabase
+                .from('products')
+                .delete()
+                .eq('id', id);
+
+            if (deleteProductError) throw new Error('Failed to delete product');
+
+        } catch (error) {
+            console.error('Error in delete process:', error);
+
+            // Rollback: Delete created productImages_records
+            if (createdProductImagesRecords.length > 0) {
+                const { error: deleteImagesRecordsError } = await supabase
+                    .from('productImages_records')
+                    .delete()
+                    .in('id', createdProductImagesRecords.map(img => img.id));
+
+                if (deleteImagesRecordsError) {
+                    console.error('Error rolling back productImages_records:', deleteImagesRecordsError);
+                }
             }
-        }
 
-        // Fetch the main product image
-        const { data: product, error: productFetchError } = await supabase
-            .from('products')
-            .select('image_url')
-            .eq('id', id)
-            .single();
+            // Rollback: Delete created product_record
+            if (createdProductRecord) {
+                const { error: deleteProductRecordError } = await supabase
+                    .from('products_records')
+                    .delete()
+                    .eq('id', createdProductRecord.id);
 
-        if (productFetchError) {
-            console.error('Error fetching product:', productFetchError);
-            return NextResponse.json({ error: 'Failed to fetch product' }, { status: 500 });
-        }
-
-        // Delete the main product image from storage
-        if (product && product.image_url) {
-            const url = new URL(product.image_url);
-            const imagePath = url.pathname.split('/').slice(-1)[0];
-
-            const { error: deleteMainImageError } = await supabase
-                .storage
-                .from('mge-product-images')
-                .remove([imagePath]);
-
-            if (deleteMainImageError) {
-                console.error('Error deleting main product image from storage:', deleteMainImageError);
-                return NextResponse.json({ error: 'Failed to delete main product image from storage' }, { status: 500 });
+                if (deleteProductRecordError) {
+                    console.error('Error rolling back product_record:', deleteProductRecordError);
+                }
             }
-        }
 
-        // Delete the product
-        const { error: deleteProductError } = await supabase
-            .from('products')
-            .delete()
-            .eq('id', id);
-
-        if (deleteProductError) {
-            console.error('Error deleting product:', deleteProductError);
-            return NextResponse.json({ error: 'Failed to delete product' }, { status: 500 });
+            return NextResponse.json({ error: `Failed to delete product: ${error instanceof Error ? error.message : 'Unknown error'}` }, { status: 500 });
         }
     }
 
