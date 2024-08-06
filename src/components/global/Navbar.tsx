@@ -44,10 +44,10 @@ export default function Navbar(){
             Devis
           </Link>
           <Link
-            href="/settings"
+            href="/records"
             className="text-muted-foreground transition-colors hover:text-foreground"
           >
-            Paramètres
+            Archives
           </Link>
         </nav>
         <Sheet open={isOpen} onOpenChange={setIsOpen}>
@@ -85,11 +85,11 @@ export default function Navbar(){
                 Devis
               </Link>
               <Link
-                href="/settings"
+                href="/records"
                 className="text-muted-foreground hover:text-foreground"
                 onClick={handleItemClick}
               >
-                Paramètres
+                Archives
               </Link>
             </nav>
           </SheetContent>

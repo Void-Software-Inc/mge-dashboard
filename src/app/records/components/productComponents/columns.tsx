@@ -6,8 +6,8 @@ import {
   CaretSortIcon,
   EyeNoneIcon,
   MixerVerticalIcon,
-  Pencil1Icon,
-  TrashIcon
+  SymbolIcon,
+  Cross1Icon
 } from "@radix-ui/react-icons"
 import { ColumnDef } from "@tanstack/react-table"
 import { Button } from "@/components/ui/button"
@@ -34,16 +34,14 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
 import { cn } from "@/lib/utils"
-import { useRouter } from 'next/navigation'
 import Image from "next/image"
-import { Product, productTypes, productColors } from "@/utils/types/products"
+import { ProductRecord, productTypes, productColors } from "@/utils/types/products"
 import { useState } from "react"
 import { useAppContext } from "@/app/context/AppContext"
 import { toast } from "sonner"
+import { restoreProductRecord, deleteProductRecord } from "@/services/products"
 
-import { deleteProduct } from "@/services/products"
-
-export const columns: ColumnDef<Product>[] = [
+export const columns: ColumnDef<ProductRecord>[] = [
   /*{
     id: "select",
     header: ({ table }) => (
@@ -76,20 +74,33 @@ export const columns: ColumnDef<Product>[] = [
       );
     },
     cell: ({ row }) => {
-      const product = row.original
-      const router = useRouter()
+      const productRecord = row.original
+      const [isRestoreDialogOpen, setIsRestoreDialogOpen] = useState(false)
       const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
       const { setProductsShouldRefetch, setProductsRecordsShouldRefetch } = useAppContext()
 
-      const handleDeleteProduct = async () => {
+      const handleRestoreProduct = async () => {
         try {
-          await deleteProduct([product.id]);
+          await restoreProductRecord([productRecord.id]);
           setProductsShouldRefetch(true);
           setProductsRecordsShouldRefetch(true);
-          toast.success('Product deleted successfully');
+          toast.success('Produit restauré avec succès');
         } catch (error) {
-          console.error('Error deleting product:', error);
-          toast.error('Failed to delete product');
+          console.error('Erreur lors de la restauration du produit:', error);
+          toast.error('Erreur lors de la restauration du produit');
+        } finally {
+          setIsRestoreDialogOpen(false);
+        }
+      };
+
+      const handleDeleteProduct = async () => {
+        try {
+          await deleteProductRecord([productRecord.id]);
+          setProductsRecordsShouldRefetch(true);
+          toast.success('Produit supprimé avec succès');
+        } catch (error) {
+          console.error('Erreur lors de la suppression du produit:', error);
+          toast.error('Erreur lors de la suppression du produit');
         } finally {
           setIsDeleteDialogOpen(false);
         }
@@ -99,19 +110,37 @@ export const columns: ColumnDef<Product>[] = [
         <div className="flex justify-center">
           <Button
             variant="ghost"
-            onClick={() => router.push(`/products/${product.id}`)}
+            onClick={() => setIsRestoreDialogOpen(true)}
             size="icon"
-            className="text-blue-500 hover:text-blue-700 hover:bg-gray-50"
+            className="text-black hover:text-green-500 hover:bg-gray-50"
           >
-            <Pencil1Icon className="h-4 w-4" />
+            <SymbolIcon className="h-4 w-4" />
           </Button>
+
+          <AlertDialog open={isRestoreDialogOpen} onOpenChange={setIsRestoreDialogOpen}>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Êtes vous sûr de vouloir restaurer ce produit ?</AlertDialogTitle>
+                <AlertDialogDescription>
+                  Cette action restaurera le produit.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Annuler</AlertDialogCancel>
+                <AlertDialogAction onClick={handleRestoreProduct}>
+                  Restaurer
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+
           <Button
             variant="ghost"
             onClick={() => setIsDeleteDialogOpen(true)}
             size="icon"
             className="text-black hover:text-red-500 hover:bg-gray-50"
           >
-            <TrashIcon className="h-4 w-4" />
+            <Cross1Icon className="h-4 w-4" />
           </Button>
 
           <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
@@ -119,7 +148,7 @@ export const columns: ColumnDef<Product>[] = [
               <AlertDialogHeader>
                 <AlertDialogTitle>Êtes vous sûr de vouloir supprimer ce produit ?</AlertDialogTitle>
                 <AlertDialogDescription>
-                  Cela supprimera le produit "{product.name}" et le déplacera dans les archives.
+                  Cette action supprimera le produit.
                 </AlertDialogDescription>
               </AlertDialogHeader>
               <AlertDialogFooter>

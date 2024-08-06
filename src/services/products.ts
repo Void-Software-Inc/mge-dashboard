@@ -1,9 +1,9 @@
-import { Product, ProductImage } from "@/utils/types/products";
+import { Product, ProductRecord, ProductImage } from "@/utils/types/products";
 
 const API_URL = '/api';
 
-
-
+/********************* PRODUCTS *********************/
+  
 export async function getProducts(): Promise<Product[]> {
   try {
     const url = `${API_URL}/products`
@@ -40,21 +40,6 @@ export async function getProduct(id: number): Promise<Product> {
     return await response.json();
   } catch (error) {
     console.error(`Error fetching product with id ${id}:`, error);
-    throw error;
-  }
-}
-
-export async function getProductImages(id: number): Promise<ProductImage[]> {
-  try {
-    const url = `${API_URL}/products/${id}/images`;
-    const response = await fetch(url);
-    if (!response.ok) {
-      throw new Error(`Failed to fetch images for product with id ${id}`);
-    }
-    const data = await response.json();
-    return data.productImages;
-  } catch (error) {
-    console.error(`Error fetching images for product with id ${id}:`, error);
     throw error;
   }
 }
@@ -122,7 +107,22 @@ export async function deleteProduct(ids: number[]): Promise<void> {
   }
 }
 
-// ... existing imports and functions ...
+/********************* PRODUCT IMAGES *********************/
+
+export async function getProductImages(id: number): Promise<ProductImage[]> {
+  try {
+    const url = `${API_URL}/products/${id}/images`;
+    const response = await fetch(url);
+    if (!response.ok) {
+      throw new Error(`Failed to fetch images for product with id ${id}`);
+    }
+    const data = await response.json();
+    return data.productImages;
+  } catch (error) {
+    console.error(`Error fetching images for product with id ${id}:`, error);
+    throw error;
+  }
+}
 
 export async function createProductImage(productId: number, imageFile: File): Promise<ProductImage> {
   try {
@@ -148,8 +148,6 @@ export async function createProductImage(productId: number, imageFile: File): Pr
   }
 }
 
-// ... rest of the existing code ...
-
 export async function deleteProductImage(productId: number, imageId: number): Promise<void> {
   try {
     const url = `${API_URL}/products/${productId}/images/delete`;
@@ -166,6 +164,76 @@ export async function deleteProductImage(productId: number, imageId: number): Pr
     }
   } catch (error) {
     console.error('Error deleting product image:', error);
+    throw error;
+  }
+}
+
+
+
+/********************* PRODUCT RECORDS *********************/
+
+export async function getProductsRecords(): Promise<ProductRecord[]> {
+  try {
+    const url = `${API_URL}/records/products`
+    const response = await fetch(url);
+    if (!response.ok) {
+      throw new Error('Failed to fetch products records');
+    }
+    const { products_records } = await response.json();
+    const cleanProductsRecords = products_records.map((product: ProductRecord) => ({
+      id: product.id,
+      name: product.name,
+      type: product.type,
+      color: product.color,
+      stock: product.stock,
+      price: product.price,
+      description: product.description,
+      image_url: product.image_url,
+      deleted_at: product.deleted_at,
+    }))
+    return cleanProductsRecords;
+  } catch (error) {
+    console.error('Error fetching products records:', error);
+    throw error;
+  }
+}
+
+export async function restoreProductRecord(ids: number[]): Promise<void> {
+  try {
+    const url = `${API_URL}/records/products/restore`;
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ ids }),
+    });
+
+    if (!response.ok) {
+      throw new Error('Failed to restore product(s)');
+    }
+  } catch (error) {
+    console.error('Error restoring product(s):', error);
+    throw error;
+  }
+}
+
+export async function deleteProductRecord(ids: number[]): Promise<void> {
+  try {
+    const url = `${API_URL}/records/products/delete`;
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ ids }),
+    });
+
+    if (!response.ok) {
+      throw new Error('Failed to delete product(s) from records');
+    }
+  } catch (error) {
+    console.error('Error deleting product(s) from records:', error);
     throw error;
   }
 }

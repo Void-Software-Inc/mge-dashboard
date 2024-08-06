@@ -12,8 +12,7 @@ export default async function Home() {
   }
   return (
     <main className="flex min-h-screen flex-col items-center p-1 md:p-4">
-      <h1 className="text-4xl mt-10 mb-8">Dashboard</h1>
-      <div className='w-full grid grid-cols-1 md:grid-cols-2 gap-4'>
+      <div className='w-full mt-2 grid grid-cols-1 md:grid-cols-2 gap-4'>
         <div className='w-full px-1 md:px-0'>
           <ProductTypesChart />
         </div>
