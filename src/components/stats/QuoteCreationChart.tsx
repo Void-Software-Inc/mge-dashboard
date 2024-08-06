@@ -68,6 +68,7 @@ const QuoteCreationChart = () => {
 
       const groupedData = groupQuotesByDate(filteredQuotes)
       setData(groupedData)
+      setQuotesShouldRefetch(false)
     } catch (error) {
       setIsLoading(false)
     } finally {
