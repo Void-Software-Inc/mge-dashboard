@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useMemo } from 'react'
 import { Label, Pie, PieChart } from 'recharts'
 import { getProducts } from '@/services/products'
 import { Product } from '@/utils/types/products'
@@ -35,47 +35,12 @@ const colors = [
   "hsl(var(--chart-5))",
 ]
 
-const ProductTypesChart = () => {
-  const [data, setData] = useState<{ type: string; count: number; fill: string }[]>([])
-  const [totalProducts, setTotalProducts] = useState(0)
-  const { productsShouldRefetch, setProductsShouldRefetch} = useAppContext()
-  const [isLoading, setIsLoading] = useState(true)
+interface ProductTypesChartProps {
+  products: Product[]
+  isLoading: boolean
+}
 
-  const fetchData = async () => {
-    setIsLoading(true)
-    try {
-      const products = await getProducts()
-      if (typeof window !== 'undefined') {
-        sessionStorage.setItem('cachedProducts', JSON.stringify(products))
-      }
-      const groupedData = groupProductsByType(products)
-      setData(groupedData)
-      setTotalProducts(products.length)
-      setProductsShouldRefetch(false)
-    } catch (error) {
-      setIsLoading(false)
-    } finally {
-      setIsLoading(false)
-    }
-  }
-
-  useEffect(() => {
-    if (productsShouldRefetch) {
-      fetchData()
-    } else {
-      if (typeof window !== 'undefined') {
-        const cachedStatsProducts = sessionStorage.getItem('cachedProducts')
-        if (cachedStatsProducts) {
-          const groupedData = groupProductsByType(JSON.parse(cachedStatsProducts))
-          setData(groupedData)
-          setTotalProducts(JSON.parse(cachedStatsProducts).length)
-          setIsLoading(false)
-        } else {
-          fetchData()
-        }
-      }
-    }
-  }, [productsShouldRefetch])
+const ProductTypesChart = ({ products, isLoading }: ProductTypesChartProps) => {
 
   const groupProductsByType = (products: Product[]) => {
     const groupedData: { [key: string]: number } = {}
@@ -91,6 +56,9 @@ const ProductTypesChart = () => {
         fill: colors[index % colors.length]
       }))
   }
+
+  const data = useMemo(() => groupProductsByType(products), [products])
+  const totalProducts = products.length
 
   return isLoading ? 
   <>
