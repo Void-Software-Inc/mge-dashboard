@@ -1,11 +1,9 @@
 "use client"
 
-import React, { useState, useEffect } from 'react'
+import React, { useState, useMemo } from 'react'
 import { Bar, BarChart, CartesianGrid, XAxis } from "recharts"
 import { format, subDays, subMonths, parseISO } from 'date-fns'
 import { fr } from 'date-fns/locale'
-import { addDays } from 'date-fns'
-import { getQuotes } from '@/services/quotes'
 import {
   Card,
   CardContent,
@@ -27,8 +25,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-import { useAppContext } from '@/app/context/AppContext'
 import { Skeleton } from '../ui/skeleton'
+import { Quote } from '@/utils/types/quotes'
 
 const chartConfig: ChartConfig = {
   quotes: {
@@ -37,117 +35,16 @@ const chartConfig: ChartConfig = {
   },
 }
 
-const QuoteCreationChart = () => {
+interface QuoteCreationChartProps {
+  quotes: Quote[]
+  isLoading: boolean
+}
+
+const QuoteCreationChart = ({ quotes, isLoading }: QuoteCreationChartProps) => {
+
   const [timeRange, setTimeRange] = useState("90j")
-  const [data, setData] = useState<any[]>([])
-  const { quotesShouldRefetch, setQuotesShouldRefetch } = useAppContext()
-  const [isLoading, setIsLoading] = useState(true)
 
-
-  
-
-  const fetchData = async () => {
-    setIsLoading(true)
-    try {
-      const quotes = await getQuotes()
-      if (typeof window !== 'undefined') {
-        sessionStorage.setItem('cachedQuotes', JSON.stringify(quotes))
-      }
-      const now = new Date()
-      let startDate = subMonths(now, 3)
-
-      if (timeRange === "30j") {
-        startDate = subDays(now, 30)
-      } else if (timeRange === "7j") {
-        startDate = subDays(now, 7)
-      }
-
-      const filteredQuotes = quotes.filter(quote => 
-        new Date(quote.created_at) >= startDate && new Date(quote.created_at) <= now
-      )
-
-      const groupedData = groupQuotesByDate(filteredQuotes)
-      setData(groupedData)
-      setQuotesShouldRefetch(false)
-    } catch (error) {
-      setIsLoading(false)
-    } finally {
-      setIsLoading(false)
-    }
-  }
-
-  useEffect(() => {
-    if (quotesShouldRefetch) {
-      fetchData()
-    } else {
-      if (typeof window !== 'undefined') {
-        const cachedStatsQuotes = sessionStorage.getItem('cachedQuotes')
-        if (cachedStatsQuotes) {
-          const now = new Date()
-          let startDate = subMonths(now, 3)
-
-          if (timeRange === "30j") {
-            startDate = subDays(now, 30)
-          } else if (timeRange === "7j") {
-            startDate = subDays(now, 7)
-          }
-
-          const parsedCachedStatsQuotes = JSON.parse(cachedStatsQuotes)
-          const filteredQuotes = parsedCachedStatsQuotes.filter((quote: { created_at: string }) => 
-            new Date(quote.created_at) >= startDate && new Date(quote.created_at) <= now
-          )
-
-          const groupedData = groupQuotesByDate(filteredQuotes)
-          setData(groupedData)
-          setIsLoading(false)
-        } else {
-          fetchData()
-        }
-      }
-    }
-  }, [timeRange, quotesShouldRefetch])
-
-  /*useEffect(() => {
-    const fetchData = async () => {
-      // Generate 500 fake quotes
-      const fakeQuotes = generateFakeQuotes(500)
-      const now = new Date()
-      let startDate = subMonths(now, 3)
-      
-      if (timeRange === "30j") {
-        startDate = subDays(now, 30)
-      } else if (timeRange === "7j") {
-        startDate = subDays(now, 7)
-      }
-  
-      const filteredQuotes = fakeQuotes.filter(quote => 
-        new Date(quote.created_at) >= startDate && new Date(quote.created_at) <= now
-      )
-  
-      const groupedData = groupQuotesByDate(filteredQuotes)
-      setData(groupedData)
-    }
-  
-    fetchData()
-  }, [timeRange, quotesShouldRefetch])
-
-  const generateFakeQuotes = (count: number) => {
-    const endDate = new Date()
-    const startDate = subMonths(endDate, 3)
-    const quotes = []
-  
-    for (let i = 0; i < count; i++) {
-      const createdAt = new Date(startDate.getTime() + Math.random() * (endDate.getTime() - startDate.getTime()))
-      quotes.push({
-        id: i + 1,
-        created_at: createdAt.toISOString(),
-      })
-    }
-  
-    return quotes
-  }*/
-
-  const groupQuotesByDate = (quotes: any[]) => {
+  const groupQuotesByDate = (quotes: Quote[]) => {
     const groupedData: { [key: string]: number } = {}
   
     quotes.forEach(quote => {
@@ -160,7 +57,24 @@ const QuoteCreationChart = () => {
       .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
   }
 
-  const total = data.reduce((acc, curr) => acc + curr.quotes, 0)
+  const filteredAndGroupedData = useMemo(() => {
+    const now = new Date()
+    let startDate = subMonths(now, 3)
+
+    if (timeRange === "30j") {
+      startDate = subDays(now, 30)
+    } else if (timeRange === "7j") {
+      startDate = subDays(now, 7)
+    }
+
+    const filteredQuotes = quotes.filter(quote => 
+      new Date(quote.created_at) >= startDate && new Date(quote.created_at) <= now
+    )
+
+    return groupQuotesByDate(filteredQuotes)
+  }, [quotes, timeRange])
+
+  const total = filteredAndGroupedData.reduce((acc, curr) => acc + curr.quotes, 0)
 
   return isLoading ? 
   <>
@@ -214,7 +128,7 @@ const QuoteCreationChart = () => {
           className="h-[275px] w-full"
         >
           <BarChart
-            data={data}
+            data={filteredAndGroupedData}
             margin={{
               left: 0,
               right: 0,
