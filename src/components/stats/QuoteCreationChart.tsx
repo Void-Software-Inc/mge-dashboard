@@ -95,9 +95,9 @@ const QuoteCreationChart = ({ quotes, isLoading }: QuoteCreationChartProps) => {
     <Card className='w-full h-[350px] flex flex-col'>
       <CardHeader className="flex items-center justify-center sm:flex-row border-b p-0">
         <div className="flex flex-1 flex-col justify-center gap-1 px-2 py-2 md:py-2">
-          <CardTitle className='text-lg md:text-xl text-center'>Devis créés</CardTitle>
+          <CardTitle className='text-lg md:text-xl text-center'>Devis en cours</CardTitle>
           <CardDescription className='text-sm text-center'>
-            Nombre total de devis créés : {total}
+            Nombre total de devis en cours : {total}
           </CardDescription>
         </div>
         <div className="hidden md:flex px-2 py-2">
