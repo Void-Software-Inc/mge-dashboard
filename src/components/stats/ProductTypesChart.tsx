@@ -1,8 +1,7 @@
 "use client"
 
-import React, { useState, useEffect, useMemo } from 'react'
+import React, { useMemo } from 'react'
 import { Label, Pie, PieChart } from 'recharts'
-import { getProducts } from '@/services/products'
 import { Product } from '@/utils/types/products'
 import {
   Card,
@@ -18,7 +17,6 @@ import {
   ChartTooltip,
   ChartTooltipContent,
 } from "@/components/ui/chart"
-import { useAppContext } from '@/app/context/AppContext'
 import { Skeleton } from '../ui/skeleton'
 
 const chartConfig: ChartConfig = {

@@ -237,3 +237,20 @@ export async function deleteProductRecord(ids: number[]): Promise<void> {
     throw error;
   }
 }
+
+/********************* PRODUCT STATS *********************/
+
+export async function getMostPopularProducts(): Promise<{ id: string; name: string; count: number }[]> {
+  try {
+    const url = `${API_URL}/stats/mostPopularProducts`;
+    const response = await fetch(url);
+    if (!response.ok) {
+      throw new Error('Failed to fetch most popular products');
+    }
+    const { popularProducts } = await response.json();
+    return popularProducts;
+  } catch (error) {
+    console.error('Error fetching most popular products:', error);
+    throw error;
+  }
+}
