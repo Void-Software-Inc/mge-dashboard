@@ -1,4 +1,4 @@
-import { Quote, QuoteItem, QuoteRecord } from "@/utils/types/quotes";
+import { Quote, QuoteItem, QuoteRecord, FinishedQuote } from "@/utils/types/quotes";
 import { Product } from "@/utils/types/products";
 
 const API_URL = '/api';
@@ -111,6 +111,26 @@ export async function deleteQuote(ids: number[]): Promise<void> {
     }
   } catch (error) {
     console.error('Error deleting quote(s):', error);
+    throw error;
+  }
+}
+
+export async function finishQuote(ids: number[]): Promise<void> {
+  try {
+    const url = `${API_URL}/quotes/finish`;
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ ids }),
+    });
+
+    if (!response.ok) {
+      throw new Error('Failed to finish quote(s)');
+    }
+  } catch (error) {
+    console.error('Error finishing quote(s):', error);
     throw error;
   }
 }
@@ -280,6 +300,59 @@ export async function deleteQuoteRecord(ids: number[]): Promise<void> {
     }
   } catch (error) {
     console.error('Error deleting quote(s) from records:', error);
+    throw error;
+  }
+}
+
+/***************************** FinishedQuotes *****************************/
+
+export async function getFinishedQuotes(): Promise<FinishedQuote[]> {
+  try {
+    const url = `${API_URL}/records/finishedQuotes`
+    const response = await fetch(url);
+    if (!response.ok) {
+      throw new Error('Failed to fetch finished quotes');
+    }
+    const { finished_quotes } = await response.json();
+    const cleanFinishedQuotes = finished_quotes.map((quotes: FinishedQuote) => ({
+      id: quotes.id,
+      first_name: quotes.first_name,
+      last_name: quotes.last_name,
+      phone_number: quotes.phone_number,
+      email: quotes.email,
+      event_start_date: quotes.event_start_date,
+      event_end_date: quotes.event_end_date,
+      status: quotes.status,
+      total_cost: quotes.total_cost,
+      is_traiteur: quotes.is_traiteur,
+      traiteur_price: quotes.traiteur_price,
+      other_expenses: quotes.other_expenses,
+      description: quotes.description,
+      finished_at: quotes.finished_at,
+    }))
+    return cleanFinishedQuotes;
+  } catch (error) {
+    console.error('Error fetching finished quotes:', error);
+    throw error;
+  }
+}
+
+export async function restoreFinishedQuote(ids: number[]): Promise<void> {
+  try {
+    const url = `${API_URL}/records/finishedQuotes/restore`;
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ ids }),
+    });
+
+    if (!response.ok) {
+      throw new Error('Failed to restore finished quote(s)');
+    }
+  } catch (error) {
+    console.error('Error restoring finished quote(s):', error);
     throw error;
   }
 }

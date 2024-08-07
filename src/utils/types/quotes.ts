@@ -33,6 +33,23 @@ export type QuoteRecord = {
   description: string;
 };
 
+export type FinishedQuote = {
+  id: number;
+  first_name: string;
+  last_name: string;
+  phone_number: string;
+  email: string;
+  event_start_date: string;
+  event_end_date: string;
+  status: string;
+  total_cost: number;
+  is_traiteur: boolean;
+  traiteur_price: number;
+  other_expenses: number;
+  finished_at: string;
+  description: string;
+};
+
 export type QuoteItem = {
   id: number;
   quote_id: number;

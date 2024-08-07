@@ -19,7 +19,6 @@ import {
   DropdownMenuCheckboxItem,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
@@ -112,7 +111,7 @@ export const columns: ColumnDef<ProductRecord>[] = [
             variant="ghost"
             onClick={() => setIsRestoreDialogOpen(true)}
             size="icon"
-            className="text-black hover:text-green-500 hover:bg-gray-50"
+            className="text-blue-500 hover:text-blue-600 hover:bg-gray-50"
           >
             <SymbolIcon className="h-4 w-4" />
           </Button>

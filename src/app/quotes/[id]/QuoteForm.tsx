@@ -7,6 +7,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { Label } from "@/components/ui/label"
 import { Button } from "@/components/ui/button"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog"
 import { Toaster, toast } from 'sonner'
 import { Skeleton } from "@/components/ui/skeleton"
 import { Switch } from "@/components/ui/switch"
@@ -14,7 +15,7 @@ import { ChevronLeftIcon, DownloadIcon } from "@radix-ui/react-icons"
 
 import { useRouter } from 'next/navigation'
 import { useAppContext } from "@/app/context/AppContext"
-import { getQuote, getQuoteItems, updateQuote, deleteQuoteItem, updateQuoteItem, createQuoteItem } from "@/services/quotes"
+import { getQuote, getQuoteItems, updateQuote, deleteQuoteItem, finishQuote, updateQuoteItem, createQuoteItem } from "@/services/quotes"
 import { Quote, quoteStatus, QuoteItem } from "@/utils/types/quotes"
 import { DatePicker } from "../components/date-picker"
 import { QuoteItemList } from "../components/quote-item-list"
@@ -53,8 +54,10 @@ export default function QuoteForm({ quoteId }: { quoteId: string }) {
 
   const [isChanged, setIsChanged] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
-  const { setQuotesShouldRefetch } = useAppContext()
+  const { setQuotesShouldRefetch, setFinishedQuotesShouldRefetch } = useAppContext()
   const [totalCostFromItems, setTotalCostFromItems] = useState(0);
+
+  const [showFinishDialog, setShowFinishDialog] = useState(false);
 
   const handleGoBack = useCallback(() => {
     router.push('/quotes')
@@ -266,15 +269,26 @@ export default function QuoteForm({ quoteId }: { quoteId: string }) {
     e.preventDefault();
     if (!isFormValid || !isChanged || !formData) return;
 
+    if (formData.status === 'termine') {
+      setShowFinishDialog(true);
+      return;
+    }
+
+    await updateQuoteAndItems();
+  };
+
+  const updateQuoteAndItems = async () => {
     setIsSubmitting(true);
     try {
       const formDataToSend = new FormData();
       // Append all form fields
-      Object.entries(formData).forEach(([key, value]) => {
-        if (value !== null && value !== undefined) {
-          formDataToSend.append(key, value.toString());
-        }
-      });
+      if (formData) {
+        Object.entries(formData).forEach(([key, value]) => {
+          if (value !== null && value !== undefined) {
+            formDataToSend.append(key, value.toString());
+          }
+        });
+      }
 
       // Update the quote
       const response = await updateQuote(formDataToSend);
@@ -315,6 +329,19 @@ export default function QuoteForm({ quoteId }: { quoteId: string }) {
     } finally {
       setShouldReloadItems(false);
       setIsSubmitting(false);
+    }
+  };
+
+  const handleFinishQuote = async () => {
+    try {
+      await updateQuoteAndItems();
+      await finishQuote([parseInt(quoteId)]);
+      setFinishedQuotesShouldRefetch(true);
+      toast.success('Devis terminé et archivé avec succès');
+      router.push('/quotes');
+    } catch (error) {
+      console.error('Error finishing quote:', error);
+      toast.error('Erreur lors de la finalisation du devis');
     }
   };
 
@@ -546,6 +573,20 @@ export default function QuoteForm({ quoteId }: { quoteId: string }) {
           </div>
         </div>
       </form>
+      <AlertDialog open={showFinishDialog} onOpenChange={setShowFinishDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Confirmer la finalisation du devis</AlertDialogTitle>
+            <AlertDialogDescription>
+              Le statut du devis est "terminé". En procédant avec cette action, vous déplacerez le devis dans les archives.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setShowFinishDialog(false)}>Annuler</AlertDialogCancel>
+            <AlertDialogAction onClick={handleFinishQuote}>Procéder</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
       <Toaster />
     </>
   )
