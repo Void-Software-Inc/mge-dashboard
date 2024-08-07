@@ -38,7 +38,6 @@ import { Input } from "@/components/ui/input"
 import { ProductRecord } from "@/utils/types/products"
 import { Skeleton } from "@/components/ui/skeleton"
 import { useAppContext } from "@/app/context/AppContext"
-import { useRouter } from 'next/navigation'
 
 interface DataTableProps<TData, TValue> {
   columns: ColumnDef<TData, TValue>[]

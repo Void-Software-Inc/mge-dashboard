@@ -2,7 +2,7 @@
 
 import * as React from "react"
 
-import { getQuotesRecords } from "@/services/quotes"
+import { getFinishedQuotes } from "@/services/quotes"
 
 import {
   ColumnDef,
@@ -35,7 +35,7 @@ import {
 
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { QuoteRecord } from "@/utils/types/quotes"
+import { FinishedQuote } from "@/utils/types/quotes"
 import { Skeleton } from "@/components/ui/skeleton"
 import { useAppContext } from "@/app/context/AppContext"
 
@@ -45,11 +45,11 @@ interface DataTableProps<TData, TValue> {
 
 export function DataTable({
   columns,
-}: Omit<DataTableProps<QuoteRecord, any>, 'data'>) {
+}: Omit<DataTableProps<FinishedQuote, any>, 'data'>) {
 
-  const [quotesRecords, setQuotesRecords] = React.useState<QuoteRecord[]>([])
+  const [finishedQuotes, setFinishedQuotes] = React.useState<FinishedQuote[]>([])
   const [isLoading, setIsLoading] = React.useState(true)
-  const { quotesRecordsShouldRefetch, setQuotesRecordsShouldRefetch } = useAppContext()
+  const { finishedQuotesShouldRefetch, setFinishedQuotesShouldRefetch } = useAppContext()
   const [isMounted, setIsMounted] = React.useState(false)
 
   const [sorting, setSorting] = React.useState<SortingState>([])
@@ -57,42 +57,42 @@ export function DataTable({
   const [columnVisibility, setColumnVisibility] = React.useState<VisibilityState>({})
   const [rowSelection, setRowSelection] = React.useState({})
 
-  const fetchQuotesRecords = async () => {
+  const fetchFinishedQuotes = async () => {
     setIsLoading(true)
     try {
-      const quotesRecords = await getQuotesRecords()
-      setQuotesRecords(quotesRecords)
+      const finishedQuotes = await getFinishedQuotes()
+      setFinishedQuotes(finishedQuotes)
       if (typeof window !== 'undefined') {
-        sessionStorage.setItem('cachedQuotesRecords', JSON.stringify(quotesRecords))
+        sessionStorage.setItem('cachedFinishedQuotes', JSON.stringify(finishedQuotes))
       }
     } catch (error) {
-      console.error('Error fetching quotes:', error)
+      console.error('Error fetching finished quotes:', error)
     }
-    setQuotesRecordsShouldRefetch(false)
+    setFinishedQuotesShouldRefetch(false)
     setIsLoading(false)
   }
 
   React.useEffect(() => {
     setIsMounted(true)
-    if (quotesRecordsShouldRefetch) {
-      fetchQuotesRecords()
+    if (finishedQuotesShouldRefetch) {
+      fetchFinishedQuotes()
     } else {
       if (typeof window !== 'undefined') {
-        const cachedQuotesRecords = sessionStorage.getItem('cachedQuotesRecords')
-        if (cachedQuotesRecords) {
-          setQuotesRecords(JSON.parse(cachedQuotesRecords))
+        const cachedFinishedQuotes = sessionStorage.getItem('cachedFinishedQuotes')
+        if (cachedFinishedQuotes) {
+          setFinishedQuotes(JSON.parse(cachedFinishedQuotes))
           setIsLoading(false)
         } else {
-          fetchQuotesRecords()
+          fetchFinishedQuotes()
         }
       }
     }
-  }, [quotesRecordsShouldRefetch])
+  }, [finishedQuotesShouldRefetch])
 
-  const memoizedQuotesRecords = React.useMemo(() => quotesRecords, [quotesRecords])
+  const memoizedFinishedQuotes = React.useMemo(() => finishedQuotes, [finishedQuotes])
   
   const table = useReactTable({
-    data : memoizedQuotesRecords,
+    data : memoizedFinishedQuotes,
     columns,
     getCoreRowModel: getCoreRowModel(),
     getPaginationRowModel: getPaginationRowModel(),
