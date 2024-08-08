@@ -14,6 +14,8 @@ const AppContext = createContext<{
   setQuotesRecordsShouldRefetch: React.Dispatch<React.SetStateAction<boolean>>;
   finishedQuotesShouldRefetch: boolean;
   setFinishedQuotesShouldRefetch: React.Dispatch<React.SetStateAction<boolean>>;
+  popularProductsShouldRefetch: boolean;
+  setPopularProductsShouldRefetch: React.Dispatch<React.SetStateAction<boolean>>;
 }>({
   productsShouldRefetch: false,
   setProductsShouldRefetch: () => {},
@@ -25,6 +27,8 @@ const AppContext = createContext<{
   setQuotesRecordsShouldRefetch: () => {},
   finishedQuotesShouldRefetch: false,
   setFinishedQuotesShouldRefetch: () => {},
+  popularProductsShouldRefetch: false,
+  setPopularProductsShouldRefetch: () => {},
 })
 
 export const AppProvider = ({ children }: { children: React.ReactNode }) => {
@@ -33,6 +37,8 @@ export const AppProvider = ({ children }: { children: React.ReactNode }) => {
   const [productsRecordsShouldRefetch, setProductsRecordsShouldRefetch] = useState(false)
   const [quotesRecordsShouldRefetch, setQuotesRecordsShouldRefetch] = useState(false)
   const [finishedQuotesShouldRefetch, setFinishedQuotesShouldRefetch] = useState(false)
+  const [popularProductsShouldRefetch, setPopularProductsShouldRefetch] = useState(false)
+
   useEffect(() => {
     const supabase = createClient()
 
@@ -45,6 +51,7 @@ export const AppProvider = ({ children }: { children: React.ReactNode }) => {
     productsChannel
       .on('postgres_changes', { event: '*', schema: 'public', table: 'products' }, () => {
         setProductsShouldRefetch(true)
+        setPopularProductsShouldRefetch(true)
       })
       .subscribe()
 
@@ -95,7 +102,9 @@ export const AppProvider = ({ children }: { children: React.ReactNode }) => {
       quotesRecordsShouldRefetch,
       setQuotesRecordsShouldRefetch,
       finishedQuotesShouldRefetch,
-      setFinishedQuotesShouldRefetch
+      setFinishedQuotesShouldRefetch,
+      popularProductsShouldRefetch,
+      setPopularProductsShouldRefetch
     }}>
       {children}
     </AppContext.Provider>

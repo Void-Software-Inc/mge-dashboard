@@ -21,7 +21,9 @@ export default function StatsRegroupment() {
         productsShouldRefetch, 
         setProductsShouldRefetch,
         quotesShouldRefetch,
-        setQuotesShouldRefetch
+        setQuotesShouldRefetch,
+        popularProductsShouldRefetch,
+        setPopularProductsShouldRefetch
     } = useAppContext()
 
     const fetchProducts = async () => {
@@ -64,6 +66,7 @@ export default function StatsRegroupment() {
                 sessionStorage.setItem('cachedPopularProducts', JSON.stringify(fetchedPopularProducts))
             }
             setPopularProducts(fetchedPopularProducts)
+            setPopularProductsShouldRefetch(false)
         } catch (error) {
             console.error('Error fetching popular products:', error)
         } finally {
@@ -90,17 +93,25 @@ export default function StatsRegroupment() {
     useEffect(() => {
         if (quotesShouldRefetch) {
             fetchQuotes()
-            fetchPopularProducts()
         } else {
             if (typeof window !== 'undefined') {
                 const cachedQuotes = sessionStorage.getItem('cachedQuotes')
-                const cachedPopularProducts = sessionStorage.getItem('cachedPopularProducts')
                 if (cachedQuotes) {
                     setQuotes(JSON.parse(cachedQuotes))
                     setIsQuotesLoading(false)
                 } else {
                     fetchQuotes()
                 }
+            }
+        }
+    }, [quotesShouldRefetch])
+
+    useEffect(() => {
+        if (popularProductsShouldRefetch) {
+            fetchPopularProducts()
+        } else {
+            if (typeof window !== 'undefined') {
+                const cachedPopularProducts = sessionStorage.getItem('cachedPopularProducts')
                 if (cachedPopularProducts) {
                     setPopularProducts(JSON.parse(cachedPopularProducts))
                     setIsPopularProductsLoading(false)
@@ -109,7 +120,7 @@ export default function StatsRegroupment() {
                 }
             }
         }
-    }, [quotesShouldRefetch])
+    }, [popularProductsShouldRefetch])
 
     return (
       <main className="flex min-h-screen flex-col items-center p-1 md:p-4">

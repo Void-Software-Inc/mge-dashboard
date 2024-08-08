@@ -79,13 +79,14 @@ export const columns: ColumnDef<Product>[] = [
       const product = row.original
       const router = useRouter()
       const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
-      const { setProductsShouldRefetch, setProductsRecordsShouldRefetch } = useAppContext()
+      const { setProductsShouldRefetch, setProductsRecordsShouldRefetch, setPopularProductsShouldRefetch } = useAppContext()
 
       const handleDeleteProduct = async () => {
         try {
           await deleteProduct([product.id]);
           setProductsShouldRefetch(true);
           setProductsRecordsShouldRefetch(true);
+          setPopularProductsShouldRefetch(true);
           toast.success('Product deleted successfully');
         } catch (error) {
           console.error('Error deleting product:', error);
