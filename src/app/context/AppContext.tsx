@@ -58,6 +58,7 @@ export const AppProvider = ({ children }: { children: React.ReactNode }) => {
     quotesChannel
       .on('postgres_changes', { event: '*', schema: 'public', table: 'quotes' }, () => {
         setQuotesShouldRefetch(true)
+        setPopularProductsShouldRefetch(true)
       })
       .subscribe()
 
