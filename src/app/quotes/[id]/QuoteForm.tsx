@@ -181,12 +181,25 @@ export default function QuoteForm({ quoteId }: { quoteId: string }) {
     setFormData(prev => prev ? { ...prev, [id]: value } : null)
   }
 
-  const handleSwitchChange = (checked: boolean) => {
-    setFormData(prev => prev ? { 
-      ...prev, 
-      is_traiteur: checked, 
-      traiteur_price: checked ? prev.traiteur_price : 0 
-    } : null);
+  const handleSwitchChange = (id: string) => {
+    setFormData((prevData) => {
+      if (!prevData) return null;
+      if (id === 'is_traiteur') {
+        const newIsTrateur = !prevData.is_traiteur;
+        return {
+          ...prevData,
+          is_traiteur: newIsTrateur,
+          traiteur_price: newIsTrateur ? prevData.traiteur_price : 0
+        };
+      } else if (id === 'is_paid') {
+        return {
+          ...prevData,
+          is_paid: !prevData.is_paid
+        };
+      }
+      return prevData;
+    });
+    setIsChanged(true);
   };
 
   const handleStartDateChange = (date: Date | undefined) => {
@@ -514,7 +527,7 @@ export default function QuoteForm({ quoteId }: { quoteId: string }) {
             <Switch
               id="is_traiteur"
               checked={formData?.is_traiteur ?? false}
-              onCheckedChange={handleSwitchChange}
+              onCheckedChange={() => handleSwitchChange('is_traiteur')}
             />
             <Label htmlFor="is_traiteur" className="text-base">Service traiteur</Label>
           </div>
@@ -554,6 +567,14 @@ export default function QuoteForm({ quoteId }: { quoteId: string }) {
               disabled
             />
             {errors.total_cost && <p className="text-red-500 text-sm mt-1">{errors.total_cost}</p>}
+          </div>
+          <div className="mb-4 flex items-center space-x-2">
+            <Switch
+              id="is_paid"
+              checked={formData?.is_paid ?? false}
+              onCheckedChange={() => handleSwitchChange('is_paid')}
+            />
+            <Label htmlFor="is_paid" className="text-base">Payé</Label>
           </div>
           <div className="mb-4">
             <Label className="text-base">Date de création du devis</Label>

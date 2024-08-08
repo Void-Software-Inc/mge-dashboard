@@ -40,6 +40,7 @@ export async function POST(request: NextRequest) {
                     event_end_date: finishedQuote.event_end_date,
                     status: 'nouveau', // restoring a finished quote sets the status to "nouveau"
                     total_cost: finishedQuote.total_cost,
+                    is_paid: finishedQuote.is_paid,
                     is_traiteur: finishedQuote.is_traiteur,
                     traiteur_price: finishedQuote.traiteur_price,
                     other_expenses: finishedQuote.other_expenses,

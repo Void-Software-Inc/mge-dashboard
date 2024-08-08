@@ -113,14 +113,24 @@ export default function QuoteCreateForm() {
     }));
     setTouched(prev => ({ ...prev, event_end_date: true }));
   };
-
-  const handleSwitchChange = (checked: boolean) => {
-    setFormData(prev => ({ 
-      ...prev, 
-      is_traiteur: checked,
-      traiteur_price: checked ? formData.traiteur_price : 0
-    }));
-    setTouched(prev => ({ ...prev, is_traiteur: true }));
+  const handleSwitchChange = (id: string) => {
+    setFormData((prevData) => {
+      if (!prevData) return prevData;
+      if (id === 'is_traiteur') {
+        const newIsTrateur = !prevData.is_traiteur;
+        return {
+          ...prevData,
+          is_traiteur: newIsTrateur,
+          traiteur_price: newIsTrateur ? prevData.traiteur_price : 0
+        };
+      } else if (id === 'is_paid') {
+        return {
+          ...prevData,
+          is_paid: !prevData.is_paid
+        };
+      }
+      return prevData;
+    });
   };
 
   const handleItemCreate = (newItems: QuoteItem[]) => {
@@ -227,6 +237,8 @@ export default function QuoteCreateForm() {
     }
   };
 
+  const filteredQuoteStatus = quoteStatus.filter(status => status.value !== 'termine');
+
   return (
     <>
       <div className="w-[100vw] h-14 fixed bg-white flex items-center z-10">
@@ -264,7 +276,7 @@ export default function QuoteCreateForm() {
                 <SelectValue placeholder="Sélectionner un statut" />
               </SelectTrigger>
               <SelectContent>
-                {quoteStatus.map((status) => (
+                {filteredQuoteStatus.map((status) => (
                   <SelectItem key={status.value} value={status.value}>
                     <div className="flex items-center">
                       <div 
@@ -366,7 +378,7 @@ export default function QuoteCreateForm() {
             <Switch
               id="is_traiteur"
               checked={formData.is_traiteur}
-              onCheckedChange={handleSwitchChange}
+              onCheckedChange={() => handleSwitchChange('is_traiteur')}
             />
             <Label htmlFor="is_traiteur" className="text-base">Service traiteur</Label>
           </div>
@@ -402,6 +414,14 @@ export default function QuoteCreateForm() {
               className="w-full text-base" 
               disabled
             />
+          </div>
+          <div className="mb-4 flex items-center space-x-2">
+            <Switch
+              id="is_paid"
+              checked={formData.is_paid}
+              onCheckedChange={() => handleSwitchChange('is_paid')}
+            />
+            <Label htmlFor="is_paid" className="text-base">Payé</Label>
           </div>
         </div>
       </form>
