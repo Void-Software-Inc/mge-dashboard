@@ -1,8 +1,8 @@
 'use client'
 
-import React, { useState, useEffect } from 'react'
+import React from 'react'
 import { TrendingUp } from "lucide-react"
-import { Pie, PieChart } from "recharts"
+import { Bar, BarChart, CartesianGrid, LabelList, XAxis, YAxis } from "recharts"
 
 import {
   Card,
@@ -23,6 +23,7 @@ interface PopularProduct {
   id: string;
   name: string;
   count: number;
+  average_quantity: number;
 }
 
 interface MostPopularProductsChartProps {
@@ -31,48 +32,65 @@ interface MostPopularProductsChartProps {
 }
 
 const MostPopularProductsChart: React.FC<MostPopularProductsChartProps> = ({ popularProducts, isLoading }) => {
-  
-  
-  const chartData = popularProducts.map((product, index) => ({
+  const chartData = popularProducts.map(product => ({
     name: product.name,
     count: product.count,
-    fill: `hsl(var(--chart-${index + 1}))`
+    average_quantity: product.average_quantity
   }))
 
+  
   const chartConfig: ChartConfig = {
     count: {
       label: "Count",
+      color: "hsl(var(--chart-1))",
     },
-    ...popularProducts.reduce((config, product, index) => {
-      config[product.name] = {
-        label: product.name,
-        color: `hsl(var(--chart-${index + 1}))`,
-      }
-      return config
-    }, {} as ChartConfig)
-  }
+    average_quantity: {
+      label: "Average Quantity",
+      color: "hsl(var(--chart-2))",
+    },
+    label: {
+      color: "hsl(var(--background))",
+    },
+  } satisfies ChartConfig
 
   const CustomTooltipContent = ({ active, payload }: any) => {
     if (active && payload && payload.length) {
       const data = payload[0].payload;
       return (
         <div className="bg-background p-2 rounded-md shadow-md">
-          <div className="flex items-center gap-2">
-            <div 
-              className="w-3 h-3 rounded-sm" 
-              style={{ backgroundColor: data.fill }}
-            />
-            <p className="font-semibold">{data.name}</p>
-          </div>
-          <p>Quantité: {data.count}</p>
+          <p className="font-semibold">{data.name}</p>
+          <p>Apparait dans {data.count} devis</p>
+          <p>Quantité moyenne commandée: {data.average_quantity.toFixed(2)}</p>
         </div>
       );
     }
     return null;
   };
 
-  return isLoading ? 
-  <>
+  const truncateText = (text: string, maxLength: number) => {
+    return text.length > maxLength ? text.slice(0, maxLength) + '...' : text;
+  };
+
+  const renderCustomizedLabel = (props: any) => {
+    const { x, y, width, height, value } = props;
+    const radius = 10;
+    const truncatedValue = truncateText(value, 15);
+
+    return (
+      <text
+        x={x + 5}
+        y={y + height / 2}
+        fill="#6b7280"
+        textAnchor="start"
+        dominantBaseline="middle"
+        style={{ fontSize: '12px' }}
+      >
+        {truncatedValue}
+      </text>
+    );
+  };
+
+  return isLoading ? (
     <Card className="flex flex-col h-[350px]">
       <CardHeader className="items-center pb-0">
         <Skeleton className="h-6 w-3/4" />
@@ -86,34 +104,57 @@ const MostPopularProductsChart: React.FC<MostPopularProductsChartProps> = ({ pop
         <Skeleton className="h-4 w-1/2" />
       </CardFooter>
     </Card>
-  </>
-  : (
+  ) : (
     <Card className="flex flex-col h-[350px]">
       <CardHeader className="items-center pb-0">
-        <CardTitle>Produits les plus commandés</CardTitle>
-        <CardDescription className='text-sm text-center'>Les 5 produits les plus commandés des devis en cours</CardDescription>
+        <CardTitle className='text-center'>Produits les plus commandés</CardTitle>
+        <CardDescription className='text-xs text-center'>Les 5 produits les plus commandés des devis en cours et terminés</CardDescription>
       </CardHeader>
-      <CardContent className="flex-1 pb-0">
-        <ChartContainer
-          config={chartConfig}
-          className="mx-auto aspect-square max-h-[200px]"
-        >
-          <PieChart>
-            <ChartTooltip content={<CustomTooltipContent />} />
-            <Pie 
-              data={chartData} 
-              dataKey="count" 
-              nameKey="name"
+      <CardContent>
+        <ChartContainer config={chartConfig} className="mx-auto max-h-[220px]">
+          <BarChart
+            data={chartData}
+            layout="vertical"
+            margin={{
+              top: 15,
+              right: 16,
+              left: 15,
+              bottom: 0,
+            }}
+          >
+            <CartesianGrid horizontal={false} vertical={false} />
+            <XAxis type="number" hide />
+            <YAxis 
+              dataKey="name" 
+              type="category" 
+              tickLine={false}
+              tickMargin={10}
+              axisLine={false}
+              tickFormatter={(value) => value.slice(0, 3)}
+              hide
             />
-          </PieChart>
+            <ChartTooltip
+              cursor={false}
+              content={<CustomTooltipContent />}
+            />
+            <Bar dataKey="count" fill="hsl(var(--chart-1))" radius={4}>
+              <LabelList
+                dataKey="name"
+                content={renderCustomizedLabel}
+              />
+              <LabelList
+                dataKey="count"
+                position="right"
+                fill="hsl(var(--foreground))"
+                style={{ fontSize: '12px' }}
+              />
+            </Bar>
+          </BarChart>
         </ChartContainer>
       </CardContent>
-      <CardFooter className="flex-col gap-2 text-sm">
+      <CardFooter className="flex justify-center text-sm">
         <div className="flex items-center gap-2 font-medium leading-none">
           Basé sur les commandes <TrendingUp className="h-4 w-4" />
-        </div>
-        <div className="leading-none text-muted-foreground">
-          Les 5 produits les plus commandés
         </div>
       </CardFooter>
     </Card>
