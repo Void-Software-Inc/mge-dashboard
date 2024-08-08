@@ -339,24 +339,24 @@ export const columns: ColumnDef<Quote>[] = [
   },
   {
     accessorKey: "total_cost",
-    header: () => <div className="text-right text-lime-500">Prix total</div>,
+    header: () => <div className="text-right font-extrabold">Prix total</div>,
     cell: ({ row }) => {
       const price = parseFloat(row.getValue("total_cost"))
       const formatted = new Intl.NumberFormat("en-US", {
         style: "currency",
         currency: "EUR",
       }).format(price)
-       return <div className="text-right font-medium text-lime-500">{formatted}</div>
+       return <div className="text-right font-extrabold">{formatted}</div>
     },
   },
   {
-    accessorKey: "is_traiteur",
-    header: "Traiteur",
+    accessorKey: "is_paid",
+    header: () => <div className="whitespace-nowrap overflow-hidden overflow-ellipsis">Payé</div>,
     cell: ({ row }) => {
-      const isTraiteur = row.getValue("is_traiteur") as boolean;
+      const isPaid = row.getValue("is_paid") as boolean;
       return (
         <div className="flex justify-center">
-          {isTraiteur ? (
+          {isPaid ? (
             <CheckIcon className="h-5 w-5 text-[#bef264] border border-2 border-[#bef264] rounded-full" />
           ) : (
             <Cross2Icon className="h-5 w-5 text-red-500 border border-2 border-red-500 rounded-full" />

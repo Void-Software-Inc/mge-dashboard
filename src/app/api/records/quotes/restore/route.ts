@@ -40,6 +40,7 @@ export async function POST(request: NextRequest) {
                     event_end_date: quoteRecord.event_end_date,
                     status: quoteRecord.status,
                     total_cost: quoteRecord.total_cost,
+                    is_paid: quoteRecord.is_paid,
                     is_traiteur: quoteRecord.is_traiteur,
                     traiteur_price: quoteRecord.traiteur_price,
                     other_expenses: quoteRecord.other_expenses,

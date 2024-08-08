@@ -23,6 +23,7 @@ export async function PUT(request: NextRequest) {
     event_end_date: formData.get('event_end_date'),
     status: formData.get('status'),
     total_cost: formData.get('total_cost'),
+    is_paid: formData.get('is_paid') === 'true',
     is_traiteur: formData.get('is_traiteur') === 'true',
     traiteur_price: formData.get('traiteur_price'),
     other_expenses: formData.get('other_expenses'),
