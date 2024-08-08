@@ -134,7 +134,7 @@ const ProductTypesChart = ({ products, isLoading }: ProductTypesChartProps) => {
         <div className="flex items-center gap-2 font-medium leading-none">
           {totalProducts} produits en stock
         </div>
-        <div className="leading-none text-muted-foreground">
+        <div className="leading-none text-muted-foreground text-center">
           Affichage de tous les produits en stock
         </div>
       </CardFooter>

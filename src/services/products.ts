@@ -240,7 +240,7 @@ export async function deleteProductRecord(ids: number[]): Promise<void> {
 
 /********************* PRODUCT STATS *********************/
 
-export async function getMostPopularProducts(): Promise<{ id: string; name: string; count: number }[]> {
+export async function getMostPopularProducts(): Promise<{ id: string; name: string; count: number; average_quantity: number }[]> {
   try {
     const url = `${API_URL}/stats/mostPopularProducts`;
     const response = await fetch(url);

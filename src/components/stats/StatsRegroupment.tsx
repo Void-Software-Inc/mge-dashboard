@@ -13,7 +13,7 @@ import { useAppContext } from '@/app/context/AppContext'
 export default function StatsRegroupment() {
     const [products, setProducts] = useState<Product[]>([])
     const [quotes, setQuotes] = useState<Quote[]>([])
-    const [popularProducts, setPopularProducts] = useState<{ id: string; name: string; count: number }[]>([])
+    const [popularProducts, setPopularProducts] = useState<{ id: string; name: string; count: number; average_quantity: number }[]>([])
     const [isProductsLoading, setIsProductsLoading] = useState(true)
     const [isQuotesLoading, setIsQuotesLoading] = useState(true)
     const [isPopularProductsLoading, setIsPopularProductsLoading] = useState(true)
@@ -124,7 +124,7 @@ export default function StatsRegroupment() {
 
     return (
       <main className="flex min-h-screen flex-col items-center p-1 md:p-4">
-        <div className='w-full mt-2 grid grid-cols-1 md:grid-cols-3 gap-4'>
+        <div className='w-full mt-2 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4'>
           <div className='w-full px-1 md:px-0'>
             <ProductTypesChart products={products} isLoading={isProductsLoading} />
           </div>
