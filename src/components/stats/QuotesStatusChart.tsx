@@ -2,7 +2,7 @@
 
 import React, { useMemo } from 'react'
 import { Label, Pie, PieChart } from 'recharts'
-import { Product, productTypes, ProductType } from '@/utils/types/products'
+import { Quote, quoteStatus } from '@/utils/types/quotes'
 import {
   Card,
   CardContent,
@@ -20,8 +20,8 @@ import {
 import { Skeleton } from '../ui/skeleton'
 
 const chartConfig: ChartConfig = {
-  products: {
-    label: "Produits",
+  quotes: {
+    label: "Devis",
   },
 }
 
@@ -33,29 +33,29 @@ const colors = [
   "hsl(var(--chart-5))",
 ]
 
-interface ProductTypesChartProps {
-  products: Product[]
+interface QuoteStatusChartProps {
+  quotes: Quote[]
   isLoading: boolean
 }
 
-const ProductTypesChart = ({ products, isLoading }: ProductTypesChartProps) => {
+const QuoteStatusChart = ({ quotes, isLoading }: QuoteStatusChartProps) => {
 
-  const groupProductsByType = (products: Product[]) => {
+  const groupQuotesByStatus = (quotes: Quote[]) => {
     const groupedData: { [key: string]: number } = {}
     
-    products.forEach(product => {
-      groupedData[product.type] = (groupedData[product.type] || 0) + 1
+    quotes.forEach(quote => {
+      groupedData[quote.status] = (groupedData[quote.status] || 0) + 1
     })
   
-    return productTypes.map((type: ProductType, index) => ({
-      type: type.name,
-      count: groupedData[type.value] || 0,
-      fill: colors[index % colors.length]
+    return quoteStatus.map(status => ({
+      status: status.name,
+      count: groupedData[status.value] || 0,
+      fill: status.color
     }))
   }
 
-  const data = useMemo(() => groupProductsByType(products), [products])
-  const totalProducts = products.length
+  const data = useMemo(() => groupQuotesByStatus(quotes), [quotes])
+  const totalQuotes = quotes.length
 
   return isLoading ? 
   <>
@@ -76,8 +76,8 @@ const ProductTypesChart = ({ products, isLoading }: ProductTypesChartProps) => {
    : (
     <Card className="flex flex-col h-[350px]">
       <CardHeader className="items-center pb-0">
-        <CardTitle>Types de Produits</CardTitle>
-        <CardDescription>Répartition des produits par type</CardDescription>
+        <CardTitle>Statuts des devis</CardTitle>
+        <CardDescription>Répartition des devis par statut</CardDescription>
       </CardHeader>
       <CardContent className="flex-1 pb-0">
         <ChartContainer
@@ -98,11 +98,11 @@ const ProductTypesChart = ({ products, isLoading }: ProductTypesChartProps) => {
                           style={{ backgroundColor: data.fill }}
                         />
                         <span className="text-xs font-medium">
-                          {data.type}
+                          {data.status}
                         </span>
                       </div>
                       <div className="mt-1 text-xs text-muted-foreground">
-                        {data.count} produits de ce type
+                        {data.count} devis avec ce statut
                       </div>
                     </div>
                   );
@@ -113,7 +113,7 @@ const ProductTypesChart = ({ products, isLoading }: ProductTypesChartProps) => {
             <Pie
               data={data}
               dataKey="count"
-              nameKey="type"
+              nameKey="status"
               innerRadius={60}
               strokeWidth={5}
             >
@@ -132,14 +132,14 @@ const ProductTypesChart = ({ products, isLoading }: ProductTypesChartProps) => {
                           y={viewBox.cy}
                           className="fill-foreground text-3xl font-bold"
                         >
-                          {totalProducts.toLocaleString()}
+                          {totalQuotes.toLocaleString()}
                         </tspan>
                         <tspan
                           x={viewBox.cx}
                           y={(viewBox.cy || 0) + 24}
                           className="fill-muted-foreground"
                         >
-                          Produits
+                          Devis
                         </tspan>
                       </text>
                     )
@@ -152,14 +152,14 @@ const ProductTypesChart = ({ products, isLoading }: ProductTypesChartProps) => {
       </CardContent>
       <CardFooter className="flex-col gap-2 text-sm">
         <div className="flex items-center gap-2 font-medium leading-none">
-          {totalProducts} produits en stock
+          {totalQuotes} devis au total
         </div>
         <div className="leading-none text-muted-foreground text-center">
-          Affichage de tous les produits en stock
+          Affichage de tous les statuts de devis
         </div>
       </CardFooter>
     </Card>
   )
 }
 
-export default ProductTypesChart
+export default QuoteStatusChart

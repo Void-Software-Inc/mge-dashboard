@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react'
 import QuoteCreationChart from '@/components/stats/QuoteCreationChart';
 import ProductTypesChart from '@/components/stats/ProductTypesChart';
 import MostPopularProductsChart from '@/components/stats/MostPopularProductsChart';
+import QuotesStatusChart from '@/components/stats/QuotesStatusChart';
 import { getProducts, getMostPopularProducts } from '@/services/products';
 import { getQuotes } from '@/services/quotes';
 import { Product } from '@/utils/types/products'
@@ -129,7 +130,7 @@ export default function StatsRegroupment() {
             <ProductTypesChart products={products} isLoading={isProductsLoading} />
           </div>
           <div className='w-full px-1 md:px-0'>
-            <MostPopularProductsChart popularProducts={popularProducts} isLoading={isPopularProductsLoading} />
+            <QuotesStatusChart quotes={quotes} isLoading={isQuotesLoading} />
           </div>
           <div className='w-full px-1 md:px-0'>
             <MostPopularProductsChart popularProducts={popularProducts} isLoading={isPopularProductsLoading} />
