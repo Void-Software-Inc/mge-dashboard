@@ -26,29 +26,28 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { Skeleton } from '../ui/skeleton'
-import { Quote } from '@/utils/types/quotes'
+import { FinishedQuote } from '@/utils/types/quotes'
 
 const chartConfig: ChartConfig = {
-  quotes: {
-    label: "Devis",
-    color: "hsl(var(--chart-1))",
+  finishedQuotes: {
+    label: "Devis terminés",
+    color: "hsl(var(--chart-2))",
   },
 }
 
-interface QuoteCreationChartProps {
-  quotes: Quote[]
+interface FinishedQuoteChartProps {
+  finishedQuotes: FinishedQuote[]
   isLoading: boolean
 }
 
-const QuoteCreationChart = ({ quotes, isLoading }: QuoteCreationChartProps) => {
-
+const FinishedQuoteChart = ({ finishedQuotes, isLoading }: FinishedQuoteChartProps) => {
   const [timeRange, setTimeRange] = useState("90j")
 
-  const groupQuotesByDate = (quotes: Quote[]) => {
+  const groupFinishedQuotesByDate = (finishedQuotes: FinishedQuote[]) => {
     const groupedData: { [key: string]: { count: number; totalCost: number } } = {}
   
-    quotes.forEach(quote => {
-      const date = format(new Date(quote.created_at), 'yyyy-MM-dd')
+    finishedQuotes.forEach(quote => {
+      const date = format(new Date(quote.finished_at), 'yyyy-MM-dd')
       if (!groupedData[date]) {
         groupedData[date] = { count: 0, totalCost: 0 }
       }
@@ -57,7 +56,7 @@ const QuoteCreationChart = ({ quotes, isLoading }: QuoteCreationChartProps) => {
     })
   
     return Object.entries(groupedData)
-      .map(([date, data]) => ({ date, quotes: data.count, totalCost: data.totalCost }))
+      .map(([date, data]) => ({ date, finishedQuotes: data.count, totalCost: data.totalCost }))
       .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
   }
 
@@ -71,14 +70,14 @@ const QuoteCreationChart = ({ quotes, isLoading }: QuoteCreationChartProps) => {
       startDate = subDays(now, 7)
     }
 
-    const filteredQuotes = quotes.filter(quote => 
-      new Date(quote.created_at) >= startDate && new Date(quote.created_at) <= now
+    const filteredQuotes = finishedQuotes.filter(quote => 
+      new Date(quote.finished_at) >= startDate && new Date(quote.finished_at) <= now
     )
 
-    return groupQuotesByDate(filteredQuotes)
-  }, [quotes, timeRange])
+    return groupFinishedQuotesByDate(filteredQuotes)
+  }, [finishedQuotes, timeRange])
 
-  const total = filteredAndGroupedData.reduce((acc, curr) => acc + curr.quotes, 0)
+  const total = filteredAndGroupedData.reduce((acc, curr) => acc + curr.finishedQuotes, 0)
   const totalCost = filteredAndGroupedData.reduce((acc, curr) => acc + curr.totalCost, 0)
 
   return isLoading ? 
@@ -100,11 +99,11 @@ const QuoteCreationChart = ({ quotes, isLoading }: QuoteCreationChartProps) => {
     <Card className='w-full h-[375px] flex flex-col'>
       <CardHeader className="flex items-center justify-center sm:flex-row border-b p-0">
         <div className="flex flex-1 flex-col justify-center gap-1 px-2 py-2 md:py-2">
-          <CardTitle className='text-lg md:text-xl text-center md'>Devis en cours</CardTitle>
+        <CardTitle className='text-lg md:text-xl text-center md'>Devis terminés</CardTitle>
           <CardDescription className='text-sm text-center'>
-            Nombre total de devis en cours : {total}
+            Nombre total de devis terminés : {total}
             <br />
-            Montant potentiel total : {totalCost.toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' })}
+            Montant total réalisé : {totalCost.toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' })}
           </CardDescription>
         </div>
         <div className="hidden md:flex px-2 py-2">
@@ -135,54 +134,54 @@ const QuoteCreationChart = ({ quotes, isLoading }: QuoteCreationChartProps) => {
           className="h-[275px] w-full"
         >
           <BarChart
-          data={filteredAndGroupedData}
-          margin={{
-            left: 0,
-            right: 0,
-            top: 16,
-            bottom: 0,
-          }}
-        >
-          <CartesianGrid vertical={false} horizontal={false} />
-          <XAxis
-            dataKey="date"
-            tickLine={false}
-            axisLine={false}
-            tickMargin={8}
-            minTickGap={30}
-            tick={{ fontSize: 12 }}
-            tickFormatter={(value) => {
-              const date = parseISO(value)
-              return format(date, 'd MMM', { locale: fr })
+            data={filteredAndGroupedData}
+            margin={{
+              left: 0,
+              right: 0,
+              top: 16,
+              bottom: 0,
             }}
-          />
-          <ChartTooltip
-            content={({ active, payload }) => {
-              if (active && payload && payload.length) {
-                const data = payload[0].payload;
-                return (
-                  <div className="rounded-lg bg-background p-2 shadow-sm">
-                    <div className="text-sm font-medium">
-                      {format(parseISO(data.date), 'd MMMM yyyy', { locale: fr })}
+          >
+            <CartesianGrid vertical={false} horizontal={false} />
+            <XAxis
+              dataKey="date"
+              tickLine={false}
+              axisLine={false}
+              tickMargin={8}
+              minTickGap={30}
+              tick={{ fontSize: 12 }}
+              tickFormatter={(value) => {
+                const date = parseISO(value)
+                return format(date, 'd MMM', { locale: fr })
+              }}
+            />
+            <ChartTooltip
+                content={({ active, payload }) => {
+                if (active && payload && payload.length) {
+                    const data = payload[0].payload;
+                    return (
+                    <div className="rounded-lg bg-background p-2 shadow-sm">
+                        <div className="text-sm font-medium">
+                        {format(parseISO(data.date), 'd MMMM yyyy', { locale: fr })}
+                        </div>
+                        <div className="mt-1 text-sm text-muted-foreground">
+                        Devis terminés : {data.finishedQuotes}
+                        </div>
+                        <div className="mt-1 text-sm text-muted-foreground">
+                        Montant total : {data.totalCost.toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' })}
+                        </div>
                     </div>
-                    <div className="mt-1 text-sm text-muted-foreground">
-                      Devis créés : {data.quotes}
-                    </div>
-                    <div className="mt-1 text-sm text-muted-foreground">
-                      Montant potentiel : {data.totalCost.toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' })}
-                    </div>
-                  </div>
-                );
-              }
-              return null;
-            }}
-          />
-          <Bar dataKey="quotes" fill={`var(--color-quotes)`} radius={[4, 4, 0, 0]} />
-        </BarChart>
+                    );
+                }
+                return null;
+                }}
+            />
+            <Bar dataKey="finishedQuotes" fill={`var(--color-finishedQuotes)`} radius={[4, 4, 0, 0]} />
+          </BarChart>
         </ChartContainer>
       </CardContent>
     </Card>
   )
 }
 
-export default QuoteCreationChart
+export default FinishedQuoteChart
