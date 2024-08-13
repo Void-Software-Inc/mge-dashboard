@@ -3,6 +3,7 @@ import { Inter } from "next/font/google";
 import "./globals.css";
 import Navbar from "@/components/global/Navbar";
 import { createClient } from "@/utils/supabase/server";
+import { AppProvider } from "@/app/context/AppContext";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -35,14 +36,16 @@ export default async function RootLayout({
         <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
       </head>
       <body className={inter.className}>
-        {await displayContent() && 
-        <>
-          <Navbar />
-        </>
-        }
-        <section>
-          {children}
-        </section>
+        <AppProvider>
+          {await displayContent() && 
+          <>
+            <Navbar />
+          </>
+          }
+          <section>
+            {children}
+          </section>
+        </AppProvider>
       </body>
     </html>
   );

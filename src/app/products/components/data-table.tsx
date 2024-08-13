@@ -2,6 +2,8 @@
 
 import * as React from "react"
 
+import { getProducts } from "@/services/products"
+
 import {
   ColumnDef,
   ColumnFiltersState,
@@ -35,7 +37,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Product } from "@/utils/types/products"
 import { Skeleton } from "@/components/ui/skeleton"
-import { useProductsContext } from '../context/ProductsContext'
+import { useAppContext } from "@/app/context/AppContext"
 import { useRouter } from 'next/navigation'
 import { PlusIcon } from "@radix-ui/react-icons"
 
@@ -50,7 +52,7 @@ export function DataTable({
 
   const [products, setProducts] = React.useState<Product[]>([])
   const [isLoading, setIsLoading] = React.useState(true)
-  const { shouldRefetch, setShouldRefetch } = useProductsContext()
+  const { productsShouldRefetch, setProductsShouldRefetch } = useAppContext()
   const [isMounted, setIsMounted] = React.useState(false)
 
   const [sorting, setSorting] = React.useState<SortingState>([])
@@ -61,32 +63,21 @@ export function DataTable({
   const fetchProducts = async () => {
     setIsLoading(true)
     try {
-      const res = await fetch('/api/products')
-      const { products } = await res.json()
-      const cleanProducts = products.map((product: Product) => ({
-        id: product.id,
-        name: product.name,
-        type: product.type,
-        color: product.color,
-        stock: product.stock,
-        price: product.price,
-        description: product.description,
-        image_url: product.image_url,
-      }))
-      setProducts(cleanProducts)
+      const products = await getProducts()
+      setProducts(products)
       if (typeof window !== 'undefined') {
-        sessionStorage.setItem('cachedProducts', JSON.stringify(cleanProducts))
+        sessionStorage.setItem('cachedProducts', JSON.stringify(products))
       }
     } catch (error) {
       console.error('Error fetching products:', error)
     }
-    setShouldRefetch(false)
+    setProductsShouldRefetch(false)
     setIsLoading(false)
   }
 
   React.useEffect(() => {
     setIsMounted(true)
-    if (shouldRefetch) {
+    if (productsShouldRefetch) {
       fetchProducts()
     } else {
       if (typeof window !== 'undefined') {
@@ -99,7 +90,7 @@ export function DataTable({
         }
       }
     }
-  }, [shouldRefetch])
+  }, [productsShouldRefetch])
 
   const memoizedProducts = React.useMemo(() => products, [products])
   
@@ -185,7 +176,7 @@ export function DataTable({
         <div className="flex w-full md:w-auto justify-between md:justify-start gap-2">
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="outline" className="flex-grow md:flex-grow-0">
+              <Button variant="outline" className="w-3/5 md:w-auto flex-grow md:flex-grow-0">
                 Colonnes
               </Button>
             </DropdownMenuTrigger>
@@ -213,9 +204,9 @@ export function DataTable({
           </DropdownMenu>
           <Button 
             onClick={handleCreateProduct}
-            className="flex-grow md:flex-grow-0 bg-lime-300 hover:bg-lime-400 text-black"
+            className="flex-grow md:flex-grow-0 bg-lime-300 hover:bg-lime-4000 text-black w-2/5 md:w-auto"
           >
-            <PlusIcon className="mr-2 h-4 w-4" /> Create Product
+            <PlusIcon className="mr-2 h-4 w-4" /> Créer un produit
           </Button>
         </div>
       </div>
@@ -271,7 +262,7 @@ export function DataTable({
           onClick={() => table.previousPage()}
           disabled={!table.getCanPreviousPage()}
         >
-          Previous
+          Précédent
         </Button>
         <Button
           variant="outline"
@@ -279,7 +270,7 @@ export function DataTable({
           onClick={() => table.nextPage()}
           disabled={!table.getCanNextPage()}
         >
-          Next
+          Suivant
         </Button>
       </div>
     </div>
