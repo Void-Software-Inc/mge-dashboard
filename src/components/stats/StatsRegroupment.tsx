@@ -5,24 +5,29 @@ import QuoteCreationChart from '@/components/stats/QuoteCreationChart';
 import ProductTypesChart from '@/components/stats/ProductTypesChart';
 import MostPopularProductsChart from '@/components/stats/MostPopularProductsChart';
 import QuotesStatusChart from '@/components/stats/QuotesStatusChart';
+import FinishedQuoteChart from '@/components/stats/FinishedQuoteChart';
 import { getProducts, getMostPopularProducts } from '@/services/products';
-import { getQuotes } from '@/services/quotes';
+import { getQuotes, getFinishedQuotes } from '@/services/quotes';
 import { Product } from '@/utils/types/products'
-import { Quote } from '@/utils/types/quotes'
+import { Quote, FinishedQuote } from '@/utils/types/quotes'
 import { useAppContext } from '@/app/context/AppContext'
 
 export default function StatsRegroupment() {
     const [products, setProducts] = useState<Product[]>([])
     const [quotes, setQuotes] = useState<Quote[]>([])
+    const [finishedQuotes, setFinishedQuotes] = useState<FinishedQuote[]>([])
     const [popularProducts, setPopularProducts] = useState<{ id: string; name: string; count: number; average_quantity: number }[]>([])
     const [isProductsLoading, setIsProductsLoading] = useState(true)
     const [isQuotesLoading, setIsQuotesLoading] = useState(true)
     const [isPopularProductsLoading, setIsPopularProductsLoading] = useState(true)
+    const [isFinishedQuotesLoading, setIsFinishedQuotesLoading] = useState(true)
     const { 
         productsShouldRefetch, 
         setProductsShouldRefetch,
         quotesShouldRefetch,
         setQuotesShouldRefetch,
+        finishedQuotesShouldRefetch,
+        setFinishedQuotesShouldRefetch,
         popularProductsShouldRefetch,
         setPopularProductsShouldRefetch
     } = useAppContext()
@@ -56,6 +61,22 @@ export default function StatsRegroupment() {
             console.error('Error fetching quotes:', error)
         } finally {
             setIsQuotesLoading(false)
+        }
+    }
+
+    const fetchFinishedQuotes = async () => {
+        setIsFinishedQuotesLoading(true)
+        try {
+            const fetchedFinishedQuotes = await getFinishedQuotes()
+            if (typeof window !== 'undefined') {
+                sessionStorage.setItem('cachedFinishedQuotes', JSON.stringify(fetchedFinishedQuotes))
+            }
+            setFinishedQuotes(fetchedFinishedQuotes)
+            setFinishedQuotesShouldRefetch(false)
+        } catch (error) {
+            console.error('Error fetching finished quotes:', error)
+        } finally {
+            setIsFinishedQuotesLoading(false)
         }
     }
 
@@ -108,6 +129,22 @@ export default function StatsRegroupment() {
     }, [quotesShouldRefetch])
 
     useEffect(() => {
+        if (finishedQuotesShouldRefetch) {
+            fetchFinishedQuotes()
+        } else {
+            if (typeof window !== 'undefined') {
+                const cachedFinishedQuotes = sessionStorage.getItem('cachedFinishedQuotes')
+                if (cachedFinishedQuotes) {
+                    setFinishedQuotes(JSON.parse(cachedFinishedQuotes))
+                    setIsFinishedQuotesLoading(false)
+                } else {
+                    fetchFinishedQuotes()
+                }
+            }
+        }
+    }, [finishedQuotesShouldRefetch])
+
+    useEffect(() => {
         if (popularProductsShouldRefetch) {
             fetchPopularProducts()
         } else {
@@ -141,7 +178,7 @@ export default function StatsRegroupment() {
             <QuoteCreationChart quotes={quotes} isLoading={isQuotesLoading} />
           </div>
           <div className='w-full px-1 md:px-0'>
-            <QuoteCreationChart quotes={quotes} isLoading={isQuotesLoading} />
+            <FinishedQuoteChart finishedQuotes={finishedQuotes} isLoading={isFinishedQuotesLoading} />
           </div>
         </div>
       </main>

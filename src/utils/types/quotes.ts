@@ -68,8 +68,8 @@ export type QuoteStatus = {
 
 export const quoteStatus: QuoteStatus[] = [
   { value: "nouveau", name: "Nouveau", color: "#3498db" }, // Blue
-  { value: "en_attente_de_reponse_client", name: "En attente de réponse client", color: "#f39c12" }, // Yellow
-  { value: "en_attente_de_paiement", name: "En attente de paiement", color: "#ffA500" }, // Orange
+  { value: "en_attente_de_reponse_client", name: "En attente de réponse client", color: "#facc15" }, // Yellow
+  { value: "en_attente_de_paiement", name: "En attente de paiement", color: "#f97316" }, // Orange
   { value: "en_cours_de_realisation", name: "En cours de réalisation", color: "#2ecc71" }, // Green
   { value: "termine", name: "Terminé", color: "#27ae60" }, // Dark Green
   { value: "annule", name: "Annulé", color: "#e74c3c" }, // Red
