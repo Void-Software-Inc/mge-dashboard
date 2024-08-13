@@ -35,19 +35,19 @@ export default function Navbar(){
             href="/products"
             className="text-muted-foreground transition-colors hover:text-foreground"
           >
-            Products
+            Produits
           </Link>
           <Link
             href="/quotes"
             className="text-muted-foreground transition-colors hover:text-foreground"
           >
-            Quotes
+            Devis
           </Link>
           <Link
-            href="/settings"
+            href="/records"
             className="text-muted-foreground transition-colors hover:text-foreground"
           >
-            Settings
+            Archives
           </Link>
         </nav>
         <Sheet open={isOpen} onOpenChange={setIsOpen}>
@@ -75,21 +75,21 @@ export default function Navbar(){
                 className="text-muted-foreground hover:text-foreground"
                 onClick={handleItemClick}
               >
-                Products
+                Produits
               </Link>
               <Link
                 href="/quotes"
                 className="text-muted-foreground hover:text-foreground"
                 onClick={handleItemClick}
               >
-                Quotes
+                Devis
               </Link>
               <Link
-                href="/settings"
+                href="/records"
                 className="text-muted-foreground hover:text-foreground"
                 onClick={handleItemClick}
               >
-                Settings
+                Archives
               </Link>
             </nav>
           </SheetContent>
@@ -103,13 +103,13 @@ export default function Navbar(){
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
-              <DropdownMenuLabel>My Account</DropdownMenuLabel>
+              <DropdownMenuLabel>Mon compte</DropdownMenuLabel>
               <DropdownMenuSeparator />
-              <DropdownMenuItem className="hover:cursor-pointer text-muted-foreground hover:text-foreground">Settings</DropdownMenuItem>
+              <DropdownMenuItem className="hover:cursor-pointer text-muted-foreground hover:text-foreground">Paramètres</DropdownMenuItem>
               <DropdownMenuItem asChild>
                 <form action="/api/auth/logout" method="POST">
                   <button type="submit" className="hover:cursor-pointer text-muted-foreground hover:text-foreground">
-                    Logout
+                    Déconnexion
                   </button>
                 </form>
               </DropdownMenuItem>
