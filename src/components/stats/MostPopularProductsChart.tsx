@@ -67,18 +67,15 @@ const MostPopularProductsChart: React.FC<MostPopularProductsChartProps> = ({ pop
     return null;
   };
 
-  const truncateText = (text: string, maxLength: number) => {
-    return text.length > maxLength ? text.slice(0, maxLength) + '...' : text;
-  };
-
   const renderCustomizedLabel = (props: any) => {
     const { x, y, width, height, value } = props;
-    const radius = 10;
-    const truncatedValue = truncateText(value, 15);
+    const padding = 5; // Padding from the start of the bar
+    const availableWidth = width - padding * 2; // Available width for text
+    const truncatedValue = truncateText(value, availableWidth);
 
     return (
       <text
-        x={x + 5}
+        x={x + padding}
         y={y + height / 2}
         fill="#6b7280"
         textAnchor="start"
@@ -88,6 +85,13 @@ const MostPopularProductsChart: React.FC<MostPopularProductsChartProps> = ({ pop
         {truncatedValue}
       </text>
     );
+  };
+
+  const truncateText = (text: string, maxWidth: number) => {
+    const charWidth = 7; // Approximate width of a character in pixels
+    const maxChars = Math.floor(maxWidth / charWidth);
+    if (text.length <= maxChars) return text;
+    return text.slice(0, maxChars - 3) + '...';
   };
 
   return isLoading ? (
