@@ -1,7 +1,8 @@
 'use client'
 
 import { useCallback, useEffect, useState } from 'react'
-
+import JSZip from 'jszip';
+import { saveAs } from 'file-saver';
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { Label } from "@/components/ui/label"
@@ -234,6 +235,45 @@ export default function ProductForm({ productId }: { productId: string }) {
       return `linear-gradient(45deg, #C0C0C0, #E8E8E8, #A9A9A9)`;
     }
     return '';
+  };
+
+  const handleDownloadAllMedia = async () => {
+    if (!product || !secondaryImages) return;
+
+    const zip = new JSZip();
+
+    // Download main image
+    try {
+      const mainImageResponse = await fetch(product.image_url);
+      const mainImageBlob = await mainImageResponse.blob();
+      zip.file(`main_image.${getFileExtension(product.image_url)}`, mainImageBlob);
+    } catch (error) {
+      console.error('Error downloading main image:', error);
+    }
+
+    // Download secondary images
+    for (let i = 0; i < secondaryImages.length; i++) {
+      try {
+        const response = await fetch(secondaryImages[i].url);
+        const blob = await response.blob();
+        zip.file(`secondary_image_${i + 1}.${getFileExtension(secondaryImages[i].url)}`, blob);
+      } catch (error) {
+        console.error(`Error downloading secondary image ${i + 1}:`, error);
+      }
+    }
+
+    // Generate and save zip file
+    try {
+      const content = await zip.generateAsync({ type: 'blob' });
+      saveAs(content, `${product.name}_images.zip`);
+    } catch (error) {
+      console.error('Error generating zip file:', error);
+    }
+  };
+
+  const getFileExtension = (url: string): string => {
+    const extension = url.split('.').pop();
+    return extension || 'jpg'; // Default to jpg if no extension found
   };
 
   if (isLoading) {
@@ -502,6 +542,12 @@ export default function ProductForm({ productId }: { productId: string }) {
                 </div>
               ))}
             </div>
+            <Button 
+              onClick={handleDownloadAllMedia}
+              className="mt-4 w-full bg-lime-300 text-blqck hover:bg-lime-400"
+            >
+              Télécharger toutes les images
+            </Button>
           </div>
           <div className="mb-4">
             <Label className="text-base">Date de création du produit</Label>
