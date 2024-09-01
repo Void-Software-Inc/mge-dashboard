@@ -1,6 +1,7 @@
 'use client'
 
 import { useCallback, useEffect, useState } from 'react'
+import Image from 'next/image'
 import JSZip from 'jszip';
 import { saveAs } from 'file-saver';
 import { Input } from "@/components/ui/input"
@@ -279,7 +280,7 @@ export default function ProductForm({ productId }: { productId: string }) {
   if (isLoading) {
     return (
       <div className="flex flex-col items-center justify-center pt-20 px-4 md:px-0">
-        <div className="w-full max-w-2xl">
+        <div className="w-full max-w-5xl">
           <Skeleton className="h-8 w-full mb-4" />
           <Skeleton className="h-12 w-full mb-4" />
           <Skeleton className="h-12 w-full mb-4" />
@@ -326,7 +327,7 @@ export default function ProductForm({ productId }: { productId: string }) {
         </div>
       </div>
       <form onSubmit={handleSubmit} className="flex flex-col items-center justify-center pt-20 px-4 md:px-0">
-        <div className="w-full max-w-2xl">
+        <div className="w-full max-w-5xl">
           <div className="mb-4">
             <Label className="text-base">Identifiant du produit</Label>
             <Input id="id" value={formData?.id ?? ''} className="w-full text-base" disabled />
@@ -444,15 +445,18 @@ export default function ProductForm({ productId }: { productId: string }) {
           </div>
           <div className="mb-4">
             <Label className="text-base">Image principale du produit</Label>
-            <div className="relative">
-              <img 
-                src={previewUrl || product.image_url} 
-                alt={product.name} 
-                className={`w-full h-auto mb-2 ${previewUrl ? 'border-4 rounded-md border-lime-300' : ''}`}
-              />
+            <div className="relative w-full h-auto mb-2">
+              <div className={`w-full h-auto flex items-center justify-center ${previewUrl ? 'border-4 rounded-md border-lime-300' : ''}`}>
+                <Image 
+                  src={previewUrl || product.image_url} 
+                  alt={product.name} 
+                  width={500}
+                  height={500}
+                />
+              </div>
               {previewUrl && (
                 <>
-                  <div className="absolute bottom-0 left-0 right-0 bg-lime-300 rounded-md text-black text-xs p-1 text-center">
+                  <div className="absolute bottom-0 left-0 right-0 bg-lime-300 text-black text-xs p-1 text-center">
                     Cette image remplacera l'image principale lors de la validation
                   </div>
                   <button

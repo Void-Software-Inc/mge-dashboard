@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from 'react'
 import { Product, productTypes, productColors } from "@/utils/types/products"
-
+import Image from 'next/image'
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { Label } from "@/components/ui/label"
@@ -235,7 +235,7 @@ export default function ProductCreateForm() {
           </div>
         </div>
         <form onSubmit={handleSubmit} className="flex flex-col items-center justify-center pt-20 px-4 md:px-0">
-          <div className="w-full max-w-2xl">
+          <div className="w-full max-w-5xl">
             <div className="mb-4">
               <Label htmlFor="name" className="text-base flex items-center">
                 Nom du produit
@@ -390,11 +390,14 @@ export default function ProductCreateForm() {
               </Label>
               <div className="relative">
                 {previewUrl && (
-                  <img 
-                    src={previewUrl} 
-                    alt="Preview" 
-                    className="w-full h-auto mb-2 border-4 rounded-md border-lime-300" 
-                  />
+                  <div className={`w-full h-auto flex items-center justify-center ${previewUrl ? 'border-4 rounded-md border-lime-300' : ''}`}>
+                    <Image 
+                      src={previewUrl} 
+                      alt="Preview" 
+                      width={500}
+                      height={500}
+                    />
+                  </div>
                 )}
                 {previewUrl && (
                   <>
