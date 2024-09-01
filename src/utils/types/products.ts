@@ -43,7 +43,7 @@ export const productTypes: ProductType[] = [
     { value: "vaiselle", name: "Vaiselle" },
     { value: "centreTable", name: "Centre Table" },
     { value: "decoration", name: "Decoration" },
-    { value: "acessoires", name: "Acessoires" },
+    { value: "acessoires", name: "Accessoires" },
 ];
 
 export type ProductColor = {
@@ -58,7 +58,7 @@ export const productColors: ProductColor[] = [
     { value: "beige", name: "Beige", hex: "#F5F5DC" },
     { value: "gris", name: "Gris", hex: "#808080" },
     { value: "blanc", name: "Blanc", hex: "#FFFFFF" },
-    { value: "bleu", name: "Bleu", hex: "#0000FF" },
+    { value: "bleu", name: "Bleu", hex: "#3b82f6" },
     { value: "turquoise", name: "Turquoise", hex: "#40E0D0" },
     { value: "vert", name: "Vert", hex: "#008000" },
     { value: "jaune", name: "Jaune", hex: "#FFFF00" },
@@ -69,4 +69,5 @@ export const productColors: ProductColor[] = [
     { value: "gold", name: "Doré", hex: "#FFD700" },
     { value: "silver", name: "Argenté", hex: "#C0C0C0" },
     { value: "multicolore", name: "Multicolore", hex: "#000000" },
+    { value: "transparent", name: "Transparent", hex: "#FFFFFF" },
 ]
