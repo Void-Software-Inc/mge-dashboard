@@ -18,6 +18,13 @@ import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
 export default function Navbar(){
   const [isOpen, setIsOpen] = useState(false);
 
+  const handleLogout = async (e: React.FormEvent) => {
+    e.preventDefault();
+    await fetch('/api/auth/logout', { method: 'POST' });
+    sessionStorage.clear();
+    window.location.href = '/login';
+  };
+
   const handleItemClick = () => {
     setIsOpen(false);
   }
@@ -107,7 +114,7 @@ export default function Navbar(){
               <DropdownMenuSeparator />
               <DropdownMenuItem className="hover:cursor-pointer text-muted-foreground hover:text-foreground">Paramètres</DropdownMenuItem>
               <DropdownMenuItem asChild>
-                <form action="/api/auth/logout" method="POST">
+                <form onSubmit={handleLogout}>
                   <button type="submit" className="hover:cursor-pointer text-muted-foreground hover:text-foreground">
                     Déconnexion
                   </button>
