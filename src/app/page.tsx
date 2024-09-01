@@ -1,6 +1,6 @@
-import Image from 'next/image';
 import { createClient } from '@/utils/supabase/server'
 import { redirect } from 'next/navigation';
+import StatsRegroupment from '@/components/stats/StatsRegroupment';
 
 export default async function Home() {
   const supabase = createClient()
@@ -10,8 +10,6 @@ export default async function Home() {
     redirect('/login')
   }
   return (
-    <main className="flex min-h-screen flex-col items-center justify-between p-24">
-      <h1 className="text-white text-4xl">You are logged in</h1>
-    </main>
+    <StatsRegroupment />
   );
 }

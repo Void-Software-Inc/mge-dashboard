@@ -1,9 +1,17 @@
-
-import { createClient } from "@/utils/supabase/server";
+import { createClient } from "@/utils/supabase/server"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
 import { redirect } from "next/navigation";
 import { SubmitButton } from "./submit-button";
-import Image from 'next/image';
-import TextInput from '@/components/inputs/textInput';
+import Image from "next/image";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card"
 
 export function handleError(searchParams: { message: string }) {
   let isError = searchParams.message === 'Could not authenticate user';
@@ -15,79 +23,38 @@ export default async function Login({
 }: {
   searchParams: { message: string };
 }) {
-
   const supabase = createClient();
-  const { data, error } = await supabase.auth.getUser()
-    if (!error || data?.user) {
-      redirect('/')
+
+  const { data, error } = await supabase.auth.getUser();
+  if (!error || data?.user) {
+    redirect("/");
   }
 
-  const signIn = async (formData: FormData) => {
-    "use server";
-
-    const email = formData.get("email") as string;
-    const password = formData.get("password") as string;
-    const supabase = createClient();
-
-    const { error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    });
-
-    if (error) {
-      return redirect("/login?message=Could not authenticate user");
-    }
-
-    return redirect("/");
-  };
-  
   return (
-    <main className="flex justify-center md:items-center h-[100vh] bg-gray-200 lg:bg-gray-300">
-      <div className="p-8 w-full h-[75vh] md:w-[400px] md:shadow-2xl rounded-lg bg-gray-200 flex flex-col justify-around">
-        <div className="flex flex-col items-start items-center">
-          <h2 className="text-black text-3xl md:text-2xl mb-12 saira font-semibold">Welcome</h2>
-          <Image
-            src="/static/svg/mgelogo.svg"
-            alt="mgelogo"
-            width={150}
-            height={150}
-            priority
-            className="mb-8"
-          />
-        </div>
-        <form>
-          <div className='grid gap-4 w-full'>
-            <div className='grid'>
-              <TextInput
-                type="text"
-                name="email"
-                placeholder="Email"
-                error={handleError(searchParams)}
-              />
+    <div className="flex justify-center items-center h-screen p-4">
+      <Card className="w-full max-w-sm">
+        <CardHeader>
+          <Image className="mx-auto" src="/static/svg/mglogo.svg" alt="logo" width={62} height={62} />
+          <CardDescription className="text-base text-center">
+            Connectez-vous à votre compte pour accéder à la plateforme.
+          </CardDescription>
+        </CardHeader>
+        <form action="/api/auth/login" method="POST">
+          <CardContent className="grid gap-4">
+            <div className="grid gap-2">
+              <Label htmlFor="email" className="text-base">Email</Label>
+              <Input className="text-base" name="email" id="email" type="email" placeholder="m@example.com" required />
             </div>
-            <div className='grid'>
-              <TextInput
-                type="password"
-                name="password"
-                placeholder="Password"
-                error={handleError(searchParams)}
-              />
+            <div className="grid gap-2">
+              <Label htmlFor="password" className="text-base">Mot de passe</Label>
+              <Input className="text-base" name="password" id="password" type="password" required />
             </div>
-            <div style={{ height: '24px' }}>
-              {handleError(searchParams) && <p className="text-red-500 saira text-sm">Invalid email or password</p>}
-            </div>
-            <div className="flex justify-center w-full">
-              <SubmitButton
-                formAction={signIn}
-                className="px-4 py-2 text-gray-200 bg-orange-500 rounded cursor-pointer w-full saira"
-                pendingText="Signing In..."
-              >
-                Sign In
-              </SubmitButton>
-            </div>
-          </div>
+          </CardContent>
+          <CardFooter>
+            <SubmitButton className="w-full" pendingText="Connexion en cours...">Connexion</SubmitButton>
+          </CardFooter>
         </form>
-      </div>
-    </main>
-  );
+      </Card>
+    </div>
+  )
 }
