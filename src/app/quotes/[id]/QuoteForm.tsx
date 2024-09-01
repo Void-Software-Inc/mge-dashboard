@@ -361,7 +361,7 @@ export default function QuoteForm({ quoteId }: { quoteId: string }) {
   if (isLoading) {
     return (
       <div className="flex flex-col items-center justify-center pt-20 px-4 md:px-0">
-        <div className="w-full max-w-2xl">
+        <div className="w-full max-w-5xl">
           <Skeleton className="h-8 w-full mb-4" />
           <Skeleton className="h-12 w-full mb-4" />
           <Skeleton className="h-12 w-full mb-4" />
@@ -408,7 +408,7 @@ export default function QuoteForm({ quoteId }: { quoteId: string }) {
         </div>
       </div>
       <form onSubmit={handleSubmit} className="flex flex-col items-center justify-center pt-20 px-4 md:px-0">
-        <div className="w-full max-w-2xl">
+        <div className="w-full max-w-5xl">
           <div className="mb-4">
             <Label className="text-base">Numéro du devis</Label>
             <Input id="id" value={formData?.id ?? ''} className="w-full text-base" disabled />
