@@ -265,7 +265,7 @@ export default function QuoteCreateForm() {
         </div>
       </div>
       <form onSubmit={handleSubmit} className="flex flex-col items-center justify-center pt-20 px-4 md:px-0">
-        <div className="w-full max-w-2xl">
+        <div className="w-full max-w-5xl">
           <div className="mb-4">
             <Label htmlFor="status" className="text-base">Statut du devis</Label>
             <Select

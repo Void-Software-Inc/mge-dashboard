@@ -1,7 +1,9 @@
 'use client'
 
 import { useCallback, useEffect, useState } from 'react'
-
+import Image from 'next/image'
+import JSZip from 'jszip';
+import { saveAs } from 'file-saver';
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { Label } from "@/components/ui/label"
@@ -236,10 +238,49 @@ export default function ProductForm({ productId }: { productId: string }) {
     return '';
   };
 
+  const handleDownloadAllMedia = async () => {
+    if (!product || !secondaryImages) return;
+
+    const zip = new JSZip();
+
+    // Download main image
+    try {
+      const mainImageResponse = await fetch(product.image_url);
+      const mainImageBlob = await mainImageResponse.blob();
+      zip.file(`main_image.${getFileExtension(product.image_url)}`, mainImageBlob);
+    } catch (error) {
+      console.error('Error downloading main image:', error);
+    }
+
+    // Download secondary images
+    for (let i = 0; i < secondaryImages.length; i++) {
+      try {
+        const response = await fetch(secondaryImages[i].url);
+        const blob = await response.blob();
+        zip.file(`secondary_image_${i + 1}.${getFileExtension(secondaryImages[i].url)}`, blob);
+      } catch (error) {
+        console.error(`Error downloading secondary image ${i + 1}:`, error);
+      }
+    }
+
+    // Generate and save zip file
+    try {
+      const content = await zip.generateAsync({ type: 'blob' });
+      saveAs(content, `${product.name}_images.zip`);
+    } catch (error) {
+      console.error('Error generating zip file:', error);
+    }
+  };
+
+  const getFileExtension = (url: string): string => {
+    const extension = url.split('.').pop();
+    return extension || 'jpg'; // Default to jpg if no extension found
+  };
+
   if (isLoading) {
     return (
       <div className="flex flex-col items-center justify-center pt-20 px-4 md:px-0">
-        <div className="w-full max-w-2xl">
+        <div className="w-full max-w-5xl">
           <Skeleton className="h-8 w-full mb-4" />
           <Skeleton className="h-12 w-full mb-4" />
           <Skeleton className="h-12 w-full mb-4" />
@@ -286,7 +327,7 @@ export default function ProductForm({ productId }: { productId: string }) {
         </div>
       </div>
       <form onSubmit={handleSubmit} className="flex flex-col items-center justify-center pt-20 px-4 md:px-0">
-        <div className="w-full max-w-2xl">
+        <div className="w-full max-w-5xl">
           <div className="mb-4">
             <Label className="text-base">Identifiant du produit</Label>
             <Input id="id" value={formData?.id ?? ''} className="w-full text-base" disabled />
@@ -404,15 +445,18 @@ export default function ProductForm({ productId }: { productId: string }) {
           </div>
           <div className="mb-4">
             <Label className="text-base">Image principale du produit</Label>
-            <div className="relative">
-              <img 
-                src={previewUrl || product.image_url} 
-                alt={product.name} 
-                className={`w-full h-auto mb-2 ${previewUrl ? 'border-4 rounded-md border-lime-300' : ''}`}
-              />
+            <div className="relative w-full h-auto mb-2">
+              <div className={`w-full h-auto flex items-center justify-center ${previewUrl ? 'border-4 rounded-md border-lime-300' : ''}`}>
+                <Image 
+                  src={previewUrl || product.image_url} 
+                  alt={product.name} 
+                  width={500}
+                  height={500}
+                />
+              </div>
               {previewUrl && (
                 <>
-                  <div className="absolute bottom-0 left-0 right-0 bg-lime-300 rounded-md text-black text-xs p-1 text-center">
+                  <div className="absolute bottom-0 left-0 right-0 bg-lime-300 text-black text-xs p-1 text-center">
                     Cette image remplacera l'image principale lors de la validation
                   </div>
                   <button
@@ -502,6 +546,12 @@ export default function ProductForm({ productId }: { productId: string }) {
                 </div>
               ))}
             </div>
+            <Button 
+              onClick={handleDownloadAllMedia}
+              className="mt-4 w-full bg-lime-300 text-blqck hover:bg-lime-400"
+            >
+              Télécharger toutes les images
+            </Button>
           </div>
           <div className="mb-4">
             <Label className="text-base">Date de création du produit</Label>
