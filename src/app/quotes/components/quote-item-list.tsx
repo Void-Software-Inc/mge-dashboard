@@ -49,7 +49,7 @@ export function QuoteItemList({
 
   const allItems = useMemo(() => [...items, ...createdItems], [items, createdItems]);
   
-  const itemsPerPage = 10;
+  const itemsPerPage = 5;
   
 
   const fetchProductDetails = useCallback(async (productIds: number[]) => {
@@ -164,6 +164,13 @@ export function QuoteItemList({
 
   const totalPages = Math.ceil(allItems.length / itemsPerPage);
 
+  // Get current items
+  const currentItems = useMemo(() => {
+    const indexOfLastItem = currentPage * itemsPerPage;
+    const indexOfFirstItem = indexOfLastItem - itemsPerPage;
+    return allItems.slice(indexOfFirstItem, indexOfLastItem);
+  }, [allItems, currentPage]);
+
   if (isLoading) {
     return (
       <div className="space-y-2">
@@ -180,7 +187,7 @@ export function QuoteItemList({
         {allItems.length > 0 ? (
           <Table className="w-full">
             <TableHeader>
-              <TableRow className="h-12">
+              <TableRow className="h-16">
                 <TableHead className="w-1/6 whitespace-nowrap">Image</TableHead>
                 <TableHead className="w-1/3 whitespace-nowrap">Nom</TableHead>
                 <TableHead className="w-1/6 whitespace-nowrap">Quantité</TableHead>
@@ -190,7 +197,7 @@ export function QuoteItemList({
               </TableRow>
             </TableHeader>
             <TableBody>
-            {allItems.map((item) => {
+            {currentItems.map((item) => {
               const product = productDetails[item.product_id];
               const isTainted = taintedItems.has(item.id);
               const isEdited = editedItems.has(item.id);
@@ -210,7 +217,15 @@ export function QuoteItemList({
                 >
                   <TableCell className="whitespace-nowrap">
                     {product && product.image_url && (
-                      <Image src={product.image_url} alt={product.name} width={45} height={45} />
+                      <div className="w-12 h-12 relative"> {/* Fixed size container for image */}
+                        <Image 
+                          src={product.image_url} 
+                          alt={product.name} 
+                          layout="fill" 
+                          objectFit="cover" 
+                          className="rounded-md"
+                        />
+                      </div>
                     )}
                   </TableCell>
                   <TableCell className="whitespace-nowrap overflow-hidden text-ellipsis">
