@@ -171,6 +171,16 @@ export function QuoteItemList({
     return allItems.slice(indexOfFirstItem, indexOfLastItem);
   }, [allItems, currentPage]);
 
+  const handlePreviousPage = (e: React.MouseEvent<HTMLButtonElement>) => {
+    e.preventDefault(); // Prevent form submission
+    setCurrentPage(prev => Math.max(prev - 1, 1));
+  };
+
+  const handleNextPage = (e: React.MouseEvent<HTMLButtonElement>) => {
+    e.preventDefault(); // Prevent form submission
+    setCurrentPage(prev => Math.min(prev + 1, totalPages));
+  };
+
   if (isLoading) {
     return (
       <div className="space-y-2">
@@ -305,7 +315,7 @@ export function QuoteItemList({
         {allItems.length > 0 && (
           <>
             <Button 
-              onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+              onClick={handlePreviousPage}
               disabled={currentPage === 1}
               variant='outline'
             >
@@ -313,7 +323,7 @@ export function QuoteItemList({
             </Button>
             <span className='text-sm text-gray-500'>Page {currentPage} sur {totalPages}</span>
             <Button 
-              onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+              onClick={handleNextPage}
               disabled={currentPage === totalPages}
               variant='outline'
             >
