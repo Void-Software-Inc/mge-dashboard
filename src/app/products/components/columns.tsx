@@ -7,9 +7,10 @@ import {
   EyeNoneIcon,
   MixerVerticalIcon,
   Pencil1Icon,
-  TrashIcon
+  TrashIcon,
+  DownloadIcon,
 } from "@radix-ui/react-icons"
-import { ColumnDef } from "@tanstack/react-table"
+import { ColumnDef, Row } from "@tanstack/react-table"
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Badge } from "@/components/ui/badge"
@@ -40,8 +41,11 @@ import { Product, productTypes, productColors } from "@/utils/types/products"
 import { useState } from "react"
 import { useAppContext } from "@/app/context/AppContext"
 import { toast } from "sonner"
+import { deleteProduct, getProduct } from "@/services/products"
 
-import { deleteProduct } from "@/services/products"
+import { getProductImages } from "@/services/products"
+import JSZip from 'jszip';
+import { saveAs } from 'file-saver';
 
 const getMetallicBackground = (color: string) => {
   if (color === 'gold') {
@@ -52,15 +56,42 @@ const getMetallicBackground = (color: string) => {
   return '';
 };
 
+const handleBulkDownloadMedia = async (productIds: number[]) => {
+  try {
+    const zip = new JSZip();
+
+    for (const productId of productIds) {
+      const product = await getProduct(productId);
+      
+      // Download main image
+      const mainImageResponse = await fetch(product.image_url);
+      const mainImageBlob = await mainImageResponse.blob();
+      const fileExtension = getFileExtension(product.image_url);
+      zip.file(`${product.name}.${fileExtension}`, mainImageBlob);
+    }
+
+    // Generate and save zip file
+    const content = await zip.generateAsync({ type: 'blob' });
+    saveAs(content, `telechargementsImages.zip`);
+    toast.success('Media downloaded successfully');
+  } catch (error) {
+    console.error('Error downloading media:', error);
+    toast.error('Failed to download media');
+  }
+};
+
+const getFileExtension = (url: string): string => {
+  const extension = url.split('.').pop();
+  return extension || 'jpg'; // Default to jpg if no extension found
+};
+
+
 export const columns: ColumnDef<Product>[] = [
-  /*{
+  {
     id: "select",
     header: ({ table }) => (
       <Checkbox
-        checked={
-          table.getIsAllPageRowsSelected() ||
-          (table.getIsSomePageRowsSelected() && "indeterminate")
-        }
+        checked={table.getIsAllPageRowsSelected()}
         onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
         aria-label="Select all"
       />
@@ -74,13 +105,45 @@ export const columns: ColumnDef<Product>[] = [
     ),
     enableSorting: false,
     enableHiding: false,
-  },*/
+  },
   {
     id: "actions",
-    header: () => {
+    header: ({ table }) => {
+      const selectedRows = table.getFilteredSelectedRowModel().rows;
+      const isAnyRowSelected = selectedRows.length > 0;
+
+      const handleDownloadSelected = () => {
+        const selectedProductIds = selectedRows.map(row => row.original.id);
+        handleBulkDownloadMedia(selectedProductIds);
+      };
+
       return (
-        <div className={cn("text-center whitespace-nowrap overflow-hidden overflow-ellipsis")}>
-          <span>Actions</span>
+        <div className={cn("flex items-center space-x-2")}>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="-ml-3 h-8 data-[state=open]:bg-accent"
+              >
+                <span>Actions</span>
+                <MixerVerticalIcon className="ml-2 h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="start">
+              <DropdownMenuItem 
+                onClick={handleDownloadSelected}
+                disabled={!isAnyRowSelected}
+                className={cn(
+                  !isAnyRowSelected && "cursor-not-allowed opacity-50"
+                )}
+              >
+                <DownloadIcon className="mr-2 h-4 w-4" />
+                Télécharger les photos
+              </DropdownMenuItem>
+              {/* Add more bulk actions here if needed */}
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       );
     },
