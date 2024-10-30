@@ -15,6 +15,8 @@ export type Quote = {
   created_at: string;
   last_update: string;
   description: string;
+  is_deposit: boolean;
+  deposit_amount: number;
 };
 
 export type QuoteRecord = {

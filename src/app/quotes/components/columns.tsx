@@ -339,7 +339,7 @@ export const columns: ColumnDef<Quote>[] = [
   },
   {
     accessorKey: "total_cost",
-    header: () => <div className="text-right font-extrabold">Prix total</div>,
+    header: () => <div className="text-right font-extrabold whitespace-nowrap overflow-hidden overflow-ellipsis">Prix total</div>,
     cell: ({ row }) => {
       const price = parseFloat(row.getValue("total_cost"))
       const formatted = new Intl.NumberFormat("en-US", {
@@ -347,6 +347,22 @@ export const columns: ColumnDef<Quote>[] = [
         currency: "EUR",
       }).format(price)
        return <div className="text-right font-extrabold">{formatted}</div>
+    },
+  },
+  {
+    accessorKey: "is_deposit",
+    header: () => <div className="whitespace-nowrap overflow-hidden overflow-ellipsis">Acompte versé</div>,
+    cell: ({ row }) => {
+      const isDeposit = row.getValue("is_deposit") as boolean;
+      return (
+        <div className="flex justify-center">
+          {isDeposit ? (
+            <CheckIcon className="h-5 w-5 text-[#bef264] border border-2 border-[#bef264] rounded-full" />
+          ) : (
+            <Cross2Icon className="h-5 w-5 text-red-500 border border-2 border-red-500 rounded-full" />
+          )}
+        </div>
+      );
     },
   },
   {
