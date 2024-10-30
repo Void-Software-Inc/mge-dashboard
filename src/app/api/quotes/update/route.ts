@@ -28,7 +28,9 @@ export async function PUT(request: NextRequest) {
     traiteur_price: formData.get('traiteur_price'),
     other_expenses: formData.get('other_expenses'),
     description: formData.get('description'),
-    last_update: parisDate
+    last_update: parisDate,
+    is_deposit: formData.get('is_deposit') === 'true',
+    deposit_amount: formData.get('deposit_amount')
   };
 
   const { data, error } = await supabase

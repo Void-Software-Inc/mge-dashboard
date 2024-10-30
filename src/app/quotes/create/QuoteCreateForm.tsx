@@ -27,6 +27,7 @@ interface FormErrors {
   total_cost?: string;
   traiteur_price?: string;
   other_expenses?: string;
+  deposit_amount?: string;
 }
 
 interface TouchedFields {
@@ -40,6 +41,7 @@ interface TouchedFields {
   total_cost: boolean;
   traiteur_price: boolean;
   other_expenses: boolean;
+  deposit_amount: boolean;
 }
 
 const initialQuote: Partial<Quote> = {
@@ -55,6 +57,8 @@ const initialQuote: Partial<Quote> = {
   description: '',
   traiteur_price: 0,
   other_expenses: 0,
+  is_paid: false,
+  is_deposit: false,
 };
 
 export default function QuoteCreateForm() {
@@ -79,6 +83,7 @@ export default function QuoteCreateForm() {
     total_cost: false,
     traiteur_price: false,
     other_expenses: false,
+    deposit_amount: false,
   });
 
   const handleGoBack = useCallback(() => router.push('/quotes'), [router]);
@@ -156,6 +161,21 @@ export default function QuoteCreateForm() {
     setTotalCostFromItems(totalCost);
   }, []);
 
+  const handleDepositChange = (id: string) => {
+    setFormData((prevData) => {
+      if (!prevData) return prevData;
+      const newIsDeposit = !prevData.is_deposit;
+      return {
+        ...prevData,
+        is_deposit: newIsDeposit,
+        deposit_amount: newIsDeposit && prevData.total_cost 
+          ? prevData.total_cost * 0.3
+          : 0
+      };
+    });
+  };
+
+  
   useEffect(() => {
     setFormData(prev => ({
       ...prev,
@@ -372,6 +392,7 @@ export default function QuoteCreateForm() {
               isLoading={false}
               quoteId={0}
               onTotalCostChange={handleTotalCostChange} // Pass the callback
+              disabled={!!formData?.is_deposit || !!formData?.is_paid}
             />
           </div>
           <div className="mb-4 flex items-center space-x-2">
@@ -379,6 +400,7 @@ export default function QuoteCreateForm() {
               id="is_traiteur"
               checked={formData.is_traiteur}
               onCheckedChange={() => handleSwitchChange('is_traiteur')}
+              disabled={!!formData?.is_deposit || !!formData?.is_paid}
             />
             <Label htmlFor="is_traiteur" className="text-base">Service traiteur</Label>
           </div>
@@ -390,7 +412,7 @@ export default function QuoteCreateForm() {
               value={formData.traiteur_price ?? ''} 
               onChange={handleInputChange} 
               className={`w-full text-base ${errors.traiteur_price ? 'border-red-500' : ''}`} 
-              disabled={!formData.is_traiteur}
+              disabled={!formData?.is_traiteur || formData?.is_paid || formData?.is_deposit}
             />
             {errors.traiteur_price && <p className="text-red-500 text-sm mt-1">{errors.traiteur_price}</p>}
           </div>
@@ -401,7 +423,8 @@ export default function QuoteCreateForm() {
               type="number"
               value={formData.other_expenses ?? ''} 
               onChange={handleInputChange} 
-              className={`w-full text-base ${errors.other_expenses ? 'border-red-500' : ''}`} 
+              className={`w-full text-base ${errors.other_expenses ? 'border-red-500' : ''}`}
+              disabled={formData?.is_paid || formData?.is_deposit}
             />
             {errors.other_expenses && <p className="text-red-500 text-sm mt-1">{errors.other_expenses}</p>}
           </div>
@@ -412,6 +435,42 @@ export default function QuoteCreateForm() {
               type="number"
               value={formData.total_cost ?? ''} 
               className="w-full text-base" 
+              disabled
+            />
+          </div>
+          <div className="mb-4 flex items-center space-x-2">
+            <Switch
+              id="is_deposit"
+              checked={formData?.is_deposit ?? false}
+              onCheckedChange={() => handleDepositChange('is_deposit')}
+            />
+            <Label htmlFor="is_deposit" className="text-base">Acompte versé (30%)</Label>
+          </div>
+          {formData?.is_deposit && (
+            <div className="mb-4">
+              <Label htmlFor="deposit_amount" className="text-base">Montant de l'acompte</Label>
+              <Input 
+                id="deposit_amount" 
+                type="number"
+                value={formData?.deposit_amount ?? ''} 
+                className="w-full text-base"
+                disabled
+              />
+            </div>
+          )}
+          <div className="mb-4">
+            <Label className="text-base">Montant restant à payer</Label>
+            <Input 
+              type="number"
+              step="0.01"
+              value={formData ? (
+                formData.is_paid 
+                  ? "0.00"
+                  : formData.is_deposit && formData.total_cost !== undefined && formData.deposit_amount !== undefined
+                    ? (formData.total_cost - formData.deposit_amount).toFixed(2)
+                    : formData.total_cost?.toFixed(2) ?? ''
+              ) : ''} 
+              className="w-full text-base"
               disabled
             />
           </div>

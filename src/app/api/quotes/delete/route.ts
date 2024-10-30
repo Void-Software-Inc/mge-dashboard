@@ -45,6 +45,8 @@ export async function POST(request: NextRequest) {
                     traiteur_price: quote.traiteur_price,
                     other_expenses: quote.other_expenses,
                     description: quote.description,
+                    is_deposit: quote.is_deposit,
+                    deposit_amount: quote.deposit_amount,
                     deleted_at: new Date().toISOString()
                 })
                 .select()
