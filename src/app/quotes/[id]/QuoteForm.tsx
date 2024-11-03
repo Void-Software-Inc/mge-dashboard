@@ -400,6 +400,11 @@ export default function QuoteForm({ quoteId }: { quoteId: string }) {
     }
   };
 
+  //calculates the total cost TTC from the total cost HT
+  const calculateTTC = (ht: number | undefined): number => {
+    return ht !== undefined ? ht * 1.20 : 0;
+  };
+
   if (isLoading) {
     return (
       <div className="flex flex-col items-center justify-center pt-20 px-4 md:px-0">
@@ -576,7 +581,7 @@ export default function QuoteForm({ quoteId }: { quoteId: string }) {
             <Label htmlFor="is_traiteur" className="text-base">Service traiteur</Label>
           </div>
           <div className="mb-4">
-            <Label htmlFor="traiteur_price" className="text-base">Prix traiteur</Label>
+            <Label htmlFor="traiteur_price" className="text-base">Prix traiteur HT</Label>
             <Input 
               id="traiteur_price" 
               type="number"
@@ -588,7 +593,7 @@ export default function QuoteForm({ quoteId }: { quoteId: string }) {
             {errors.traiteur_price && <p className="text-red-500 text-sm mt-1">{errors.traiteur_price}</p>}
           </div>
           <div className="mb-4">
-            <Label htmlFor="other_expenses" className="text-base">Frais supplémentaires</Label>
+            <Label htmlFor="other_expenses" className="text-base">Frais supplémentaires HT</Label>
             <Input 
               id="other_expenses" 
               type="number"
@@ -600,7 +605,7 @@ export default function QuoteForm({ quoteId }: { quoteId: string }) {
             {errors.other_expenses && <p className="text-red-500 text-sm mt-1">{errors.other_expenses}</p>}
           </div>
           <div className="mb-4">
-            <Label htmlFor="price" className="text-base">Prix total</Label>
+            <Label htmlFor="price" className="text-base">Prix total HT</Label>
             <Input 
               id="total_cost" 
               type="number"
@@ -613,6 +618,16 @@ export default function QuoteForm({ quoteId }: { quoteId: string }) {
             />
             {errors.total_cost && <p className="text-red-500 text-sm mt-1">{errors.total_cost}</p>}
           </div>
+          <div className="mb-4">
+            <Label htmlFor="total_cost_ttc" className="text-base">Prix total TTC</Label>
+            <Input 
+              id="total_cost_ttc" 
+              type="number"
+              value={formData?.total_cost ? calculateTTC(formData.total_cost).toFixed(2) : ''} 
+              className="w-full text-base" 
+              disabled
+            />
+          </div>
           <div className="mb-4 flex items-center space-x-2">
             <Switch
               id="is_deposit"
@@ -623,27 +638,27 @@ export default function QuoteForm({ quoteId }: { quoteId: string }) {
           </div>
           {formData?.is_deposit && (
             <div className="mb-4">
-              <Label htmlFor="deposit_amount" className="text-base">Montant de l'acompte</Label>
+              <Label htmlFor="deposit_amount" className="text-base">Montant de l'acompte TTC</Label>
               <Input 
                 id="deposit_amount" 
                 type="number"
-                value={formData?.deposit_amount ?? ''} 
+                value={formData.total_cost !== undefined ? (calculateTTC(formData.total_cost) * 0.3).toFixed(2) : ''} 
                 className="w-full text-base"
                 disabled
               />
             </div>
           )}
           <div className="mb-4">
-            <Label className="text-base">Montant restant à payer</Label>
+            <Label className="text-base">Montant restant à payer TTC</Label>
             <Input 
               type="number"
               step="0.01"
               value={formData ? (
                 formData.is_paid 
                   ? "0.00"
-                  : formData.is_deposit && formData.total_cost !== undefined && formData.deposit_amount !== undefined
-                    ? (formData.total_cost - formData.deposit_amount).toFixed(2)
-                    : formData.total_cost?.toFixed(2) ?? ''
+                  : formData.is_deposit && formData.total_cost !== undefined
+                    ? (calculateTTC(formData.total_cost) * 0.7).toFixed(2)
+                    : calculateTTC(formData.total_cost).toFixed(2)
               ) : ''} 
               className="w-full text-base"
               disabled

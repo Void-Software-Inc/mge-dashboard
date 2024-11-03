@@ -339,7 +339,7 @@ export const columns: ColumnDef<Quote>[] = [
   },
   {
     accessorKey: "total_cost",
-    header: () => <div className="text-right font-extrabold whitespace-nowrap overflow-hidden overflow-ellipsis">Prix total</div>,
+    header: () => <div className="text-right font-extrabold whitespace-nowrap overflow-hidden overflow-ellipsis">Prix total HT</div>,
     cell: ({ row }) => {
       const price = parseFloat(row.getValue("total_cost"))
       const formatted = new Intl.NumberFormat("en-US", {

@@ -313,7 +313,7 @@ export function QuoteItemList({
       </div>
       {allItems.length > 0 && (
       <div className="text-center text-sm text-gray-400 pt-4">
-          Prix total des produits : {calculateTotalCost()} €
+          Prix total des produits HT : {calculateTotalCost()} €
         </div>
       )}
       <div className="flex items-center justify-between mt-4">
