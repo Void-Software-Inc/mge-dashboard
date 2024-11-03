@@ -77,8 +77,12 @@ const FinishedQuoteChart = ({ finishedQuotes, isLoading }: FinishedQuoteChartPro
     return groupFinishedQuotesByDate(filteredQuotes)
   }, [finishedQuotes, timeRange])
 
-  const total = filteredAndGroupedData.reduce((acc, curr) => acc + curr.finishedQuotes, 0)
-  const totalCost = filteredAndGroupedData.reduce((acc, curr) => acc + curr.totalCost, 0)
+  const calculateTTC = (ht: number): number => {
+    return ht * 1.20;
+  };
+
+  const total = filteredAndGroupedData.reduce((acc, curr) => acc + curr.finishedQuotes, 0);
+  const totalCostTTC = filteredAndGroupedData.reduce((acc, curr) => acc + calculateTTC(curr.totalCost), 0);
 
   return isLoading ? 
   <>
@@ -103,7 +107,7 @@ const FinishedQuoteChart = ({ finishedQuotes, isLoading }: FinishedQuoteChartPro
           <CardDescription className='text-sm text-center'>
             Nombre total de devis terminés : {total}
             <br />
-            Montant total réalisé : {totalCost.toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' })}
+            Montant total réalisé TTC : {totalCostTTC.toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' })}
           </CardDescription>
         </div>
         <div className="hidden md:flex px-2 py-2">
@@ -156,25 +160,25 @@ const FinishedQuoteChart = ({ finishedQuotes, isLoading }: FinishedQuoteChartPro
               }}
             />
             <ChartTooltip
-                content={({ active, payload }) => {
+              content={({ active, payload }) => {
                 if (active && payload && payload.length) {
-                    const data = payload[0].payload;
-                    return (
+                  const data = payload[0].payload;
+                  return (
                     <div className="rounded-lg bg-background p-2 shadow-sm">
-                        <div className="text-sm font-medium">
+                      <div className="text-sm font-medium">
                         {format(parseISO(data.date), 'd MMMM yyyy', { locale: fr })}
-                        </div>
-                        <div className="mt-1 text-sm text-muted-foreground">
+                      </div>
+                      <div className="mt-1 text-sm text-muted-foreground">
                         Devis terminés : {data.finishedQuotes}
-                        </div>
-                        <div className="mt-1 text-sm text-muted-foreground">
-                        Montant total : {data.totalCost.toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' })}
-                        </div>
+                      </div>
+                      <div className="mt-1 text-sm text-muted-foreground">
+                        Montant total TTC : {calculateTTC(data.totalCost).toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' })}
+                      </div>
                     </div>
-                    );
+                  );
                 }
                 return null;
-                }}
+              }}
             />
             <Bar dataKey="finishedQuotes" fill={`var(--color-finishedQuotes)`} radius={[4, 4, 0, 0]} />
           </BarChart>
