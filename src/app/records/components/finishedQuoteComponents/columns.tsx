@@ -32,6 +32,20 @@ const formatPhoneNumber = (phoneNumber: string) => {
     return phoneNumber.replace(/(\d{2})(?=\d)/g, '$1 ').trim();
 };
 
+const calculateTTC = (ht: number): number => {
+  return ht * 1.20;
+};
+
+const formatDate = (dateString: string | null) => {
+  if (!dateString) return '-';
+  try {
+      const date = new Date(dateString);
+      if (isNaN(date.getTime())) return '-';
+      return format(date, 'dd/MM/yyyy', { locale: fr });
+  } catch (error) {
+      return '-';
+  }
+};
 
 export const columns: ColumnDef<FinishedQuote>[] = [
   /*Implementation later{
@@ -156,7 +170,7 @@ export const columns: ColumnDef<FinishedQuote>[] = [
   },
   {
     id: "product_price",
-    header: () => <div className="whitespace-nowrap overflow-hidden overflow-ellipsis">Prix produits</div>,
+    header: () => <div className="whitespace-nowrap overflow-hidden overflow-ellipsis">Prix produits HT</div>,
     cell: ({ row }) => {
       const price = parseFloat(row.getValue("total_cost")) - (parseFloat(row.getValue("traiteur_price")) + parseFloat(row.getValue("other_expenses")))
       const formatted = new Intl.NumberFormat("en-US", {
@@ -168,7 +182,7 @@ export const columns: ColumnDef<FinishedQuote>[] = [
   },
   {
     accessorKey: "traiteur_price",
-    header: () => <div className="whitespace-nowrap overflow-hidden overflow-ellipsis">Prix traiteur</div>,
+    header: () => <div className="whitespace-nowrap overflow-hidden overflow-ellipsis">Prix traiteur HT</div>,
     cell: ({ row }) => {
       const price = parseFloat(row.getValue("traiteur_price"))
       const formatted = new Intl.NumberFormat("en-US", {
@@ -180,7 +194,7 @@ export const columns: ColumnDef<FinishedQuote>[] = [
   },
   {
     accessorKey: "other_expenses",
-    header: () => <div className="whitespace-nowrap overflow-hidden overflow-ellipsis">Autres frais</div>,
+    header: () => <div className="whitespace-nowrap overflow-hidden overflow-ellipsis">Autres frais HT</div>,
     cell: ({ row }) => {
       const price = parseFloat(row.getValue("other_expenses"))
       const formatted = new Intl.NumberFormat("en-US", {
@@ -192,7 +206,7 @@ export const columns: ColumnDef<FinishedQuote>[] = [
   },
   {
     accessorKey: "total_cost",
-    header: () => <div className="whitespace-nowrap overflow-hidden overflow-ellipsis font-extrabold">Prix total</div>,
+    header: () => <div className="whitespace-nowrap overflow-hidden overflow-ellipsis font-extrabold">Prix total HT</div>,
     cell: ({ row }) => {
       const price = parseFloat(row.getValue("total_cost"))
       const formatted = new Intl.NumberFormat("en-US", {
@@ -200,6 +214,19 @@ export const columns: ColumnDef<FinishedQuote>[] = [
         currency: "EUR",
       }).format(price)
        return <div className="text-right font-extrabold">{formatted}</div>
+    },
+  },
+  {
+    accessorKey: "total_cost_ttc",
+    header: () => <div className="whitespace-nowrap overflow-hidden overflow-ellipsis font-extrabold">Prix total TTC</div>,
+    cell: ({ row }) => {
+      const priceHT = parseFloat(row.getValue("total_cost"))
+      const priceTTC = calculateTTC(priceHT)
+      const formatted = new Intl.NumberFormat("en-US", {
+        style: "currency",
+        currency: "EUR",
+      }).format(priceTTC)
+      return <div className="text-right font-extrabold">{formatted}</div>
     },
   },
   {
@@ -243,6 +270,22 @@ export const columns: ColumnDef<FinishedQuote>[] = [
     header: "Description",
     cell: ({ row }) => {
       return <div className="whitespace-nowrap overflow-hidden overflow-ellipsis">{row.getValue("description")}</div>
+    },
+  },
+  {
+    accessorKey: "finished_at",
+    header: () => {
+      return (
+        <div className={cn("whitespace-nowrap overflow-hidden overflow-ellipsis")}>
+          <span>Date de finalisation</span>
+        </div>
+      );
+    },
+    cell: ({ row }) => {
+      const dateString = row.getValue("finished_at") as string | null;
+      return <div className="whitespace-nowrap overflow-hidden overflow-ellipsis">
+        {formatDate(dateString)}
+      </div>;
     },
   },
 ]

@@ -49,14 +49,24 @@ const formatPhoneNumber = (phoneNumber: string) => {
     return phoneNumber.replace(/(\d{2})(?=\d)/g, '$1 ').trim();
 };
 
-const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
-    return format(date, 'dd/MM/yyyy', { locale: fr });
+const formatDate = (dateString: string | null) => {
+  if (!dateString) return '-';
+  try {
+      const date = new Date(dateString);
+      if (isNaN(date.getTime())) return '-'; // Check if date is invalid
+      return format(date, 'dd/MM/yyyy', { locale: fr });
+  } catch (error) {
+      return '-';
+  }
 };
 
 export const onRowClick = (row: Quote, router: ReturnType<typeof useRouter>) => {
   router.push(`/quotes/${row.id}`)
 }
+
+const calculateTTC = (ht: number): number => {
+  return ht * 1.20;
+};
 
 export const columns: ColumnDef<Quote>[] = [
   /*Implementation later{
@@ -339,14 +349,15 @@ export const columns: ColumnDef<Quote>[] = [
   },
   {
     accessorKey: "total_cost",
-    header: () => <div className="text-right font-extrabold whitespace-nowrap overflow-hidden overflow-ellipsis">Prix total HT</div>,
+    header: () => <div className="text-right font-extrabold whitespace-nowrap overflow-hidden overflow-ellipsis">Prix total TTC</div>,
     cell: ({ row }) => {
-      const price = parseFloat(row.getValue("total_cost"))
+      const priceHT = parseFloat(row.getValue("total_cost"))
+      const priceTTC = calculateTTC(priceHT)
       const formatted = new Intl.NumberFormat("en-US", {
         style: "currency",
         currency: "EUR",
-      }).format(price)
-       return <div className="text-right font-extrabold">{formatted}</div>
+      }).format(priceTTC)
+      return <div className="text-right font-extrabold">{formatted}</div>
     },
   },
   {
@@ -386,6 +397,98 @@ export const columns: ColumnDef<Quote>[] = [
     header: "Description",
     cell: ({ row }) => {
       return <div className="whitespace-nowrap overflow-hidden overflow-ellipsis">{row.getValue("description")}</div>
+    },
+  },
+  {
+    accessorKey: "created_at",
+    header: ({ column }) => {
+      return (
+        <div className={cn("flex items-center space-x-2")}>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="-ml-3 h-8 data-[state=open]:bg-accent"
+              >
+                <span>Date de création</span>
+                {column.getIsSorted() === "desc" ? (
+                  <ArrowDownIcon className="ml-2 h-4 w-4" />
+                ) : column.getIsSorted() === "asc" ? (
+                  <ArrowUpIcon className="ml-2 h-4 w-4" />
+                ) : (
+                  <CaretSortIcon className="ml-2 h-4 w-4" />
+                )}
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="start">
+              <DropdownMenuItem onClick={() => column.toggleSorting(false)}>
+                <ArrowUpIcon className="mr-2 h-3.5 w-3.5 text-muted-foreground/70" />
+                Asc
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => column.toggleSorting(true)}>
+                <ArrowDownIcon className="mr-2 h-3.5 w-3.5 text-muted-foreground/70" />
+                Desc
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={() => column.toggleVisibility(false)}>
+                <EyeNoneIcon className="mr-2 h-3.5 w-3.5 text-muted-foreground/70" />
+                Masquer
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
+      )
+    },
+    cell: ({ row }) => {
+      const dateString = row.getValue("created_at") as string | null;
+      return <div>{formatDate(dateString)}</div>;
+    },
+  },
+  {
+    accessorKey: "last_update",
+    header: ({ column }) => {
+      return (
+        <div className={cn("flex items-center space-x-2")}>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="-ml-3 h-8 data-[state=open]:bg-accent"
+              >
+                <span>Dernière modification</span>
+                {column.getIsSorted() === "desc" ? (
+                  <ArrowDownIcon className="ml-2 h-4 w-4" />
+                ) : column.getIsSorted() === "asc" ? (
+                  <ArrowUpIcon className="ml-2 h-4 w-4" />
+                ) : (
+                  <CaretSortIcon className="ml-2 h-4 w-4" />
+                )}
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="start">
+              <DropdownMenuItem onClick={() => column.toggleSorting(false)}>
+                <ArrowUpIcon className="mr-2 h-3.5 w-3.5 text-muted-foreground/70" />
+                Asc
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => column.toggleSorting(true)}>
+                <ArrowDownIcon className="mr-2 h-3.5 w-3.5 text-muted-foreground/70" />
+                Desc
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={() => column.toggleVisibility(false)}>
+                <EyeNoneIcon className="mr-2 h-3.5 w-3.5 text-muted-foreground/70" />
+                Masquer
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
+      )
+    },
+    cell: ({ row }) => {
+      const dateString = row.getValue("last_update") as string | null;
+      return <div>{formatDate(dateString)}</div>;
     },
   },
 ]
