@@ -15,6 +15,7 @@ import {
   getPaginationRowModel,
   getSortedRowModel,
   useReactTable,
+  PaginationState,
 } from "@tanstack/react-table"
 
 import {
@@ -38,7 +39,7 @@ import { Input } from "@/components/ui/input"
 import { Product } from "@/utils/types/products"
 import { Skeleton } from "@/components/ui/skeleton"
 import { useAppContext } from "@/app/context/AppContext"
-import { useRouter } from 'next/navigation'
+import { useRouter, usePathname } from 'next/navigation'
 import { PlusIcon } from "@radix-ui/react-icons"
 
 interface DataTableProps<TData, TValue> {
@@ -49,6 +50,7 @@ export function DataTable({
   columns,
 }: Omit<DataTableProps<Product, any>, 'data'>) {
   const router = useRouter()
+  const pathname = usePathname()
 
   const [products, setProducts] = React.useState<Product[]>([])
   const [isLoading, setIsLoading] = React.useState(true)
@@ -59,6 +61,10 @@ export function DataTable({
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([])
   const [columnVisibility, setColumnVisibility] = React.useState<VisibilityState>({})
   const [rowSelection, setRowSelection] = React.useState({})
+  const [pagination, setPagination] = React.useState<PaginationState>({
+    pageIndex: 0,
+    pageSize: 10,
+  })
 
   const fetchProducts = async () => {
     setIsLoading(true)
@@ -77,6 +83,15 @@ export function DataTable({
 
   React.useEffect(() => {
     setIsMounted(true)
+    const savedState = sessionStorage.getItem('productsTableState')
+    if (savedState) {
+      const parsedState = JSON.parse(savedState)
+      setSorting(parsedState.sorting || [])
+      setColumnFilters(parsedState.columnFilters || [])
+      setColumnVisibility(parsedState.columnVisibility || {})
+      setPagination(parsedState.pagination || { pageIndex: 0, pageSize: 10 })
+    }
+
     if (productsShouldRefetch) {
       fetchProducts()
     } else {
@@ -92,6 +107,18 @@ export function DataTable({
     }
   }, [productsShouldRefetch])
 
+  React.useEffect(() => {
+    if (isMounted) {
+      const state = {
+        sorting,
+        columnFilters,
+        columnVisibility,
+        pagination,
+      }
+      sessionStorage.setItem('productsTableState', JSON.stringify(state))
+    }
+  }, [isMounted, sorting, columnFilters, columnVisibility, pagination])
+
   const memoizedProducts = React.useMemo(() => products, [products])
   
   const table = useReactTable({
@@ -105,11 +132,13 @@ export function DataTable({
     getFilteredRowModel: getFilteredRowModel(),
     onColumnVisibilityChange: setColumnVisibility,
     onRowSelectionChange: setRowSelection,
+    onPaginationChange: setPagination,
     state: {
       sorting,
       columnFilters,
       columnVisibility,
       rowSelection, 
+      pagination,
     },
   })
 
