@@ -90,11 +90,21 @@ export default function QuoteCreateForm() {
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { id, value } = e.target;
-    const numValue = value === '' ? 0 : parseInt(value, 10);
-    setFormData(prev => {
-      const updatedFormData = { ...prev, [id]: id === 'traiteur_price' || id === 'other_expenses' ? numValue : value };
-      return updatedFormData;
-    });
+    
+    if (id === 'traiteur_price' || id === 'other_expenses') {
+      // Allow decimal numbers for traiteur_price and other_expenses
+      if (!/^\d*\.?\d*$/.test(value)) return;
+      const numValue = value === '' ? null : parseFloat(value);
+      setFormData(prev => ({
+        ...prev,
+        [id]: numValue
+      }));
+    } else {
+      setFormData(prev => ({
+        ...prev,
+        [id]: value
+      }));
+    }
     setTouched(prev => ({ ...prev, [id]: true }));
   };
 
