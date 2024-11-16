@@ -171,11 +171,10 @@ export default function QuoteForm({ quoteId }: { quoteId: string }) {
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { id, value } = e.target
     if (id === 'traiteur_price' || id === 'other_expenses') {
-      // Only allow numeric input for total_cost
-      if (!/^\d*$/.test(value)) return
+      // Allow decimal numbers for traiteur_price and other_expenses
+      if (!/^\d*\.?\d*$/.test(value)) return
       // Convert to number or null if empty
-      const numValue = value === '' ? null : parseInt(value, 10)
-      // @ts-ignore
+      const numValue = value === '' ? null : parseFloat(value)
       setFormData(prev => prev ? { ...prev, [id]: numValue } : null)
     } else {
       setFormData(prev => prev ? { ...prev, [id]: value } : null)
