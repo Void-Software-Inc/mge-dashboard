@@ -76,7 +76,7 @@ const ProductTypesChart = ({ products, isLoading }: ProductTypesChartProps) => {
    : (
     <Card className="flex flex-col h-[350px]">
       <CardHeader className="items-center pb-0">
-        <CardTitle>Types de Produitsfafafafaf</CardTitle>
+        <CardTitle>Types de Produits</CardTitle>
         <CardDescription>Répartition des produits par type</CardDescription>
       </CardHeader>
       <CardContent className="flex-1 pb-0">
