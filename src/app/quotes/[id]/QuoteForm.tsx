@@ -33,6 +33,7 @@ interface FormErrors {
   is_traiteur?: string;
   traiteur_price?: string;
   other_expenses?: string;
+  deposit_amount?: string;
 }
 
 export default function QuoteForm({ quoteId }: { quoteId: string }) {
@@ -153,6 +154,10 @@ export default function QuoteForm({ quoteId }: { quoteId: string }) {
       newErrors.other_expenses = "Les frais additionnels sont invalides";
       isValid = false;
     }
+    if (formData?.deposit_amount !== undefined && (formData.deposit_amount === null || formData.deposit_amount < 0)) {
+      newErrors.deposit_amount = "Le montant de l'acompte est invalide";
+      isValid = false;
+    }
 
     setErrors(newErrors)
     setIsFormValid(isValid)
@@ -166,11 +171,10 @@ export default function QuoteForm({ quoteId }: { quoteId: string }) {
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { id, value } = e.target
     if (id === 'traiteur_price' || id === 'other_expenses') {
-      // Only allow numeric input for total_cost
-      if (!/^\d*$/.test(value)) return
+      // Allow decimal numbers for traiteur_price and other_expenses
+      if (!/^\d*\.?\d*$/.test(value)) return
       // Convert to number or null if empty
-      const numValue = value === '' ? null : parseInt(value, 10)
-      // @ts-ignore
+      const numValue = value === '' ? null : parseFloat(value)
       setFormData(prev => prev ? { ...prev, [id]: numValue } : null)
     } else {
       setFormData(prev => prev ? { ...prev, [id]: value } : null)
@@ -271,6 +275,43 @@ export default function QuoteForm({ quoteId }: { quoteId: string }) {
     setTotalCostFromItems(totalCost);
   }, []);
 
+  const handleDepositChange = (id: string) => {
+    setFormData((prevData) => {
+      if (!prevData) return null;
+      const newIsDeposit = !prevData.is_deposit;
+      return {
+        ...prevData,
+        is_deposit: newIsDeposit,
+        deposit_amount: newIsDeposit && prevData.total_cost 
+          ? prevData.total_cost * 0.3
+          : 0
+      };
+    });
+    setIsChanged(true);
+  };
+
+  //watches for any changes on total price, if it changes, it resets the deposit to false and amount to 0
+  useEffect(() => {
+    if (formData && quote && (
+      formData.is_traiteur !== quote.is_traiteur ||
+      formData.traiteur_price !== quote.traiteur_price ||
+      formData.other_expenses !== quote.other_expenses
+    )) {
+      setFormData(prev => prev ? ({
+        ...prev,
+        is_deposit: false,
+        deposit_amount: 0
+      }) : null);
+    }
+  }, [
+    formData?.is_traiteur,
+    quote?.is_traiteur,
+    formData?.traiteur_price,
+    quote?.traiteur_price,
+    formData?.other_expenses,
+    quote?.other_expenses
+  ]);
+
   useEffect(() => {
     setFormData(prev => prev ? ({
       ...prev,
@@ -356,6 +397,11 @@ export default function QuoteForm({ quoteId }: { quoteId: string }) {
       console.error('Error finishing quote:', error);
       toast.error('Erreur lors de la finalisation du devis');
     }
+  };
+
+  //calculates the total cost TTC from the total cost HT
+  const calculateTTC = (ht: number | undefined): number => {
+    return ht !== undefined ? ht * 1.20 : 0;
   };
 
   if (isLoading) {
@@ -509,18 +555,19 @@ export default function QuoteForm({ quoteId }: { quoteId: string }) {
                 <Skeleton className="h-12 w-full" />
               </div>
             ) : <QuoteItemList 
-                items={quoteItems ?? []}
-                taintedItems={taintedItems}
-                editedItems={editedItems}
-                createdItems={createdItems}
-                onItemTaint={handleItemTaint}
-                onItemEdit={handleItemEdit}
-                onItemCreate={handleItemCreate}
-                onItemRemove={handleItemRemove}
-                isLoading={isQuoteItemsLoading}
-                quoteId={quote.id}
-                onTotalCostChange={handleTotalCostChange}
-              />
+                  items={quoteItems ?? []}
+                  taintedItems={taintedItems}
+                  editedItems={editedItems}
+                  createdItems={createdItems}
+                  onItemTaint={handleItemTaint}
+                  onItemEdit={handleItemEdit}
+                  onItemCreate={handleItemCreate}
+                  onItemRemove={handleItemRemove}
+                  isLoading={isQuoteItemsLoading}
+                  quoteId={quote.id}
+                  onTotalCostChange={handleTotalCostChange}
+                  disabled={!!formData?.is_deposit || !!formData?.is_paid}
+                />
             }
           </div>
           <div className="mb-4 flex items-center space-x-2">
@@ -528,34 +575,36 @@ export default function QuoteForm({ quoteId }: { quoteId: string }) {
               id="is_traiteur"
               checked={formData?.is_traiteur ?? false}
               onCheckedChange={() => handleSwitchChange('is_traiteur')}
+              disabled={formData?.is_paid || formData?.is_deposit}
             />
             <Label htmlFor="is_traiteur" className="text-base">Service traiteur</Label>
           </div>
           <div className="mb-4">
-            <Label htmlFor="traiteur_price" className="text-base">Prix traiteur</Label>
+            <Label htmlFor="traiteur_price" className="text-base">Prix traiteur HT</Label>
             <Input 
               id="traiteur_price" 
               type="number"
               value={formData?.traiteur_price ?? ''} 
               onChange={handleInputChange} 
               className={`w-full text-base ${errors.traiteur_price ? 'border-red-500' : ''}`} 
-              disabled={!formData?.is_traiteur}
+              disabled={!formData?.is_traiteur || formData?.is_paid || formData?.is_deposit}
             />
             {errors.traiteur_price && <p className="text-red-500 text-sm mt-1">{errors.traiteur_price}</p>}
           </div>
           <div className="mb-4">
-            <Label htmlFor="other_expenses" className="text-base">Frais supplémentaires</Label>
+            <Label htmlFor="other_expenses" className="text-base">Frais supplémentaires HT</Label>
             <Input 
               id="other_expenses" 
               type="number"
               value={formData?.other_expenses ?? ''} 
               onChange={handleInputChange} 
               className={`w-full text-base ${errors.other_expenses ? 'border-red-500' : ''}`} 
+              disabled={formData?.is_paid || formData?.is_deposit}
             />
             {errors.other_expenses && <p className="text-red-500 text-sm mt-1">{errors.other_expenses}</p>}
           </div>
           <div className="mb-4">
-            <Label htmlFor="price" className="text-base">Prix total</Label>
+            <Label htmlFor="price" className="text-base">Prix total HT</Label>
             <Input 
               id="total_cost" 
               type="number"
@@ -567,6 +616,52 @@ export default function QuoteForm({ quoteId }: { quoteId: string }) {
               disabled
             />
             {errors.total_cost && <p className="text-red-500 text-sm mt-1">{errors.total_cost}</p>}
+          </div>
+          <div className="mb-4">
+            <Label htmlFor="total_cost_ttc" className="text-base">Prix total TTC</Label>
+            <Input 
+              id="total_cost_ttc" 
+              type="number"
+              value={formData?.total_cost ? calculateTTC(formData.total_cost).toFixed(2) : ''} 
+              className="w-full text-base" 
+              disabled
+            />
+          </div>
+          <div className="mb-4 flex items-center space-x-2">
+            <Switch
+              id="is_deposit"
+              checked={formData?.is_deposit ?? false}
+              onCheckedChange={() => handleDepositChange('is_deposit')}
+            />
+            <Label htmlFor="is_deposit" className="text-base">Acompte versé (30%)</Label>
+          </div>
+          {formData?.is_deposit && (
+            <div className="mb-4">
+              <Label htmlFor="deposit_amount" className="text-base">Montant de l'acompte TTC</Label>
+              <Input 
+                id="deposit_amount" 
+                type="number"
+                value={formData.total_cost !== undefined ? (calculateTTC(formData.total_cost) * 0.3).toFixed(2) : ''} 
+                className="w-full text-base"
+                disabled
+              />
+            </div>
+          )}
+          <div className="mb-4">
+            <Label className="text-base">Montant restant à payer TTC</Label>
+            <Input 
+              type="number"
+              step="0.01"
+              value={formData ? (
+                formData.is_paid 
+                  ? "0.00"
+                  : formData.is_deposit && formData.total_cost !== undefined
+                    ? (calculateTTC(formData.total_cost) * 0.7).toFixed(2)
+                    : calculateTTC(formData.total_cost).toFixed(2)
+              ) : ''} 
+              className="w-full text-base"
+              disabled
+            />
           </div>
           <div className="mb-4 flex items-center space-x-2">
             <Switch

@@ -25,6 +25,7 @@ interface QuoteItemListProps {
     isLoading: boolean;
     quoteId: number;
     onTotalCostChange: (totalCost: number) => void;
+    disabled: boolean;
 }
 
 export function QuoteItemList({ 
@@ -38,7 +39,8 @@ export function QuoteItemList({
   onItemRemove,
   isLoading, 
   quoteId,
-  onTotalCostChange
+  onTotalCostChange,
+  disabled,
 }: QuoteItemListProps) {
   const [productDetails, setProductDetails] = useState<Record<number, Product>>({});
   const [editingId, setEditingId] = useState<number | null>(null);
@@ -252,6 +254,7 @@ export function QuoteItemList({
                           className="w-20 text-base"
                           min="0"
                           max={product ? product.stock : undefined}
+                          disabled={disabled}
                         />
                         <span className="text-sm text-gray-500">/ {product ? product.stock : 'N/A'}</span>
                       </div>
@@ -264,6 +267,7 @@ export function QuoteItemList({
                             size="icon"
                             onClick={() => handleEditStart(item.id)}
                             className="text-blue-500 hover:text-blue-700"
+                            disabled={disabled}
                           >
                             <Pencil1Icon className="h-4 w-4" />
                           </Button>
@@ -291,6 +295,7 @@ export function QuoteItemList({
                         handleEditEnd();
                       }}
                       className={isTainted || isCreated ? 'text-red-500 hover:text-red-500 hover:bg-red-50' : 'text-black hover:text-red-500 hover:bg-gray-50'}
+                      disabled={disabled}
                     >
                       <TrashIcon className="h-4 w-4" />
                     </Button>
@@ -308,7 +313,7 @@ export function QuoteItemList({
       </div>
       {allItems.length > 0 && (
       <div className="text-center text-sm text-gray-400 pt-4">
-          Prix total des produits : {calculateTotalCost()} €
+          Prix total des produits HT : {calculateTotalCost()} €
         </div>
       )}
       <div className="flex items-center justify-between mt-4">
@@ -339,6 +344,7 @@ export function QuoteItemList({
               variant='outline' 
               className="text-lime-500 hover:text-lime-700 w-full"
               onClick={handleDrawerOpen}
+              disabled={disabled}
             >
               <PlusIcon className="mr-2 h-4 w-4" /> Ajouter un produit
             </Button>

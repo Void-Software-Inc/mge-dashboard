@@ -52,6 +52,10 @@ const formatDate = (dateString: string) => {
     return format(date, 'dd/MM/yyyy', { locale: fr });
 };
 
+const calculateTTC = (ht: number): number => {
+  return ht * 1.20;
+};
+
 export const columns: ColumnDef<QuoteRecord>[] = [
   /*Implementation later{
     id: "select",
@@ -364,14 +368,15 @@ export const columns: ColumnDef<QuoteRecord>[] = [
   },
   {
     accessorKey: "total_cost",
-    header: () => <div className="whitespace-nowrap overflow-hidden overflow-ellipsis">Prix total</div>,
+    header: () => <div className="whitespace-nowrap overflow-hidden overflow-ellipsis">Prix total TTC</div>,
     cell: ({ row }) => {
-      const price = parseFloat(row.getValue("total_cost"))
+      const priceHT = parseFloat(row.getValue("total_cost"))
+      const priceTTC = calculateTTC(priceHT)
       const formatted = new Intl.NumberFormat("en-US", {
         style: "currency",
         currency: "EUR",
-      }).format(price)
-       return <div className="text-right font-extrabold">{formatted}</div>
+      }).format(priceTTC)
+      return <div className="text-right font-extrabold">{formatted}</div>
     },
   },
   {

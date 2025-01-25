@@ -116,8 +116,17 @@ export default function ProductCreateForm() {
     
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { id, value } = e.target
-    if (id === 'stock' || id === 'price') {
-      const numValue = value === '' ? '' : parseFloat(value)
+    if (id === 'stock') {
+      // Only allow integers for stock
+      if (!/^\d*$/.test(value)) return
+      const numValue = value === '' ? null : parseInt(value) // Default to 0 instead of empty string
+      //@ts-ignore
+      setFormData(prev => ({ ...prev, [id]: numValue }))
+    } else if (id === 'price') {
+      // Allow decimal numbers for price
+      if (!/^\d*\.?\d*$/.test(value)) return
+      const numValue = value === '' ? null : parseFloat(value) // Default to 0 instead of empty string
+      //@ts-ignore
       setFormData(prev => ({ ...prev, [id]: numValue }))
     } else {
       setFormData(prev => ({ ...prev, [id]: value }))
