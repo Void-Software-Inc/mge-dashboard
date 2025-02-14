@@ -679,7 +679,7 @@ export default function QuoteForm({ quoteId }: { quoteId: string }) {
                 timeZone: 'Europe/Paris'
               }) : ''} className="w-full text-base" disabled />
           </div>
-          <div className="mb-4">
+          <div className="mb-40">
             <Label className="text-base">Date de dernière mise à jour du devis</Label>
             <Input id="last_update" value={formData?.last_update ? new Date(formData.last_update).toLocaleString('fr-FR', {
               dateStyle: 'short',
