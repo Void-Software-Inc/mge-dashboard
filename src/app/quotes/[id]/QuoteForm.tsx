@@ -16,7 +16,7 @@ import { ChevronLeftIcon, DownloadIcon } from "@radix-ui/react-icons"
 import { useRouter } from 'next/navigation'
 import { useAppContext } from "@/app/context/AppContext"
 import { getQuote, getQuoteItems, updateQuote, deleteQuoteItem, finishQuote, updateQuoteItem, createQuoteItem } from "@/services/quotes"
-import { Quote, quoteStatus, QuoteItem } from "@/utils/types/quotes"
+import { Quote, quoteStatus, QuoteItem, Address } from "@/utils/types/quotes"
 import { DatePicker } from "../components/date-picker"
 import { QuoteItemList } from "../components/quote-item-list"
 import { format, parseISO } from 'date-fns';
@@ -34,7 +34,33 @@ interface FormErrors {
   traiteur_price?: string;
   other_expenses?: string;
   deposit_amount?: string;
+  address?: {
+    voie?: string;
+    compl?: string;
+    cp?: string;
+    ville?: string;
+    depart?: string;
+    pays?: string;
+  };
 }
+
+const isEqual = (obj1: any, obj2: any): boolean => {
+  if (obj1 === obj2) return true;
+  if (typeof obj1 !== 'object' || typeof obj2 !== 'object') return obj1 === obj2;
+  if (obj1 === null || obj2 === null) return obj1 === obj2;
+  
+  const keys1 = Object.keys(obj1);
+  const keys2 = Object.keys(obj2);
+  
+  if (keys1.length !== keys2.length) return false;
+  
+  for (const key of keys1) {
+    if (!keys2.includes(key)) return false;
+    if (!isEqual(obj1[key], obj2[key])) return false;
+  }
+  
+  return true;
+};
 
 export default function QuoteForm({ quoteId }: { quoteId: string }) {
   const router = useRouter()
@@ -85,7 +111,9 @@ export default function QuoteForm({ quoteId }: { quoteId: string }) {
           getQuote(parseInt(quoteId))
         ])
         setQuote(fetchedQuote)
-        setFormData(fetchedQuote)
+        const formDataCopy = JSON.parse(JSON.stringify(fetchedQuote));
+        setFormData(formDataCopy)
+        setIsChanged(false);
         await fetchQuoteItems()
       } catch (error) {
         console.error('Error fetching quote:', error)
@@ -97,18 +125,6 @@ export default function QuoteForm({ quoteId }: { quoteId: string }) {
 
     fetchQuote()
   }, [quoteId, fetchQuoteItems])
-
-  useEffect(() => {
-    setIsChanged(JSON.stringify(quote) !== JSON.stringify(formData) || taintedItems.size > 0 || editedItems.size > 0 || createdItems.length > 0);
-  }, [quote, formData, taintedItems, editedItems, createdItems]);
-
-  useEffect(() => {
-    if (createdItems.length > 0 || taintedItems.size > 0 || editedItems.size > 0) {
-      setShouldReloadItems(true);
-    } else {
-      setShouldReloadItems(false);
-    }
-  }, [taintedItems, editedItems, createdItems]);
 
   const validateForm = useCallback(() => {
     const newErrors: FormErrors = {}
@@ -165,9 +181,28 @@ export default function QuoteForm({ quoteId }: { quoteId: string }) {
   }, [formData])
 
   useEffect(() => {
-    validateForm()
-  }, [formData, validateForm])
-  
+    const formDataWithoutTotal = formData ? { ...formData } : null;
+    const quoteWithoutTotal = quote ? { ...quote } : null;
+    
+    let hasChanges = false;
+    if (formDataWithoutTotal && quoteWithoutTotal) {
+      const { total_cost: _f, ...formDataCompare } = formDataWithoutTotal;
+      const { total_cost: _q, ...quoteCompare } = quoteWithoutTotal;
+      hasChanges = !isEqual(formDataCompare, quoteCompare);
+    }
+
+    setIsChanged(hasChanges);
+    validateForm();
+  }, [formData, quote, validateForm]);
+
+  useEffect(() => {
+    if (createdItems.length > 0 || taintedItems.size > 0 || editedItems.size > 0) {
+      setShouldReloadItems(true);
+    } else {
+      setShouldReloadItems(false);
+    }
+  }, [taintedItems, editedItems, createdItems]);
+
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { id, value } = e.target
     if (id === 'traiteur_price' || id === 'other_expenses') {
@@ -313,10 +348,13 @@ export default function QuoteForm({ quoteId }: { quoteId: string }) {
   ]);
 
   useEffect(() => {
-    setFormData(prev => prev ? ({
-      ...prev,
-      total_cost: totalCostFromItems + (prev.traiteur_price ?? 0) + (prev.other_expenses ?? 0)
-    }) : null);
+    // Only update total_cost if it's different from the current value
+    if (formData && (formData.total_cost !== (totalCostFromItems + (formData.traiteur_price ?? 0) + (formData.other_expenses ?? 0)))) {
+      setFormData(prev => prev ? ({
+        ...prev,
+        total_cost: totalCostFromItems + (prev.traiteur_price ?? 0) + (prev.other_expenses ?? 0)
+      }) : null);
+    }
   }, [totalCostFromItems, formData?.traiteur_price, formData?.other_expenses]);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -328,22 +366,27 @@ export default function QuoteForm({ quoteId }: { quoteId: string }) {
       return;
     }
 
-    await updateQuoteAndItems();
+    const formDataToSend = new FormData();
+    // Append all form fields
+    if (formData) {
+      Object.entries(formData).forEach(([key, value]) => {
+        if (key === 'address' && value) {
+          // Handle address object separately
+          Object.entries(value).forEach(([addressKey, addressValue]) => {
+            formDataToSend.append(`address.${addressKey}`, addressValue?.toString() ?? '');
+          });
+        } else if (value !== null && value !== undefined) {
+          formDataToSend.append(key, value.toString());
+        }
+      });
+    }
+
+    await updateQuoteAndItems(formDataToSend);
   };
 
-  const updateQuoteAndItems = async () => {
+  const updateQuoteAndItems = async (formDataToSend: FormData) => {
     setIsSubmitting(true);
     try {
-      const formDataToSend = new FormData();
-      // Append all form fields
-      if (formData) {
-        Object.entries(formData).forEach(([key, value]) => {
-          if (value !== null && value !== undefined) {
-            formDataToSend.append(key, value.toString());
-          }
-        });
-      }
-
       // Update the quote
       const response = await updateQuote(formDataToSend);
 
@@ -388,7 +431,19 @@ export default function QuoteForm({ quoteId }: { quoteId: string }) {
 
   const handleFinishQuote = async () => {
     try {
-      await updateQuoteAndItems();
+      const formDataToSend = new FormData();
+      if (formData) {
+        Object.entries(formData).forEach(([key, value]) => {
+          if (key === 'address' && value) {
+            Object.entries(value).forEach(([addressKey, addressValue]) => {
+              formDataToSend.append(`address.${addressKey}`, addressValue?.toString() ?? '');
+            });
+          } else if (value !== null && value !== undefined) {
+            formDataToSend.append(key, value.toString());
+          }
+        });
+      }
+      await updateQuoteAndItems(formDataToSend);
       await finishQuote([parseInt(quoteId)]);
       setFinishedQuotesShouldRefetch(true);
       toast.success('Devis terminé et archivé avec succès');
@@ -402,6 +457,25 @@ export default function QuoteForm({ quoteId }: { quoteId: string }) {
   //calculates the total cost TTC from the total cost HT
   const calculateTTC = (ht: number | undefined): number => {
     return ht !== undefined ? ht * 1.20 : 0;
+  };
+
+  const handleAddressChange = (field: keyof Address, value: string) => {
+    setFormData(prev => {
+      if (!prev) return null;
+      return {
+        ...prev,
+        address: {
+          voie: prev.address?.voie ?? '',
+          compl: prev.address?.compl ?? null,
+          cp: prev.address?.cp ?? '',
+          ville: prev.address?.ville ?? '',
+          depart: prev.address?.depart ?? '',
+          pays: prev.address?.pays ?? '',
+          ...prev.address,
+          [field]: value
+        }
+      };
+    });
   };
 
   if (isLoading) {
@@ -523,6 +597,66 @@ export default function QuoteForm({ quoteId }: { quoteId: string }) {
               className={`w-full text-base ${errors.email ? 'border-red-500' : ''}`} 
             />
             {errors.email && <p className="text-red-500 text-sm mt-1">{errors.email}</p>}
+          </div>
+          <div className="mb-4">
+            <Label className="text-base">Adresse</Label>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="col-span-2">
+                <Label htmlFor="voie" className="text-sm">Voie</Label>
+                <Input 
+                  id="voie" 
+                  value={formData?.address?.voie ?? ''} 
+                  onChange={(e) => handleAddressChange('voie', e.target.value)} 
+                  className="w-full text-base" 
+                />
+              </div>
+              <div className="col-span-2">
+                <Label htmlFor="compl" className="text-sm">Complément d'adresse</Label>
+                <Input 
+                  id="compl" 
+                  value={formData?.address?.compl ?? ''} 
+                  onChange={(e) => handleAddressChange('compl', e.target.value)} 
+                  className="w-full text-base" 
+                />
+              </div>
+              <div>
+                <Label htmlFor="cp" className="text-sm">Code Postal</Label>
+                <Input 
+                  id="cp" 
+                  value={formData?.address?.cp ?? ''} 
+                  onChange={(e) => handleAddressChange('cp', e.target.value)} 
+                  className="w-full text-base" 
+                />
+              </div>
+              <div>
+                <Label htmlFor="ville" className="text-sm">Ville</Label>
+                <Input 
+                  id="ville" 
+                  value={formData?.address?.ville ?? ''} 
+                  onChange={(e) => handleAddressChange('ville', e.target.value)} 
+                  className="w-full text-base" 
+                />
+              </div>
+              <div>
+                <Label htmlFor="depart" className="text-sm">Département</Label>
+                <Input 
+                  id="depart" 
+                  value={formData?.address?.depart ?? ''} 
+                  onChange={(e) => handleAddressChange('depart', e.target.value)} 
+                  className="w-full text-base" 
+                />
+              </div>
+              <div>
+                <Label htmlFor="pays" className="text-sm">Pays</Label>
+                <Input 
+                  id="pays" 
+                  value={formData?.address?.pays ?? 'France'} 
+                  onChange={(e) => handleAddressChange('pays', e.target.value)} 
+                  className="w-full text-base"
+                  disabled
+                />
+              </div>
+            </div>
           </div>
           <div className="mb-4">
             <Label className="text-base">Date de début de l'événement</Label>

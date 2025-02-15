@@ -31,6 +31,7 @@ export async function getQuotes(): Promise<Quote[]> {
       last_update: quote.last_update,
       is_deposit: quote.is_deposit,
       deposit_amount: quote.deposit_amount,
+      address: quote.address,
     }))
     return cleanQuotes;
   } catch (error) {

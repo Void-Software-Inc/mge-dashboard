@@ -47,6 +47,7 @@ export async function POST(request: NextRequest) {
                     description: finishedQuote.description,
                     is_deposit: finishedQuote.is_deposit,
                     deposit_amount: finishedQuote.deposit_amount,
+                    address: finishedQuote.address,
                     created_at: new Date().toISOString(),
                     last_update: new Date().toISOString()
                 })
