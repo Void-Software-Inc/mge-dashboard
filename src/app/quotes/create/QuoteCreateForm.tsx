@@ -1,7 +1,7 @@
 'use client';
 import { useCallback, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Quote, QuoteItem, quoteStatus } from "@/utils/types/quotes";
+import { Address, Quote, QuoteItem, quoteStatus } from "@/utils/types/quotes";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
@@ -59,6 +59,14 @@ const initialQuote: Partial<Quote> = {
   other_expenses: 0,
   is_paid: false,
   is_deposit: false,
+  address: {
+    voie: '',
+    compl: null,
+    cp: '',
+    ville: '',
+    depart: '',
+    pays: 'France'
+  }
 };
 
 export default function QuoteCreateForm() {
@@ -185,7 +193,24 @@ export default function QuoteCreateForm() {
     });
   };
 
-  
+  const handleAddressChange = (field: keyof Address, value: string) => {
+    setFormData(prev => {
+      if (!prev) return prev;
+      return {
+        ...prev,
+        address: {
+          voie: prev.address?.voie ?? '',
+          compl: prev.address?.compl ?? null,
+          cp: prev.address?.cp ?? '',
+          ville: prev.address?.ville ?? '',
+          depart: prev.address?.depart ?? '',
+          pays: prev.address?.pays ?? '',
+          [field]: value
+        }
+      };
+    });
+  };
+
   useEffect(() => {
     setFormData(prev => ({
       ...prev,
@@ -294,7 +319,7 @@ export default function QuoteCreateForm() {
           </Button>
         </div>
       </div>
-      <form onSubmit={handleSubmit} className="flex flex-col items-center justify-center pt-20 px-4 md:px-0">
+      <form onSubmit={handleSubmit} className="flex flex-col items-center justify-center pt-20 px-4 md:px-0 mb-40">
         <div className="w-full max-w-5xl">
           <div className="mb-4">
             <Label htmlFor="status" className="text-base">Statut du devis</Label>
@@ -360,6 +385,66 @@ export default function QuoteCreateForm() {
               className={`w-full text-base ${errors.email ? 'border-red-500' : ''}`} 
             />
             {errors.email && <p className="text-red-500 text-sm mt-1">{errors.email}</p>}
+          </div>
+          <div className="mb-4">
+            <Label className="text-base">Adresse</Label>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="col-span-2">
+                <Label htmlFor="voie" className="text-sm">Voie</Label>
+                <Input 
+                  id="voie" 
+                  value={formData.address?.voie ?? ''} 
+                  onChange={(e) => handleAddressChange('voie', e.target.value)} 
+                  className="w-full text-base" 
+                />
+              </div>
+              <div className="col-span-2">
+                <Label htmlFor="compl" className="text-sm">Complément d'adresse</Label>
+                <Input 
+                  id="compl" 
+                  value={formData.address?.compl ?? ''} 
+                  onChange={(e) => handleAddressChange('compl', e.target.value)} 
+                  className="w-full text-base" 
+                />
+              </div>
+              <div>
+                <Label htmlFor="cp" className="text-sm">Code Postal</Label>
+                <Input 
+                  id="cp" 
+                  value={formData.address?.cp ?? ''} 
+                  onChange={(e) => handleAddressChange('cp', e.target.value)} 
+                  className="w-full text-base" 
+                />
+              </div>
+              <div>
+                <Label htmlFor="ville" className="text-sm">Ville</Label>
+                <Input 
+                  id="ville" 
+                  value={formData.address?.ville ?? ''} 
+                  onChange={(e) => handleAddressChange('ville', e.target.value)} 
+                  className="w-full text-base" 
+                />
+              </div>
+              <div>
+                <Label htmlFor="depart" className="text-sm">Département</Label>
+                <Input 
+                  id="depart" 
+                  value={formData.address?.depart ?? ''} 
+                  onChange={(e) => handleAddressChange('depart', e.target.value)} 
+                  className="w-full text-base" 
+                />
+              </div>
+              <div>
+                <Label htmlFor="pays" className="text-sm">Pays</Label>
+                <Input 
+                  id="pays" 
+                  value={formData.address?.pays ?? 'France'} 
+                  onChange={(e) => handleAddressChange('pays', e.target.value)} 
+                  className="w-full text-base"
+                  disabled
+                />
+              </div>
+            </div>
           </div>
           <div className="mb-4">
             <Label className="text-base">Date de début de l'événement</Label>
