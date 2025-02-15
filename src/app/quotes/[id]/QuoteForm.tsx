@@ -569,28 +569,6 @@ export default function QuoteForm({ quoteId }: { quoteId: string }) {
             {errors.email && <p className="text-red-500 text-sm mt-1">{errors.email}</p>}
           </div>
           <div className="mb-4">
-            <Label className="text-base">Date de début de l'événement</Label>
-            <DatePicker
-              date={formData?.event_start_date ? parseISO(formData.event_start_date) : undefined}
-              onDateChange={handleStartDateChange}
-              label="Choisir la date de début"
-            />
-            {errors.event_start_date && <p className="text-red-500 text-sm mt-1">{errors.event_start_date}</p>}
-          </div>
-          <div className="mb-4">
-            <Label className="text-base">Date de fin de l'événement</Label>
-            <DatePicker
-              date={formData?.event_end_date ? parseISO(formData.event_end_date) : undefined}
-              onDateChange={handleEndDateChange}
-              label="Choisir la date de fin"
-            />
-            {errors.event_end_date && <p className="text-red-500 text-sm mt-1">{errors.event_end_date}</p>}
-          </div>
-          <div className="mb-4">
-            <Label htmlFor="description" className="text-base">Description du devis</Label>
-            <Textarea id="description" value={formData?.description ?? ''} onChange={handleInputChange} className="w-full text-base" />
-          </div>
-          <div className="mb-4">
             <Label className="text-base">Adresse</Label>
             <div className="grid grid-cols-2 gap-4">
               <div className="col-span-2">
@@ -649,6 +627,28 @@ export default function QuoteForm({ quoteId }: { quoteId: string }) {
                 />
               </div>
             </div>
+          </div>
+          <div className="mb-4">
+            <Label className="text-base">Date de début de l'événement</Label>
+            <DatePicker
+              date={formData?.event_start_date ? parseISO(formData.event_start_date) : undefined}
+              onDateChange={handleStartDateChange}
+              label="Choisir la date de début"
+            />
+            {errors.event_start_date && <p className="text-red-500 text-sm mt-1">{errors.event_start_date}</p>}
+          </div>
+          <div className="mb-4">
+            <Label className="text-base">Date de fin de l'événement</Label>
+            <DatePicker
+              date={formData?.event_end_date ? parseISO(formData.event_end_date) : undefined}
+              onDateChange={handleEndDateChange}
+              label="Choisir la date de fin"
+            />
+            {errors.event_end_date && <p className="text-red-500 text-sm mt-1">{errors.event_end_date}</p>}
+          </div>
+          <div className="mb-4">
+            <Label htmlFor="description" className="text-base">Description du devis</Label>
+            <Textarea id="description" value={formData?.description ?? ''} onChange={handleInputChange} className="w-full text-base" />
           </div>
           <div className="mb-4">
             <Label className="text-base">Produits du devis</Label>
