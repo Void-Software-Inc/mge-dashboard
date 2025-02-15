@@ -44,6 +44,24 @@ interface FormErrors {
   };
 }
 
+const isEqual = (obj1: any, obj2: any): boolean => {
+  if (obj1 === obj2) return true;
+  if (typeof obj1 !== 'object' || typeof obj2 !== 'object') return obj1 === obj2;
+  if (obj1 === null || obj2 === null) return obj1 === obj2;
+  
+  const keys1 = Object.keys(obj1);
+  const keys2 = Object.keys(obj2);
+  
+  if (keys1.length !== keys2.length) return false;
+  
+  for (const key of keys1) {
+    if (!keys2.includes(key)) return false;
+    if (!isEqual(obj1[key], obj2[key])) return false;
+  }
+  
+  return true;
+};
+
 export default function QuoteForm({ quoteId }: { quoteId: string }) {
   const router = useRouter()
 
@@ -93,7 +111,9 @@ export default function QuoteForm({ quoteId }: { quoteId: string }) {
           getQuote(parseInt(quoteId))
         ])
         setQuote(fetchedQuote)
-        setFormData(fetchedQuote)
+        const formDataCopy = JSON.parse(JSON.stringify(fetchedQuote));
+        setFormData(formDataCopy)
+        setIsChanged(false);
         await fetchQuoteItems()
       } catch (error) {
         console.error('Error fetching quote:', error)
@@ -105,18 +125,6 @@ export default function QuoteForm({ quoteId }: { quoteId: string }) {
 
     fetchQuote()
   }, [quoteId, fetchQuoteItems])
-
-  useEffect(() => {
-    setIsChanged(JSON.stringify(quote) !== JSON.stringify(formData) || taintedItems.size > 0 || editedItems.size > 0 || createdItems.length > 0);
-  }, [quote, formData, taintedItems, editedItems, createdItems]);
-
-  useEffect(() => {
-    if (createdItems.length > 0 || taintedItems.size > 0 || editedItems.size > 0) {
-      setShouldReloadItems(true);
-    } else {
-      setShouldReloadItems(false);
-    }
-  }, [taintedItems, editedItems, createdItems]);
 
   const validateForm = useCallback(() => {
     const newErrors: FormErrors = {}
@@ -173,9 +181,28 @@ export default function QuoteForm({ quoteId }: { quoteId: string }) {
   }, [formData])
 
   useEffect(() => {
-    validateForm()
-  }, [formData, validateForm])
-  
+    const formDataWithoutTotal = formData ? { ...formData } : null;
+    const quoteWithoutTotal = quote ? { ...quote } : null;
+    
+    let hasChanges = false;
+    if (formDataWithoutTotal && quoteWithoutTotal) {
+      const { total_cost: _f, ...formDataCompare } = formDataWithoutTotal;
+      const { total_cost: _q, ...quoteCompare } = quoteWithoutTotal;
+      hasChanges = !isEqual(formDataCompare, quoteCompare);
+    }
+
+    setIsChanged(hasChanges);
+    validateForm();
+  }, [formData, quote, validateForm]);
+
+  useEffect(() => {
+    if (createdItems.length > 0 || taintedItems.size > 0 || editedItems.size > 0) {
+      setShouldReloadItems(true);
+    } else {
+      setShouldReloadItems(false);
+    }
+  }, [taintedItems, editedItems, createdItems]);
+
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { id, value } = e.target
     if (id === 'traiteur_price' || id === 'other_expenses') {
@@ -321,10 +348,13 @@ export default function QuoteForm({ quoteId }: { quoteId: string }) {
   ]);
 
   useEffect(() => {
-    setFormData(prev => prev ? ({
-      ...prev,
-      total_cost: totalCostFromItems + (prev.traiteur_price ?? 0) + (prev.other_expenses ?? 0)
-    }) : null);
+    // Only update total_cost if it's different from the current value
+    if (formData && (formData.total_cost !== (totalCostFromItems + (formData.traiteur_price ?? 0) + (formData.other_expenses ?? 0)))) {
+      setFormData(prev => prev ? ({
+        ...prev,
+        total_cost: totalCostFromItems + (prev.traiteur_price ?? 0) + (prev.other_expenses ?? 0)
+      }) : null);
+    }
   }, [totalCostFromItems, formData?.traiteur_price, formData?.other_expenses]);
 
   const handleSubmit = async (e: React.FormEvent) => {
