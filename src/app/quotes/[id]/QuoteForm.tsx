@@ -16,7 +16,7 @@ import { ChevronLeftIcon, DownloadIcon } from "@radix-ui/react-icons"
 import { useRouter } from 'next/navigation'
 import { useAppContext } from "@/app/context/AppContext"
 import { getQuote, getQuoteItems, updateQuote, deleteQuoteItem, finishQuote, updateQuoteItem, createQuoteItem } from "@/services/quotes"
-import { Quote, quoteStatus, QuoteItem } from "@/utils/types/quotes"
+import { Quote, quoteStatus, QuoteItem, Address } from "@/utils/types/quotes"
 import { DatePicker } from "../components/date-picker"
 import { QuoteItemList } from "../components/quote-item-list"
 import { format, parseISO } from 'date-fns';
@@ -34,6 +34,14 @@ interface FormErrors {
   traiteur_price?: string;
   other_expenses?: string;
   deposit_amount?: string;
+  address?: {
+    voie?: string;
+    compl?: string;
+    cp?: string;
+    ville?: string;
+    depart?: string;
+    pays?: string;
+  };
 }
 
 export default function QuoteForm({ quoteId }: { quoteId: string }) {
@@ -328,22 +336,27 @@ export default function QuoteForm({ quoteId }: { quoteId: string }) {
       return;
     }
 
-    await updateQuoteAndItems();
+    const formDataToSend = new FormData();
+    // Append all form fields
+    if (formData) {
+      Object.entries(formData).forEach(([key, value]) => {
+        if (key === 'address' && value) {
+          // Handle address object separately
+          Object.entries(value).forEach(([addressKey, addressValue]) => {
+            formDataToSend.append(`address.${addressKey}`, addressValue?.toString() ?? '');
+          });
+        } else if (value !== null && value !== undefined) {
+          formDataToSend.append(key, value.toString());
+        }
+      });
+    }
+
+    await updateQuoteAndItems(formDataToSend);
   };
 
-  const updateQuoteAndItems = async () => {
+  const updateQuoteAndItems = async (formDataToSend: FormData) => {
     setIsSubmitting(true);
     try {
-      const formDataToSend = new FormData();
-      // Append all form fields
-      if (formData) {
-        Object.entries(formData).forEach(([key, value]) => {
-          if (value !== null && value !== undefined) {
-            formDataToSend.append(key, value.toString());
-          }
-        });
-      }
-
       // Update the quote
       const response = await updateQuote(formDataToSend);
 
@@ -388,7 +401,19 @@ export default function QuoteForm({ quoteId }: { quoteId: string }) {
 
   const handleFinishQuote = async () => {
     try {
-      await updateQuoteAndItems();
+      const formDataToSend = new FormData();
+      if (formData) {
+        Object.entries(formData).forEach(([key, value]) => {
+          if (key === 'address' && value) {
+            Object.entries(value).forEach(([addressKey, addressValue]) => {
+              formDataToSend.append(`address.${addressKey}`, addressValue?.toString() ?? '');
+            });
+          } else if (value !== null && value !== undefined) {
+            formDataToSend.append(key, value.toString());
+          }
+        });
+      }
+      await updateQuoteAndItems(formDataToSend);
       await finishQuote([parseInt(quoteId)]);
       setFinishedQuotesShouldRefetch(true);
       toast.success('Devis terminé et archivé avec succès');
@@ -402,6 +427,25 @@ export default function QuoteForm({ quoteId }: { quoteId: string }) {
   //calculates the total cost TTC from the total cost HT
   const calculateTTC = (ht: number | undefined): number => {
     return ht !== undefined ? ht * 1.20 : 0;
+  };
+
+  const handleAddressChange = (field: keyof Address, value: string) => {
+    setFormData(prev => {
+      if (!prev) return null;
+      return {
+        ...prev,
+        address: {
+          voie: prev.address?.voie ?? '',
+          compl: prev.address?.compl ?? null,
+          cp: prev.address?.cp ?? '',
+          ville: prev.address?.ville ?? '',
+          depart: prev.address?.depart ?? '',
+          pays: prev.address?.pays ?? '',
+          ...prev.address,
+          [field]: value
+        }
+      };
+    });
   };
 
   if (isLoading) {
@@ -545,6 +589,65 @@ export default function QuoteForm({ quoteId }: { quoteId: string }) {
           <div className="mb-4">
             <Label htmlFor="description" className="text-base">Description du devis</Label>
             <Textarea id="description" value={formData?.description ?? ''} onChange={handleInputChange} className="w-full text-base" />
+          </div>
+          <div className="mb-4">
+            <Label className="text-base">Adresse</Label>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="col-span-2">
+                <Label htmlFor="voie" className="text-sm">Voie</Label>
+                <Input 
+                  id="voie" 
+                  value={formData?.address?.voie ?? ''} 
+                  onChange={(e) => handleAddressChange('voie', e.target.value)} 
+                  className="w-full text-base" 
+                />
+              </div>
+              <div className="col-span-2">
+                <Label htmlFor="compl" className="text-sm">Complément d'adresse</Label>
+                <Input 
+                  id="compl" 
+                  value={formData?.address?.compl ?? ''} 
+                  onChange={(e) => handleAddressChange('compl', e.target.value)} 
+                  className="w-full text-base" 
+                />
+              </div>
+              <div>
+                <Label htmlFor="cp" className="text-sm">Code Postal</Label>
+                <Input 
+                  id="cp" 
+                  value={formData?.address?.cp ?? ''} 
+                  onChange={(e) => handleAddressChange('cp', e.target.value)} 
+                  className="w-full text-base" 
+                />
+              </div>
+              <div>
+                <Label htmlFor="ville" className="text-sm">Ville</Label>
+                <Input 
+                  id="ville" 
+                  value={formData?.address?.ville ?? ''} 
+                  onChange={(e) => handleAddressChange('ville', e.target.value)} 
+                  className="w-full text-base" 
+                />
+              </div>
+              <div>
+                <Label htmlFor="depart" className="text-sm">Département</Label>
+                <Input 
+                  id="depart" 
+                  value={formData?.address?.depart ?? ''} 
+                  onChange={(e) => handleAddressChange('depart', e.target.value)} 
+                  className="w-full text-base" 
+                />
+              </div>
+              <div>
+                <Label htmlFor="pays" className="text-sm">Pays</Label>
+                <Input 
+                  id="pays" 
+                  value={formData?.address?.pays ?? ''} 
+                  onChange={(e) => handleAddressChange('pays', e.target.value)} 
+                  className="w-full text-base" 
+                />
+              </div>
+            </div>
           </div>
           <div className="mb-4">
             <Label className="text-base">Produits du devis</Label>
