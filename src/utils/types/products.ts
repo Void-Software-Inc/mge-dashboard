@@ -41,9 +41,11 @@ export const productTypes: ProductType[] = [
     { value: "housses", name: "Housses" },
     { value: "chapiteau", name: "Chapiteau" },
     { value: "vaiselle", name: "Vaiselle" },
+    { value: "vaisselleHG", name: "Vaisselle Haut de Gamme" },
     { value: "centreTable", name: "Centre Table" },
     { value: "decoration", name: "Decoration" },
     { value: "acessoires", name: "Accessoires" },
+    { value: "noeudChaise", name: "Noeud de Chaise" },
 ];
 
 export type ProductColor = {
