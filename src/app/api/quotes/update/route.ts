@@ -30,7 +30,15 @@ export async function PUT(request: NextRequest) {
     description: formData.get('description'),
     last_update: parisDate,
     is_deposit: formData.get('is_deposit') === 'true',
-    deposit_amount: formData.get('deposit_amount')
+    deposit_amount: formData.get('deposit_amount'),
+    address: {
+      voie: formData.get('address.voie') || '',
+      compl: formData.get('address.compl'),
+      cp: formData.get('address.cp') || '',
+      ville: formData.get('address.ville') || '',
+      depart: formData.get('address.depart') || '',
+      pays: formData.get('address.pays') || ''
+    }
   };
 
   const { data, error } = await supabase

@@ -1,3 +1,12 @@
+export interface Address {
+  voie: string;
+  compl: string | null;
+  cp: string;
+  ville: string;
+  depart: string;
+  pays: string;
+}
+
 export type Quote = {
   id: number;
   first_name: string;
@@ -17,6 +26,7 @@ export type Quote = {
   description: string;
   is_deposit: boolean;
   deposit_amount: number;
+  address: Address | null;
 };
 
 export type QuoteRecord = {
@@ -35,6 +45,7 @@ export type QuoteRecord = {
   other_expenses: number;
   deleted_at: string;
   description: string;
+  address: Address | null;
 };
 
 export type FinishedQuote = {
@@ -53,6 +64,7 @@ export type FinishedQuote = {
   other_expenses: number;
   finished_at: string;
   description: string;
+  address: Address | null;
 };
 
 export type QuoteItem = {
