@@ -642,9 +642,10 @@ export default function QuoteForm({ quoteId }: { quoteId: string }) {
                 <Label htmlFor="pays" className="text-sm">Pays</Label>
                 <Input 
                   id="pays" 
-                  value={formData?.address?.pays ?? ''} 
+                  value={formData?.address?.pays ?? 'France'} 
                   onChange={(e) => handleAddressChange('pays', e.target.value)} 
-                  className="w-full text-base" 
+                  className="w-full text-base"
+                  disabled
                 />
               </div>
             </div>
