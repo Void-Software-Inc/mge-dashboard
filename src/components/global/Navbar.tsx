@@ -112,7 +112,11 @@ export default function Navbar(){
             <DropdownMenuContent align="end">
               <DropdownMenuLabel>Mon compte</DropdownMenuLabel>
               <DropdownMenuSeparator />
-              <DropdownMenuItem className="hover:cursor-pointer text-muted-foreground hover:text-foreground">Paramètres</DropdownMenuItem>
+              <DropdownMenuItem className="hover:cursor-pointer text-muted-foreground hover:text-foreground">
+                <Link href="/settings">
+                  Paramètres
+                </Link>
+              </DropdownMenuItem>
               <DropdownMenuItem asChild>
                 <form onSubmit={handleLogout}>
                   <button type="submit" className="hover:cursor-pointer text-muted-foreground hover:text-foreground">
