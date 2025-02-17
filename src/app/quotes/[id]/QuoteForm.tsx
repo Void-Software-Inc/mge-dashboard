@@ -12,6 +12,8 @@ import { Toaster, toast } from 'sonner'
 import { Skeleton } from "@/components/ui/skeleton"
 import { Switch } from "@/components/ui/switch"
 import { ChevronLeftIcon, DownloadIcon } from "@radix-ui/react-icons"
+import jsPDF from 'jspdf';
+import 'jspdf-autotable';
 
 import { useRouter } from 'next/navigation'
 import { useAppContext } from "@/app/context/AppContext"
@@ -191,9 +193,14 @@ export default function QuoteForm({ quoteId }: { quoteId: string }) {
       hasChanges = !isEqual(formDataCompare, quoteCompare);
     }
 
+    // Add check for quote item changes
+    if (!hasChanges) {
+      hasChanges = taintedItems.size > 0 || editedItems.size > 0 || createdItems.length > 0;
+    }
+
     setIsChanged(hasChanges);
     validateForm();
-  }, [formData, quote, validateForm]);
+  }, [formData, quote, validateForm, taintedItems, editedItems, createdItems]);
 
   useEffect(() => {
     if (createdItems.length > 0 || taintedItems.size > 0 || editedItems.size > 0) {
@@ -475,6 +482,284 @@ export default function QuoteForm({ quoteId }: { quoteId: string }) {
           [field]: value
         }
       };
+    });
+  };
+
+  const formatDateToParisTime = (date: string | undefined) => {
+    if (!date) return '';
+    return new Date(date).toLocaleDateString('fr-FR', { timeZone: 'Europe/Paris' });
+  };
+
+  const downloadPDF = () => {
+    if (!formData || !quoteItems) {
+      console.error('Missing data for PDF generation');
+      toast.error('Impossible de générer le PDF : données manquantes');
+      return;
+    }
+
+    const doc = new jsPDF();
+    const pageWidth = doc.internal.pageSize.getWidth();
+    const rightMargin = 15;
+    const lineSpacing = 7;
+
+    // Try multiple possible paths for the logo
+    const possibleLogoPaths = [
+      '/quote-mg-events.png',
+      '/images/quote-mg-events.png',
+      '/assets/quote-mg-events.png',
+      '/logo/quote-mg-events.png'
+    ];
+
+    const loadImage = (paths: string[]): Promise<HTMLImageElement> => {
+      return new Promise((resolve, reject) => {
+        const tryLoadImage = (index: number) => {
+          if (index >= paths.length) {
+            reject(new Error('No valid image path found'));
+            return;
+          }
+
+          const img = new Image();
+          img.onload = () => resolve(img);
+          img.onerror = () => {
+            console.log(`Failed to load image from path: ${paths[index]}`);
+            tryLoadImage(index + 1);
+          };
+          img.src = paths[index];
+        };
+
+        tryLoadImage(0);
+      });
+    };
+
+    const generatePDFContent = (startY: number) => {
+      doc.setFontSize(50);
+      doc.setTextColor(51);
+      doc.text(`Devis`, 15, 30);
+      doc.setTextColor(0);
+
+      // Quote info
+      const quoteDate = new Date(formData.created_at).toLocaleDateString('fr-FR');
+      
+      doc.setFontSize(9);
+      doc.setFont('helvetica', 'bold');
+      doc.text("Date:", 15, startY + 15);
+      doc.setFont('helvetica', 'normal');
+      doc.text(quoteDate, 15 + doc.getTextWidth("Date:   "), startY + 15);
+
+      doc.setFont('helvetica', 'bold');
+      doc.text("Numéro devis: ", 15, startY + 21);
+      doc.setFont('helvetica', 'normal');
+      doc.text(formData.id.toString(), 15 + doc.getTextWidth("Numéro devis:   "), startY + 21);
+
+      // Event dates
+      const eventDateValue = formData.event_start_date === formData.event_end_date 
+        ? formatDateToParisTime(formData.event_start_date)
+        : `du ${formatDateToParisTime(formData.event_start_date)} au ${formatDateToParisTime(formData.event_end_date)}`;
+      
+      doc.setFont('helvetica', 'bold');
+      doc.text("Date(s) de l'événement:", 15, startY + 27);
+      doc.setFont('helvetica', 'normal');
+      doc.text(eventDateValue, 15, startY + 33);
+
+      // Client info
+      doc.setFontSize(9);
+      doc.setFont('helvetica', 'bold');
+      doc.text("Client", pageWidth - 15 - doc.getTextWidth("Client"), startY + 15);
+      doc.setFont('helvetica', 'normal');
+
+      const clientInfo = [
+        `${formData.first_name} ${formData.last_name}`,
+        formData.email,
+        formData.phone_number,
+        `${formData.address?.voie}${formData.address?.compl ? `, ${formData.address.compl}` : ''}`,
+        `${formData.address?.cp} ${formData.address?.ville}`,
+        formData.address?.depart
+      ];
+
+      clientInfo.forEach((line, index) => {
+        if (line) {
+          const lineWidth = doc.getTextWidth(line);
+          doc.text(line, pageWidth - 15 - lineWidth, startY + 21 + (index * 6));
+        }
+      });
+
+      // Calculate last Y position
+      const lastClientInfoY = startY + 21 + ((clientInfo.length - 1) * 6);
+
+      // Products table
+      const headers = [['Produit', 'Quantité', 'Prix HT']];
+      
+      // First, fetch the products data for the items
+      Promise.all(quoteItems.map(async (item) => {
+        try {
+          const response = await fetch(`/api/products/${item.product_id}`);
+          const product = await response.json();
+          return {
+            ...item,
+            product: {
+              name: product.name,
+              price: product.price
+            }
+          };
+        } catch (error) {
+          console.error(`Error fetching product ${item.product_id}:`, error);
+          return null;
+        }
+      }))
+      .then((itemsWithProducts) => {
+        const validItems = itemsWithProducts.filter((item): item is QuoteItem => 
+          item !== null && item.product !== undefined
+        );
+
+        const data = validItems.map((item) => [
+          item.product.name,
+          item.quantity,
+          `${(item.product.price * item.quantity).toFixed(2)}€`
+        ]);
+
+        // Generate table with the complete data
+        (doc as any).autoTable({
+          head: headers,
+          body: data,
+          startY: lastClientInfoY + 30,
+          styles: { 
+            fontSize: 9,
+            cellPadding: 5,
+            lineColor: [200, 200, 200],
+            lineWidth: 0.1
+          },
+          headStyles: {
+            fillColor: [51, 51, 51],
+            textColor: [255, 255, 255],
+            fontStyle: 'bold'
+          },
+          columnStyles: {
+            0: { cellWidth: 'auto' },
+            1: { cellWidth: 30, halign: 'center' },
+            2: { cellWidth: 30, halign: 'right' }
+          },
+          margin: { bottom: 60 },
+          didDrawPage: function(data: any) {
+            const pageHeight = doc.internal.pageSize.getHeight();
+            
+            // Add page numbers
+            const pageNumber = doc.internal.pages.length - 1;
+            const totalPages = doc.internal.pages.length - 1;
+            doc.setFontSize(8);
+            const text = `Page ${pageNumber} sur ${totalPages}`;
+            const textWidth = doc.getTextWidth(text);
+            doc.text(
+              text,
+              doc.internal.pageSize.getWidth() - 15 - textWidth,
+              pageHeight - 10
+            );
+
+            // Add footer content
+            const footerY = pageHeight - 45;
+
+            // Add horizontal line
+            doc.setDrawColor(168, 168, 168);
+            doc.setLineWidth(0.5);
+            doc.line(15, footerY, pageWidth - 15, footerY);
+
+            // Add the three sections below the line
+            doc.setFontSize(9);
+            
+            // Company section
+            doc.setFont('helvetica', 'bold');
+            doc.setTextColor(89, 89, 89);
+            doc.text("Entreprise", 15, footerY + 10);
+            doc.setFont('helvetica', 'normal');
+            doc.text("MG Événements\nChemin des droits de l'homme\net du citoyen, 31450 Ayguevives", 15, footerY + 15);
+
+            // Contact section
+            const contactX = pageWidth / 3 + 10;
+            doc.setFont('helvetica', 'bold');
+            doc.text("Coordonnées", contactX, footerY + 10);
+            doc.setFont('helvetica', 'normal');
+            doc.text("Mani Grimaudo\n07 68 10 96 17\nmgevenementiel31@gmail.com\nwww.mgevenements.fr", contactX, footerY + 15);
+
+            // Bank details section
+            const bankX = (2 * pageWidth) / 3;
+            doc.setFont('helvetica', 'bold');
+            doc.text("Coordonnées bancaires", bankX, footerY + 10);
+            doc.setFont('helvetica', 'normal');
+            doc.text("IBAN FR76 2823 3000 0113 2935 6527 041\nCode BIC / SWIFT REVOFRP2\nPaypal: mani.grimaudo@icloud.com", bankX, footerY + 15);
+          }
+        });
+
+        const finalY = (doc as any).lastAutoTable.finalY + 7;
+        
+        // Add totals
+        const totalHT = formData.total_cost;
+        const tva = totalHT * 0.20;
+        const totalTTC = totalHT * 1.20;
+
+        // Add totals section
+        doc.setFontSize(9);
+        doc.setTextColor(0);
+        doc.setFont('helvetica', 'bold');
+
+        // Total HT
+        const totalHTText = `Total HT:  ${Number(totalHT).toFixed(2)}€`;
+        const totalHTWidth = doc.getTextWidth(totalHTText);
+        doc.text(totalHTText, pageWidth - rightMargin - totalHTWidth, finalY);
+
+        // TVA
+        const tvaText = `TVA 20%:  ${Number(tva).toFixed(2)}€`;
+        const tvaWidth = doc.getTextWidth(tvaText);
+        doc.text(tvaText, pageWidth - rightMargin - tvaWidth, finalY + lineSpacing);
+
+        // Total TTC
+        const totalTTCText = `Total TTC:  ${Number(totalTTC).toFixed(2)}€`;
+        const totalTTCWidth = doc.getTextWidth(totalTTCText);
+        doc.text(totalTTCText, pageWidth - rightMargin - totalTTCWidth, finalY + (lineSpacing * 2));
+
+        // Add signature box
+        const signatureBoxWidth = totalHTWidth + 80;
+        const signatureBoxHeight = 30;
+        const signatureBoxX = pageWidth - rightMargin - signatureBoxWidth;
+        const signatureBoxY = finalY + (lineSpacing * 3);
+
+        // Draw signature box
+        doc.setFillColor(240, 240, 240);
+        doc.rect(signatureBoxX, signatureBoxY, signatureBoxWidth, signatureBoxHeight, 'F');
+
+        // Add signature text
+        const signatureText = "Signature du client (précédée de la mention « Bon pour accord »)";
+        doc.setFontSize(9);
+        doc.setTextColor(133, 133, 132);
+        const signatureTextWidth = doc.getTextWidth(signatureText);
+        doc.text(signatureText, 
+            signatureBoxX + (signatureBoxWidth - signatureTextWidth) / 2, 
+            signatureBoxY + 7
+        );
+
+        // Save the PDF
+        doc.save(`Devis_${formData.id}_${formData.last_name}_${new Date().toLocaleDateString('fr-FR')}.pdf`);
+      });
+    };
+
+    // Try to load the logo with the new approach
+    Promise.race<HTMLImageElement>([
+      loadImage(possibleLogoPaths),
+      new Promise<HTMLImageElement>((_, reject) => 
+        setTimeout(() => reject(new Error('Image load timeout')), 3000)
+      )
+    ])
+    .then((img) => {
+      console.log('Logo loaded successfully');
+      const originalWidth = img.width;
+      const originalHeight = img.height;
+      const desiredWidth = 65;
+      const scaledHeight = (desiredWidth * originalHeight) / originalWidth;
+      
+      doc.addImage(img, 'PNG', 133, 5, desiredWidth, scaledHeight);
+      generatePDFContent(5 + scaledHeight);
+    })
+    .catch((error) => {
+      console.warn('Logo not loaded:', error.message);
+      generatePDFContent(20);
     });
   };
 
@@ -813,13 +1098,23 @@ export default function QuoteForm({ quoteId }: { quoteId: string }) {
                 timeZone: 'Europe/Paris'
               }) : ''} className="w-full text-base" disabled />
           </div>
-          <div className="mb-40">
+          <div className="mb-20">
             <Label className="text-base">Date de dernière mise à jour du devis</Label>
             <Input id="last_update" value={formData?.last_update ? new Date(formData.last_update).toLocaleString('fr-FR', {
               dateStyle: 'short',
               timeStyle: 'short',
                 timeZone: 'Europe/Paris'
               }) : ''} className="w-full text-base" disabled />
+          </div>
+          <div className="flex justify-center mb-20">
+            <Button
+              onClick={downloadPDF}
+              className="bg-lime-300 hover:bg-lime-400 text-black"
+              variant="secondary"
+            >
+              <DownloadIcon className="w-4 h-4 mr-2" />
+              Télécharger le devis en PDF
+            </Button>
           </div>
         </div>
       </form>
