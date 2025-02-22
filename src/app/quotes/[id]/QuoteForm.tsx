@@ -513,7 +513,6 @@ export default function QuoteForm({ quoteId }: { quoteId: string }) {
   };
 
   const downloadPDF = () => {
-    // Add loading check
     if (isProductsLoading) {
       toast.error('Chargement des produits en cours...');
       return;
@@ -611,10 +610,10 @@ export default function QuoteForm({ quoteId }: { quoteId: string }) {
         `${formData.first_name} ${formData.last_name}`,
         formData.email,
         formData.phone_number,
-        `${formData.address?.voie}${formData.address?.compl ? `, ${formData.address.compl}` : ''}`,
-        `${formData.address?.cp} ${formData.address?.ville}`,
-        formData.address?.depart
-      ];
+        formData.address?.voie ? `${formData.address.voie}${formData.address?.compl ? `, ${formData.address.compl}` : ''}` : '',
+        formData.address?.cp || formData.address?.ville ? `${formData.address?.cp || ''} ${formData.address?.ville || ''}`.trim() : '',
+        formData.address?.depart || ''
+      ].filter(line => line !== ''); // Remove empty lines
 
       clientInfo.forEach((line, index) => {
         if (line) {
@@ -623,26 +622,30 @@ export default function QuoteForm({ quoteId }: { quoteId: string }) {
         }
       });
 
-      const lastClientInfoY = contentStartY + 21 + ((clientInfo.length - 1) * 6);
+      // Add minimum spacing even if client info is short
+      const lastClientInfoY = Math.max(
+        contentStartY + 21 + ((clientInfo.length - 1) * 6),
+        contentStartY + 45 // Minimum space from contentStartY
+      );
 
-      // Add payment terms and conditions on the left
+      // Add payment terms and conditions on the left with added spacing
       doc.setFontSize(9);
       doc.setFont('helvetica', 'bold');
-      doc.text("Termes et conditions", 15, lastClientInfoY + 10);
+      doc.text("Termes et conditions", 15, lastClientInfoY + 15); // Increased spacing
       doc.setFont('helvetica', 'normal');
-      doc.text("Devis valable un mois", 15, lastClientInfoY + 15);
-      doc.text("Un acompte de 30% est requis", 15, lastClientInfoY + 20);
+      doc.text("Devis valable un mois", 15, lastClientInfoY + 20); // Adjusted spacing
+      doc.text("Un acompte de 30% est requis", 15, lastClientInfoY + 25); // Adjusted spacing
 
-      // Add address section on the right
+      // Add address section on the right with consistent spacing
       doc.setFont('helvetica', 'bold');
       const addressTitle = "Adresse de récupération du matériel";
       const addressTitleWidth = doc.getTextWidth(addressTitle);
-      doc.text(addressTitle, pageWidth - 15 - addressTitleWidth, lastClientInfoY + 10);
-      
+      doc.text(addressTitle, pageWidth - 15 - addressTitleWidth, lastClientInfoY + 15); // Matched spacing with terms
+
       doc.setFont('helvetica', 'normal');
       const addressText = "Chemin des droits de l'homme et du citoyen, 31450 Ayguevives";
       const addressWidth = doc.getTextWidth(addressText);
-      doc.text(addressText, pageWidth - 15 - addressWidth, lastClientInfoY + 15);
+      doc.text(addressText, pageWidth - 15 - addressWidth, lastClientInfoY + 20); // Matched spacing with terms
 
       // Generate table with the product details
       const headers = [['Produit', 'Quantité', 'Prix']];
@@ -650,7 +653,7 @@ export default function QuoteForm({ quoteId }: { quoteId: string }) {
         .filter(item => !taintedItems.has(item.id))
         .map(item => {
           const product = products.find((p: Product) => p.id === item.product_id);
-          const priceHT = ((product?.price || 0) * item.quantity) / 1.2; // Convert TTC to HT
+          const priceHT = ((product?.price || 0) * item.quantity) / 1.2;
           return [
             product?.name || 'Produit inconnu',
             item.quantity,
@@ -673,17 +676,16 @@ export default function QuoteForm({ quoteId }: { quoteId: string }) {
           const pageHeight = doc.internal.pageSize.getHeight();
           
           // Add page numbers - get total pages from doc
-          const totalPages = (doc as any).internal.getNumberOfPages();
-          const currentPage = (doc as any).internal.getCurrentPageInfo().pageNumber;
-          
-          doc.setFontSize(8);
-          const text = `Page ${currentPage} sur ${totalPages}`;
-          const textWidth = doc.getTextWidth(text);
-          doc.text(
-            text,
-            doc.internal.pageSize.getWidth() - 15 - textWidth,
-            pageHeight - 10
-          );
+          // Temporarily disabled page numbering due to issues
+          // const currentPage = doc.internal.pages.length - 1;
+          // const totalPages = doc.internal.pages.length - 1;
+          // const text = `Page ${currentPage} sur ${totalPages}`;
+          // const textWidth = doc.getTextWidth(text);
+          // doc.text(
+          //   text,
+          //   doc.internal.pageSize.getWidth() - 15 - textWidth,
+          //   pageHeight - 10
+          // );
 
           // Add footer content
           const footerY = pageHeight - 45;
