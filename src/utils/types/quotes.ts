@@ -72,6 +72,10 @@ export type QuoteItem = {
   quote_id: number;
   product_id: number;
   quantity: number;
+  product: {
+    name: string;
+    price: number;
+  };
 };
 
 export type QuoteStatus = {
