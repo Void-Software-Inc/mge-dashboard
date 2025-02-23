@@ -646,16 +646,18 @@ export default function QuoteForm({ quoteId }: { quoteId: string }) {
       doc.text(addressText, pageWidth - 15 - addressWidth, lastClientInfoY + 20);
 
       // Generate table with the product details
-      const headers = [['Produit', 'Quantité', 'Prix']];
+      const headers = [['Produit', 'Quantité', 'Prix unitaire HT', 'Sous-Total HT']];
       const data = quoteItems
         .filter(item => !taintedItems.has(item.id))
         .map(item => {
           const product = products.find((p: Product) => p.id === item.product_id);
-          const priceHT = ((product?.price || 0) * item.quantity) / 1.2;
+          const unitPriceHT = (product?.price || 0);
+          const subtotalHT = unitPriceHT * item.quantity;
           return [
             product?.name || 'Produit inconnu',
             item.quantity,
-            `${priceHT.toFixed(2)}€`
+            `${unitPriceHT.toFixed(2)}€`,
+            `${subtotalHT.toFixed(2)}€`
           ];
         });
 
@@ -701,6 +703,12 @@ export default function QuoteForm({ quoteId }: { quoteId: string }) {
         startY: lastClientInfoY + 30,
         styles: {
           fontSize: 9
+        },
+        columnStyles: {
+          0: { cellWidth: 'auto' },     // Product name - auto width
+          1: { cellWidth: 30 },         // Quantity - fixed width
+          2: { cellWidth: 40 },         // Unit price - fixed width
+          3: { cellWidth: 40 },         // Subtotal - fixed width
         },
         margin: { bottom: 60 },
         didDrawPage: function(data: any) {
