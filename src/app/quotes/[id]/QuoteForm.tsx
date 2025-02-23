@@ -518,10 +518,6 @@ export default function QuoteForm({ quoteId }: { quoteId: string }) {
       return;
     }
 
-    console.log('FormData:', formData);
-    console.log('QuoteItems:', quoteItems);
-    console.log('Products:', products);
-
     if (!formData) {
       console.error('Missing form data');
       toast.error('Impossible de générer le PDF : données du devis manquantes');
@@ -664,8 +660,6 @@ export default function QuoteForm({ quoteId }: { quoteId: string }) {
             `${subtotalHT.toFixed(2)}€`
           ];
         });
-
-      console.log('Filtered data:', data);
 
       const addFooter = (doc: any, pageHeight: number) => {
         const footerY = pageHeight - 35;
