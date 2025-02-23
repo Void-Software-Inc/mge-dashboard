@@ -606,6 +606,7 @@ export default function QuoteForm({ quoteId }: { quoteId: string }) {
       doc.text("Client", pageWidth - 15 - doc.getTextWidth("Client"), contentStartY + 15);
       doc.setFont('helvetica', 'normal');
 
+      // Always create 6 lines of client info, using empty strings for missing address fields
       const clientInfo = [
         `${formData.first_name} ${formData.last_name}`,
         formData.email,
@@ -613,39 +614,36 @@ export default function QuoteForm({ quoteId }: { quoteId: string }) {
         formData.address?.voie ? `${formData.address.voie}${formData.address?.compl ? `, ${formData.address.compl}` : ''}` : '',
         formData.address?.cp || formData.address?.ville ? `${formData.address?.cp || ''} ${formData.address?.ville || ''}`.trim() : '',
         formData.address?.depart || ''
-      ].filter(line => line !== ''); // Remove empty lines
+      ];
+
+      // Fixed position for the last line
+      const lastClientInfoY = contentStartY + 21 + (5 * 6); // 5 is the number of spaces between 6 lines
 
       clientInfo.forEach((line, index) => {
-        if (line) {
+        if (line) { // Only render non-empty lines
           const lineWidth = doc.getTextWidth(line);
           doc.text(line, pageWidth - 15 - lineWidth, contentStartY + 21 + (index * 6));
         }
       });
 
-      // Add minimum spacing even if client info is short
-      const lastClientInfoY = Math.max(
-        contentStartY + 21 + ((clientInfo.length - 1) * 6),
-        contentStartY + 45 // Minimum space from contentStartY
-      );
-
-      // Add payment terms and conditions on the left with added spacing
+      // Add payment terms and conditions on the left
       doc.setFontSize(9);
       doc.setFont('helvetica', 'bold');
-      doc.text("Termes et conditions", 15, lastClientInfoY + 15); // Increased spacing
+      doc.text("Termes et conditions", 15, lastClientInfoY + 15);
       doc.setFont('helvetica', 'normal');
-      doc.text("Devis valable un mois", 15, lastClientInfoY + 20); // Adjusted spacing
-      doc.text("Un acompte de 30% est requis", 15, lastClientInfoY + 25); // Adjusted spacing
+      doc.text("Devis valable un mois", 15, lastClientInfoY + 20);
+      doc.text("Un acompte de 30% est requis", 15, lastClientInfoY + 25);
 
-      // Add address section on the right with consistent spacing
+      // Add address section on the right
       doc.setFont('helvetica', 'bold');
       const addressTitle = "Adresse de récupération du matériel";
       const addressTitleWidth = doc.getTextWidth(addressTitle);
-      doc.text(addressTitle, pageWidth - 15 - addressTitleWidth, lastClientInfoY + 15); // Matched spacing with terms
+      doc.text(addressTitle, pageWidth - 15 - addressTitleWidth, lastClientInfoY + 15);
 
       doc.setFont('helvetica', 'normal');
       const addressText = "Chemin des droits de l'homme et du citoyen, 31450 Ayguevives";
       const addressWidth = doc.getTextWidth(addressText);
-      doc.text(addressText, pageWidth - 15 - addressWidth, lastClientInfoY + 20); // Matched spacing with terms
+      doc.text(addressText, pageWidth - 15 - addressWidth, lastClientInfoY + 20);
 
       // Generate table with the product details
       const headers = [['Produit', 'Quantité', 'Prix']];
@@ -663,6 +661,39 @@ export default function QuoteForm({ quoteId }: { quoteId: string }) {
 
       console.log('Filtered data:', data);
 
+      const addFooter = (doc: any, pageHeight: number) => {
+        const footerY = pageHeight - 35;
+
+        // Add horizontal line
+        doc.setDrawColor(168, 168, 168);
+        doc.setLineWidth(0.5);
+        doc.line(15, footerY, pageWidth - 15, footerY);
+
+        // Add the three sections below the line
+        doc.setFontSize(9);
+        
+        // Company section
+        doc.setFont('helvetica', 'bold');
+        doc.setTextColor(89, 89, 89);
+        doc.text("Entreprise", 15, footerY + 10);
+        doc.setFont('helvetica', 'normal');
+        doc.text("MG Événements\nChemin des droits de l'homme\net du citoyen, 31450 Ayguevives", 15, footerY + 15);
+
+        // Contact section
+        const contactX = pageWidth / 3 + 10;
+        doc.setFont('helvetica', 'bold');
+        doc.text("Coordonnées", contactX, footerY + 10);
+        doc.setFont('helvetica', 'normal');
+        doc.text("Mani Grimaudo\n07 68 10 96 17\nmgevenementiel31@gmail.com\nwww.mgevenements.fr", contactX, footerY + 15);
+
+        // Bank details section
+        const bankX = (2 * pageWidth) / 3;
+        doc.setFont('helvetica', 'bold');
+        doc.text("Coordonnées bancaires", bankX, footerY + 10);
+        doc.setFont('helvetica', 'normal');
+        doc.text("IBAN FR76 2823 3000 0113 2935 6527 041\nCode BIC / SWIFT REVOFRP2\nPaypal: mani.grimaudo@icloud.com", bankX, footerY + 15);
+      };
+
       (doc as any).autoTable({
         head: headers,
         headStyles: { fillColor: [50, 50, 50], textColor: [255, 255, 255] },
@@ -674,64 +705,58 @@ export default function QuoteForm({ quoteId }: { quoteId: string }) {
         margin: { bottom: 60 },
         didDrawPage: function(data: any) {
           const pageHeight = doc.internal.pageSize.getHeight();
-          
-          // Add page numbers - get total pages from doc
-          // Temporarily disabled page numbering due to issues
-          // const currentPage = doc.internal.pages.length - 1;
-          // const totalPages = doc.internal.pages.length - 1;
-          // const text = `Page ${currentPage} sur ${totalPages}`;
-          // const textWidth = doc.getTextWidth(text);
-          // doc.text(
-          //   text,
-          //   doc.internal.pageSize.getWidth() - 15 - textWidth,
-          //   pageHeight - 10
-          // );
-
-          // Add footer content
-          const footerY = pageHeight - 45;
-
-          // Add horizontal line
-          doc.setDrawColor(168, 168, 168);
-          doc.setLineWidth(0.5);
-          doc.line(15, footerY, pageWidth - 15, footerY);
-
-          // Add the three sections below the line
-          doc.setFontSize(9);
-          
-          // Company section
-          doc.setFont('helvetica', 'bold');
-          doc.setTextColor(89, 89, 89);
-          doc.text("Entreprise", 15, footerY + 10);
-          doc.setFont('helvetica', 'normal');
-          doc.text("MG Événements\nChemin des droits de l'homme\net du citoyen, 31450 Ayguevives", 15, footerY + 15);
-
-          // Contact section
-          const contactX = pageWidth / 3 + 10;
-          doc.setFont('helvetica', 'bold');
-          doc.text("Coordonnées", contactX, footerY + 10);
-          doc.setFont('helvetica', 'normal');
-          doc.text("Mani Grimaudo\n07 68 10 96 17\nmgevenementiel31@gmail.com\nwww.mgevenements.fr", contactX, footerY + 15);
-
-          // Bank details section
-          const bankX = (2 * pageWidth) / 3;
-          doc.setFont('helvetica', 'bold');
-          doc.text("Coordonnées bancaires", bankX, footerY + 10);
-          doc.setFont('helvetica', 'normal');
-          doc.text("IBAN FR76 2823 3000 0113 2935 6527 041\nCode BIC / SWIFT REVOFRP2\nPaypal: mani.grimaudo@icloud.com", bankX, footerY + 15);
+          addFooter(doc, pageHeight);
         }
       });
 
-      const finalY = (doc as any).lastAutoTable.finalY + 7;
-      
-      // Check if there's enough space for totals and signature
-      const requiredSpace = 120;
+      // After autoTable, check if we need to add a new page for totals
+      const finalY = (doc as any).lastAutoTable.finalY + 10;
+      const requiredSpace = 90;
       const pageHeight = doc.internal.pageSize.getHeight();
       
-      if (finalY + requiredSpace > pageHeight - 20) {
+      if (finalY + requiredSpace > pageHeight) {
         doc.addPage();
-        addTotalsAndSignature(doc, 20, pageWidth, formData.total_cost ?? 0, (formData.total_cost ?? 0) * 0.2, (formData.total_cost ?? 0) * 1.2, rightMargin, lineSpacing);
+        addFooter(doc, pageHeight);
+        
+        // Calculate total from items
+        const totalFromItems = quoteItems.reduce((total, item) => {
+          const product = products.find(p => p.id === item.product_id);
+          return total + ((product?.price || 0) * item.quantity);
+        }, 0);
+        
+        // Add other costs
+        const totalHT = totalFromItems + (formData.traiteur_price || 0) + (formData.other_expenses || 0);
+        
+        addTotalsAndSignature(
+          doc,
+          20,
+          pageWidth,
+          totalHT,
+          totalHT * 0.2,
+          totalHT * 1.2,
+          rightMargin,
+          lineSpacing
+        );
       } else {
-        addTotalsAndSignature(doc, finalY, pageWidth, formData.total_cost ?? 0, (formData.total_cost ?? 0) * 0.2, (formData.total_cost ?? 0) * 1.2, rightMargin, lineSpacing);
+        // Calculate total from items
+        const totalFromItems = quoteItems.reduce((total, item) => {
+          const product = products.find(p => p.id === item.product_id);
+          return total + ((product?.price || 0) * item.quantity);
+        }, 0);
+        
+        // Add other costs
+        const totalHT = totalFromItems + (formData.traiteur_price || 0) + (formData.other_expenses || 0);
+        
+        addTotalsAndSignature(
+          doc,
+          finalY,
+          pageWidth,
+          totalHT,
+          totalHT * 0.2,
+          totalHT * 1.2,
+          rightMargin,
+          lineSpacing
+        );
       }
 
       doc.save(`Devis_${formData.id}_${formData.last_name}_${new Date().toLocaleDateString('fr-FR')}.pdf`);
