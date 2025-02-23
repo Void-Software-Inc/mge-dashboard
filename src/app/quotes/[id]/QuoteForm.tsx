@@ -540,8 +540,9 @@ export default function QuoteForm({ quoteId }: { quoteId: string }) {
       return;
     }
 
-    const doc = new jsPDF();
-    const pageWidth = doc.internal.pageSize.getWidth();
+    // First pass: Generate document to get total pages
+    const tempDoc = new jsPDF();
+    const pageWidth = tempDoc.internal.pageSize.getWidth();
     const rightMargin = 15;
     const lineSpacing = 7;
 
@@ -558,6 +559,9 @@ export default function QuoteForm({ quoteId }: { quoteId: string }) {
       const desiredWidth = 65;
       const scaledHeight = (desiredWidth * originalHeight) / originalWidth;
       
+      // Generate the actual document
+      const doc = new jsPDF();
+
       doc.setFontSize(50);
       doc.setTextColor(51);
       doc.text(`Devis`, 15, 30);
@@ -696,6 +700,9 @@ export default function QuoteForm({ quoteId }: { quoteId: string }) {
         doc.text("IBAN FR76 2823 3000 0113 2935 6527 041\nCode BIC / SWIFT REVOFRP2\nPaypal: mani.grimaudo@icloud.com", bankX, footerY + 15);
       };
 
+      // First calculate total pages by doing a dry run
+      const totalPages = Math.ceil(data.length / 20); // Approximate rows per page
+
       (doc as any).autoTable({
         head: headers,
         headStyles: { fillColor: [50, 50, 50], textColor: [255, 255, 255] },
@@ -705,15 +712,25 @@ export default function QuoteForm({ quoteId }: { quoteId: string }) {
           fontSize: 9
         },
         columnStyles: {
-          0: { cellWidth: 'auto' },     // Product name - auto width
-          1: { cellWidth: 30 },         // Quantity - fixed width
-          2: { cellWidth: 40 },         // Unit price - fixed width
-          3: { cellWidth: 40 },         // Subtotal - fixed width
+          0: { cellWidth: 'auto' },
+          1: { cellWidth: 30 },
+          2: { cellWidth: 40 },
+          3: { cellWidth: 40 },
         },
         margin: { bottom: 60 },
         didDrawPage: function(data: any) {
           const pageHeight = doc.internal.pageSize.getHeight();
           addFooter(doc, pageHeight);
+          
+          // Add page numbers using the pre-calculated total
+          doc.setFontSize(8);
+          const text = `Page ${data.pageNumber} sur ${totalPages}`;
+          const textWidth = doc.getTextWidth(text);
+          doc.text(
+            text,
+            doc.internal.pageSize.getWidth() - 15 - textWidth,
+            pageHeight - 5
+          );
         }
       });
 
