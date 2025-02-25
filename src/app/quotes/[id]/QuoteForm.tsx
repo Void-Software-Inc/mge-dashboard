@@ -1111,7 +1111,7 @@ export default function QuoteForm({ quoteId }: { quoteId: string }) {
               type="number"
               step="1"
               min="0"
-              value={formData?.total_cost ?? ''} 
+              value={formData?.total_cost.toFixed(2) ?? ''} 
               onChange={handleInputChange} 
               className={`w-full text-base ${errors.total_cost ? 'border-red-500' : ''}`} 
               disabled
