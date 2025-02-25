@@ -1111,7 +1111,7 @@ export default function QuoteForm({ quoteId }: { quoteId: string }) {
               type="number"
               step="1"
               min="0"
-              value={formData?.total_cost ?? ''} 
+              value={formData?.total_cost.toFixed(2) ?? ''} 
               onChange={handleInputChange} 
               className={`w-full text-base ${errors.total_cost ? 'border-red-500' : ''}`} 
               disabled
@@ -1191,11 +1191,21 @@ export default function QuoteForm({ quoteId }: { quoteId: string }) {
           <div className="flex justify-center mb-20">
             <Button
               onClick={downloadPDF}
-              className="bg-lime-300 hover:bg-lime-400 text-black"
+              className={`
+                ${!isChanged 
+                  ? "bg-lime-300 hover:bg-lime-400" 
+                  : "bg-gray-300 hover:bg-gray-400 cursor-not-allowed"
+                }
+                text-black
+              `}
               variant="secondary"
+              disabled={isChanged}
             >
               <DownloadIcon className="w-4 h-4 mr-2" />
-              Télécharger le devis en PDF
+              {isChanged 
+                ? "Sauvegardez les modifications avant de télécharger" 
+                : "Télécharger le devis en PDF"
+              }
             </Button>
           </div>
         </div>
