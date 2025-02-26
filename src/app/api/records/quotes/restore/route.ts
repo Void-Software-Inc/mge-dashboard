@@ -48,6 +48,7 @@ export async function POST(request: NextRequest) {
                     is_deposit: quoteRecord.is_deposit,
                     deposit_amount: quoteRecord.deposit_amount,
                     address: quoteRecord.address,
+                    payments: quoteRecord.payments || [],
                     created_at: new Date().toISOString(),
                     last_update: new Date().toISOString()
                 })
