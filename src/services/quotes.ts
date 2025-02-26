@@ -32,6 +32,7 @@ export async function getQuotes(): Promise<Quote[]> {
       is_deposit: quote.is_deposit,
       deposit_amount: quote.deposit_amount,
       address: quote.address,
+      payments: quote.payments || [],
     }))
     return cleanQuotes;
   } catch (error) {
@@ -82,7 +83,6 @@ export async function createQuote(quoteData: Partial<Quote>, quoteItems?: QuoteI
 export async function updateQuote(formData: FormData): Promise<Quote> {
   try {
     const url = `${API_URL}/quotes/update`;
-
     const response = await fetch(url, {
       method: 'PUT',
       body: formData,
@@ -336,6 +336,8 @@ export async function getFinishedQuotes(): Promise<FinishedQuote[]> {
       other_expenses: quotes.other_expenses,
       description: quotes.description,
       finished_at: quotes.finished_at,
+      payments: quotes.payments || [],
+      address: quotes.address,
     }))
     return cleanFinishedQuotes;
   } catch (error) {

@@ -27,6 +27,7 @@ export type Quote = {
   is_deposit: boolean;
   deposit_amount: number;
   address: Address | null;
+  payments?: QuotePayment[];
 };
 
 export type QuoteRecord = {
@@ -46,6 +47,7 @@ export type QuoteRecord = {
   deleted_at: string;
   description: string;
   address: Address | null;
+  payments?: QuotePayment[];
 };
 
 export type FinishedQuote = {
@@ -65,6 +67,7 @@ export type FinishedQuote = {
   finished_at: string;
   description: string;
   address: Address | null;
+  payments?: QuotePayment[];
 };
 
 export type QuoteItem = {
@@ -91,4 +94,22 @@ export const quoteStatus: QuoteStatus[] = [
   { value: "en_cours_de_realisation", name: "En cours de réalisation", color: "#2ecc71" }, // Green
   { value: "termine", name: "Terminé", color: "#27ae60" }, // Dark Green
   { value: "annule", name: "Annulé", color: "#e74c3c" }, // Red
+];
+
+export type PaymentMode = {
+  value: string;
+  name: string;
+};
+
+export interface QuotePayment {
+  mode: string;
+  amount: number | null;
+}
+
+export const paymentModes: PaymentMode[] = [
+  { value: "especes", name: "Espèces" },
+  { value: "cheque", name: "Chèque" },
+  { value: "virement", name: "Virement" },
+  { value: "cb", name: "Carte bancaire" },
+  { value: "paypal", name: "PayPal" }
 ];
