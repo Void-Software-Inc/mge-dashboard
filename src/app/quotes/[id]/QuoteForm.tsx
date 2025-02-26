@@ -11,14 +11,14 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Toaster, toast } from 'sonner'
 import { Skeleton } from "@/components/ui/skeleton"
 import { Switch } from "@/components/ui/switch"
-import { ChevronLeftIcon, DownloadIcon } from "@radix-ui/react-icons"
+import { ChevronLeftIcon, DownloadIcon, PlusIcon, TrashIcon } from "@radix-ui/react-icons"
 import jsPDF from 'jspdf';
 import 'jspdf-autotable';
 
 import { useRouter } from 'next/navigation'
 import { useAppContext } from "@/app/context/AppContext"
 import { getQuote, getQuoteItems, updateQuote, deleteQuoteItem, finishQuote, updateQuoteItem, createQuoteItem } from "@/services/quotes"
-import { Quote, quoteStatus, QuoteItem, Address } from "@/utils/types/quotes"
+import { Quote, quoteStatus, QuoteItem, Address, PaymentMode, paymentModes, QuotePayment } from "@/utils/types/quotes"
 import { DatePicker } from "../components/date-picker"
 import { QuoteItemList } from "../components/quote-item-list"
 import { format, parseISO } from 'date-fns';
@@ -46,6 +46,7 @@ interface FormErrors {
     depart?: string;
     pays?: string;
   };
+  payments?: { mode?: string; amount?: string }[];
 }
 
 const isEqual = (obj1: any, obj2: any): boolean => {
@@ -197,6 +198,33 @@ export default function QuoteForm({ quoteId }: { quoteId: string }) {
     if (formData?.deposit_amount !== undefined && (formData.deposit_amount === null || formData.deposit_amount < 0)) {
       newErrors.deposit_amount = "Le montant de l'acompte est invalide";
       isValid = false;
+    }
+
+    if (formData?.payments) {
+      const paymentErrors: { mode?: string; amount?: string }[] = [];
+      let hasPaymentError = false;
+
+      formData.payments.forEach((payment, index) => {
+        const error: { mode?: string; amount?: string } = {};
+        
+        if (payment.mode || payment.amount !== null) {
+          if (!payment.mode) {
+            error.mode = "Le mode de paiement est requis";
+            hasPaymentError = true;
+          }
+          if (payment.amount === null || Number(payment.amount) <= 0) {
+            error.amount = "Le montant doit être supérieur à 0";
+            hasPaymentError = true;
+          }
+        }
+        
+        paymentErrors[index] = error;
+      });
+
+      if (hasPaymentError) {
+        newErrors.payments = paymentErrors;
+        isValid = false;
+      }
     }
 
     setErrors(newErrors)
@@ -410,6 +438,16 @@ export default function QuoteForm({ quoteId }: { quoteId: string }) {
       });
     }
 
+    // Add payments to the form data right before the updateQuote call
+    if (formData?.payments && Array.isArray(formData.payments)) {
+      formData.payments.forEach((payment) => {
+        if (payment.mode && (payment.amount !== undefined && payment.amount !== null)) {
+          formDataToSend.append('payment_modes[]', payment.mode.toString());
+          formDataToSend.append('payment_amounts[]', payment.amount.toString());
+        }
+      });
+    }
+
     await updateQuoteAndItems(formDataToSend);
   };
 
@@ -472,6 +510,17 @@ export default function QuoteForm({ quoteId }: { quoteId: string }) {
           }
         });
       }
+
+      // Add payments to the form data right before the updateQuote call
+      if (formData?.payments && Array.isArray(formData.payments)) {
+        formData.payments.forEach((payment) => {
+          if (payment.mode && (payment.amount !== undefined && payment.amount !== null)) {
+            formDataToSend.append('payment_modes[]', payment.mode.toString());
+            formDataToSend.append('payment_amounts[]', payment.amount.toString());
+          }
+        });
+      }
+
       await updateQuoteAndItems(formDataToSend);
       await finishQuote([parseInt(quoteId)]);
       setFinishedQuotesShouldRefetch(true);
@@ -845,6 +894,35 @@ export default function QuoteForm({ quoteId }: { quoteId: string }) {
     doc.setTextColor(0);
   };
 
+  const handleAddPayment = () => {
+    setFormData(prev => {
+      if (!prev) return prev;
+      const newPayments = [...(prev.payments || []), { mode: '', amount: null }];
+      return { ...prev, payments: newPayments };
+    });
+  };
+
+  const handleRemovePayment = (index: number) => {
+    setFormData(prev => {
+      if (!prev) return prev;
+      const newPayments = [...(prev.payments || [])];
+      newPayments.splice(index, 1);
+      return { ...prev, payments: newPayments };
+    });
+  };
+
+  const handlePaymentChange = (index: number, field: 'mode' | 'amount', value: string) => {
+    setFormData(prev => {
+      if (!prev) return prev;
+      const newPayments = [...(prev.payments || [])];
+      newPayments[index] = {
+        ...newPayments[index],
+        [field]: field === 'amount' ? (value === '' ? null : parseFloat(value)) : value
+      };
+      return { ...prev, payments: newPayments };
+    });
+  };
+
   if (isLoading) {
     return (
       <div className="flex flex-col items-center justify-center pt-20 px-4 md:px-0">
@@ -1163,6 +1241,83 @@ export default function QuoteForm({ quoteId }: { quoteId: string }) {
               className="w-full text-base"
               disabled
             />
+          </div>
+          <div className="mb-4">
+            <div className="flex justify-between items-center mb-2">
+              <Label className="text-base">Paiements</Label>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={handleAddPayment}
+              >
+                <PlusIcon className="w-4 h-4 mr-2" />
+                Ajouter un paiement
+              </Button>
+            </div>
+            
+            {formData?.payments?.map((payment, index) => (
+              <div key={index} className="flex gap-4 mb-4">
+                <div className="flex-1">
+                  <Select
+                    value={payment.mode}
+                    onValueChange={(value) => handlePaymentChange(index, 'mode', value)}
+                  >
+                    <SelectTrigger className={`w-full ${errors.payments?.[index]?.mode ? 'border-red-500' : ''}`}>
+                      <SelectValue placeholder="Mode de paiement" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {paymentModes.map((mode) => (
+                        <SelectItem key={mode.value} value={mode.value}>
+                          {mode.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  {errors.payments?.[index]?.mode && payment.mode !== '' && (
+                    <p className="text-red-500 text-sm mt-1">{errors.payments[index].mode}</p>
+                  )}
+                </div>
+                
+                <div className="flex-1">
+                  <Input
+                    type="number"
+                    value={payment.amount ?? ''}
+                    onChange={(e) => handlePaymentChange(index, 'amount', e.target.value)}
+                    className={`w-full ${errors.payments?.[index]?.amount ? 'border-red-500' : ''}`}
+                    placeholder="Montant"
+                  />
+                  {errors.payments?.[index]?.amount && payment.amount !== null && (
+                    <p className="text-red-500 text-sm mt-1">{errors.payments[index].amount}</p>
+                  )}
+                </div>
+                
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => handleRemovePayment(index)}
+                  className="flex-shrink-0"
+                >
+                  <TrashIcon className="w-4 h-4" />
+                </Button>
+              </div>
+            ))}
+            
+            {formData?.payments && formData.payments.length > 0 && (
+              <div className="mt-2">
+                <Label className="text-base">Total payé</Label>
+                <Input
+                  type="number"
+                  value={formData.payments.reduce((sum, payment) => 
+                    sum + (payment.amount === null ? 0 : Number(payment.amount)), 
+                    0
+                  ).toFixed(2)}
+                  className="w-full"
+                  disabled
+                />
+              </div>
+            )}
           </div>
           <div className="mb-4 flex items-center space-x-2">
             <Switch
