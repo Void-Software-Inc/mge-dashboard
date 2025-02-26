@@ -14,6 +14,21 @@ export async function PUT(request: NextRequest) {
 
   const parisDate = formatInTimeZone(new Date(), 'Europe/Paris', "yyyy-MM-dd'T'HH:mm:ss.SSSxxx");
 
+  // Parse payments from form data
+  const payments = [];
+  const paymentModes = formData.getAll('payment_modes[]');
+  const paymentAmounts = formData.getAll('payment_amounts[]');
+
+  for (let i = 0; i < paymentModes.length; i++) {
+    if (paymentModes[i] && paymentAmounts[i]) {
+      const amount = parseFloat(paymentAmounts[i] as string);
+      payments.push({
+        mode: paymentModes[i] as string,
+        amount: !isNaN(amount) ? amount : null
+      });
+    }
+  }
+
   const quoteData = {
     first_name: formData.get('first_name'),
     last_name: formData.get('last_name'),
@@ -28,6 +43,7 @@ export async function PUT(request: NextRequest) {
     traiteur_price: formData.get('traiteur_price'),
     other_expenses: formData.get('other_expenses'),
     description: formData.get('description'),
+    payments: payments,
     last_update: parisDate,
     is_deposit: formData.get('is_deposit') === 'true',
     deposit_amount: formData.get('deposit_amount'),
