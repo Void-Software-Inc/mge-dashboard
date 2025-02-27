@@ -1171,7 +1171,10 @@ export default function QuoteForm({ quoteId }: { quoteId: string }) {
               </div>
               
               <div className="p-4 border border-gray-200 rounded-lg bg-white">
-                <Label htmlFor="other_expenses" className="text-base mb-4">Frais supplémentaires</Label>
+                <div className="flex items-center space-x-2 mb-4">
+                  <Label htmlFor="other_expenses" className="text-base">Frais supplémentaires</Label>
+                </div>
+                
                 <div>
                   <Label htmlFor="other_expenses" className="text-sm text-gray-600">Montant HT</Label>
                   <Input 

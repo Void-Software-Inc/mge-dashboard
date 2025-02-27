@@ -351,7 +351,7 @@ export function QuoteItemList({
             </div>
             <span className='text-sm text-gray-500 text-center'>
               <span className="hidden sm:inline">Page </span>
-              {currentPage}<span className="hidden sm:inline"> sur </span>/<span className="sm:hidden"> </span>{totalPages}
+              {currentPage}<span className="hidden sm:inline"> </span> / <span className="sm:hidden"> </span>{totalPages}
             </span>
             <div className="flex space-x-2">
               <Button 
