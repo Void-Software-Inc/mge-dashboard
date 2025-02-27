@@ -1003,152 +1003,202 @@ export default function QuoteForm({ quoteId }: { quoteId: string }) {
             </Select>
             {errors.status && <p className="text-red-500 text-sm mt-1">{errors.status}</p>}
           </div>
-          <div className="mb-4">
-            <Label htmlFor="last_name" className="text-base">Nom du client</Label>
-            <Input 
-              id="last_name" 
-              value={formData?.last_name ?? ''} 
-              onChange={handleInputChange} 
-              className={`w-full text-base ${errors.last_name ? 'border-red-500' : ''}`} 
-            />
-            {errors.last_name && <p className="text-red-500 text-sm mt-1">{errors.last_name}</p>}
-          </div>
-          <div className="mb-4">
-            <Label htmlFor="first_name" className="text-base">Prénom du client</Label>
-            <Input 
-              id="first_name" 
-              value={formData?.first_name ?? ''} 
-              onChange={handleInputChange} 
-              className={`w-full text-base ${errors.first_name ? 'border-red-500' : ''}`} 
-            />
-            {errors.first_name && <p className="text-red-500 text-sm mt-1">{errors.first_name}</p>}
-          </div>
-          <div className="mb-4">
-            <Label htmlFor="last_name" className="text-base">Numéro de téléphone du client</Label>
-            <Input 
-              id="phone_number" 
-              value={formData?.phone_number ?? ''} 
-              onChange={handleInputChange} 
-              className={`w-full text-base ${errors.phone_number ? 'border-red-500' : ''}`} 
-            />
-            {errors.phone_number && <p className="text-red-500 text-sm mt-1">{errors.phone_number}</p>}
-          </div>
-          <div className="mb-4">
-            <Label htmlFor="email" className="text-base">Email du client</Label>
-            <Input 
-              id="email" 
-              value={formData?.email ?? ''} 
-              onChange={handleInputChange} 
-              className={`w-full text-base ${errors.email ? 'border-red-500' : ''}`} 
-            />
-            {errors.email && <p className="text-red-500 text-sm mt-1">{errors.email}</p>}
-          </div>
-          <div className="mb-4">
-            <Label className="text-base">Adresse</Label>
-            <div className="grid grid-cols-2 gap-4">
-              <div className="col-span-2">
-                <Label htmlFor="voie" className="text-sm">Voie</Label>
-                <Input 
-                  id="voie" 
-                  value={formData?.address?.voie ?? ''} 
-                  onChange={(e) => handleAddressChange('voie', e.target.value)} 
-                  className="w-full text-base" 
-                />
+          
+          {/* Enhanced Client Information Section */}
+          <div className="mb-8 border border-gray-200 rounded-lg p-6 bg-gray-50">
+            <h3 className="text-lg font-semibold mb-4">Informations Client</h3>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {/* Personal Information */}
+              <div className="p-4 border border-gray-200 rounded-lg bg-white">
+                <h4 className="text-base font-medium mb-3 text-gray-700">Coordonnées</h4>
+                <div className="space-y-4">
+                  <div>
+                    <Label htmlFor="last_name" className="text-sm text-gray-600">Nom</Label>
+                    <Input 
+                      id="last_name" 
+                      value={formData?.last_name ?? ''} 
+                      onChange={handleInputChange} 
+                      className={`w-full mt-1 ${errors.last_name ? 'border-red-500' : ''}`} 
+                    />
+                    {errors.last_name && <p className="text-red-500 text-sm mt-1">{errors.last_name}</p>}
+                  </div>
+                  
+                  <div>
+                    <Label htmlFor="first_name" className="text-sm text-gray-600">Prénom</Label>
+                    <Input 
+                      id="first_name" 
+                      value={formData?.first_name ?? ''} 
+                      onChange={handleInputChange} 
+                      className={`w-full mt-1 ${errors.first_name ? 'border-red-500' : ''}`} 
+                    />
+                    {errors.first_name && <p className="text-red-500 text-sm mt-1">{errors.first_name}</p>}
+                  </div>
+                  
+                  <div>
+                    <Label htmlFor="phone_number" className="text-sm text-gray-600">Téléphone</Label>
+                    <Input 
+                      id="phone_number" 
+                      value={formData?.phone_number ?? ''} 
+                      onChange={handleInputChange} 
+                      className={`w-full mt-1 ${errors.phone_number ? 'border-red-500' : ''}`} 
+                    />
+                    {errors.phone_number && <p className="text-red-500 text-sm mt-1">{errors.phone_number}</p>}
+                  </div>
+                  
+                  <div>
+                    <Label htmlFor="email" className="text-sm text-gray-600">Email</Label>
+                    <Input 
+                      id="email" 
+                      value={formData?.email ?? ''} 
+                      onChange={handleInputChange} 
+                      className={`w-full mt-1 ${errors.email ? 'border-red-500' : ''}`} 
+                    />
+                    {errors.email && <p className="text-red-500 text-sm mt-1">{errors.email}</p>}
+                  </div>
+                </div>
               </div>
-              <div className="col-span-2">
-                <Label htmlFor="compl" className="text-sm">Complément d'adresse</Label>
-                <Input 
-                  id="compl" 
-                  value={formData?.address?.compl ?? ''} 
-                  onChange={(e) => handleAddressChange('compl', e.target.value)} 
-                  className="w-full text-base" 
-                />
-              </div>
-              <div>
-                <Label htmlFor="cp" className="text-sm">Code Postal</Label>
-                <Input 
-                  id="cp" 
-                  value={formData?.address?.cp ?? ''} 
-                  onChange={(e) => handleAddressChange('cp', e.target.value)} 
-                  className="w-full text-base" 
-                />
-              </div>
-              <div>
-                <Label htmlFor="ville" className="text-sm">Ville</Label>
-                <Input 
-                  id="ville" 
-                  value={formData?.address?.ville ?? ''} 
-                  onChange={(e) => handleAddressChange('ville', e.target.value)} 
-                  className="w-full text-base" 
-                />
-              </div>
-              <div>
-                <Label htmlFor="depart" className="text-sm">Département</Label>
-                <Input 
-                  id="depart" 
-                  value={formData?.address?.depart ?? ''} 
-                  onChange={(e) => handleAddressChange('depart', e.target.value)} 
-                  className="w-full text-base" 
-                />
-              </div>
-              <div>
-                <Label htmlFor="pays" className="text-sm">Pays</Label>
-                <Input 
-                  id="pays" 
-                  value={formData?.address?.pays ?? 'France'} 
-                  onChange={(e) => handleAddressChange('pays', e.target.value)} 
-                  className="w-full text-base"
-                  disabled
-                />
+              
+              {/* Address Information */}
+              <div className="p-4 border border-gray-200 rounded-lg bg-white">
+                <h4 className="text-base font-medium mb-3 text-gray-700">Adresse</h4>
+                <div className="space-y-4">
+                  <div>
+                    <Label htmlFor="voie" className="text-sm text-gray-600">Voie</Label>
+                    <Input 
+                      id="voie" 
+                      value={formData?.address?.voie ?? ''} 
+                      onChange={(e) => handleAddressChange('voie', e.target.value)} 
+                      className="w-full mt-1" 
+                    />
+                  </div>
+                  
+                  <div>
+                    <Label htmlFor="compl" className="text-sm text-gray-600">Complément d'adresse</Label>
+                    <Input 
+                      id="compl" 
+                      value={formData?.address?.compl ?? ''} 
+                      onChange={(e) => handleAddressChange('compl', e.target.value)} 
+                      className="w-full mt-1" 
+                    />
+                  </div>
+                  
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <Label htmlFor="cp" className="text-sm text-gray-600">Code Postal</Label>
+                      <Input 
+                        id="cp" 
+                        value={formData?.address?.cp ?? ''} 
+                        onChange={(e) => handleAddressChange('cp', e.target.value)} 
+                        className="w-full mt-1" 
+                      />
+                    </div>
+                    
+                    <div>
+                      <Label htmlFor="ville" className="text-sm text-gray-600">Ville</Label>
+                      <Input 
+                        id="ville" 
+                        value={formData?.address?.ville ?? ''} 
+                        onChange={(e) => handleAddressChange('ville', e.target.value)} 
+                        className="w-full mt-1" 
+                      />
+                    </div>
+                  </div>
+                  
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <Label htmlFor="depart" className="text-sm text-gray-600">Département</Label>
+                      <Input 
+                        id="depart" 
+                        value={formData?.address?.depart ?? ''} 
+                        onChange={(e) => handleAddressChange('depart', e.target.value)} 
+                        className="w-full mt-1" 
+                      />
+                    </div>
+                    
+                    <div>
+                      <Label htmlFor="pays" className="text-sm text-gray-600">Pays</Label>
+                      <Input 
+                        id="pays" 
+                        value={formData?.address?.pays ?? 'France'} 
+                        onChange={(e) => handleAddressChange('pays', e.target.value)} 
+                        className="w-full mt-1 bg-gray-50"
+                        disabled
+                      />
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
-          <div className="mb-4">
-            <Label className="text-base">Date de début de l'événement</Label>
-            <DatePicker
-              date={formData?.event_start_date ? parseISO(formData.event_start_date) : undefined}
-              onDateChange={handleStartDateChange}
-              label="Choisir la date de début"
-            />
-            {errors.event_start_date && <p className="text-red-500 text-sm mt-1">{errors.event_start_date}</p>}
-          </div>
-          <div className="mb-4">
-            <Label className="text-base">Date de fin de l'événement</Label>
-            <DatePicker
-              date={formData?.event_end_date ? parseISO(formData.event_end_date) : undefined}
-              onDateChange={handleEndDateChange}
-              label="Choisir la date de fin"
-            />
-            {errors.event_end_date && <p className="text-red-500 text-sm mt-1">{errors.event_end_date}</p>}
-          </div>
-          <div className="mb-4">
-            <Label htmlFor="description" className="text-base">Description du devis</Label>
-            <Textarea id="description" value={formData?.description ?? ''} onChange={handleInputChange} className="w-full text-base" />
-          </div>
-          <div className="mb-4">
-            <Label className="text-base">Produits du devis</Label>
-            {isQuoteItemsLoading ? (
-              <div className="space-y-2">
-                <Skeleton className="h-12 w-full" />
-                <Skeleton className="h-12 w-full" />
-                <Skeleton className="h-12 w-full" />
-              </div>
-            ) : <QuoteItemList 
-                  items={quoteItems ?? []}
-                  taintedItems={taintedItems}
-                  editedItems={editedItems}
-                  createdItems={createdItems}
-                  onItemTaint={handleItemTaint}
-                  onItemEdit={handleItemEdit}
-                  onItemCreate={handleItemCreate}
-                  onItemRemove={handleItemRemove}
-                  isLoading={isQuoteItemsLoading}
-                  quoteId={quote.id}
-                  onTotalCostChange={handleTotalCostChange}
-                  disabled={!!formData?.is_deposit || !!formData?.is_paid}
+          
+          {/* Enhanced Event Information Section */}
+          <div className="mb-8 border border-gray-200 rounded-lg p-6 bg-gray-50">
+            <h3 className="text-lg font-semibold mb-4">Événement</h3>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+              <div className="p-4 border border-gray-200 rounded-lg bg-white">
+                <h4 className="text-base font-medium mb-3 text-gray-700">Date de début</h4>
+                <DatePicker
+                  date={formData?.event_start_date ? parseISO(formData.event_start_date) : undefined}
+                  onDateChange={handleStartDateChange}
+                  label="Choisir la date de début"
                 />
-            }
+                {errors.event_start_date && <p className="text-red-500 text-sm mt-1">{errors.event_start_date}</p>}
+              </div>
+              
+              <div className="p-4 border border-gray-200 rounded-lg bg-white">
+                <h4 className="text-base font-medium mb-3 text-gray-700">Date de fin</h4>
+                <DatePicker
+                  date={formData?.event_end_date ? parseISO(formData.event_end_date) : undefined}
+                  onDateChange={handleEndDateChange}
+                  label="Choisir la date de fin"
+                />
+                {errors.event_end_date && <p className="text-red-500 text-sm mt-1">{errors.event_end_date}</p>}
+              </div>
+            </div>
+            
+            <div className="p-4 border border-gray-200 rounded-lg bg-white">
+              <h4 className="text-base font-medium mb-3 text-gray-700">Description</h4>
+              <Textarea 
+                id="description" 
+                value={formData?.description ?? ''} 
+                onChange={handleInputChange} 
+                className="w-full text-base min-h-[120px]" 
+                placeholder="Description détaillée de l'événement..."
+              />
+            </div>
           </div>
+          
+          {/* Enhanced Products Section */}
+          <div className="mb-8 border border-gray-200 rounded-lg p-6 bg-gray-50">
+            <h3 className="text-lg font-semibold mb-4">Produits du devis</h3>
+            
+            <div className="p-4 border border-gray-200 rounded-lg bg-white">
+              {isQuoteItemsLoading ? (
+                <div className="space-y-2">
+                  <Skeleton className="h-12 w-full" />
+                  <Skeleton className="h-12 w-full" />
+                  <Skeleton className="h-12 w-full" />
+                </div>
+              ) : <QuoteItemList 
+                    items={quoteItems ?? []}
+                    taintedItems={taintedItems}
+                    editedItems={editedItems}
+                    createdItems={createdItems}
+                    onItemTaint={handleItemTaint}
+                    onItemEdit={handleItemEdit}
+                    onItemCreate={handleItemCreate}
+                    onItemRemove={handleItemRemove}
+                    isLoading={isQuoteItemsLoading}
+                    quoteId={quote.id}
+                    onTotalCostChange={handleTotalCostChange}
+                    disabled={!!formData?.is_deposit || !!formData?.is_paid}
+                  />
+              }
+            </div>
+          </div>
+          
           <div className="mb-8 mt-8 border border-gray-200 rounded-lg p-6 bg-gray-50">
             <h3 className="text-lg font-semibold mb-4">Prix et Paiement</h3>
             
