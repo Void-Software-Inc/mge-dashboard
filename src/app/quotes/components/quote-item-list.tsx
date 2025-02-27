@@ -6,7 +6,7 @@ import { Product } from "@/utils/types/products";
 import { getProduct } from "@/services/products";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
-import { TrashIcon, Pencil1Icon, PlusIcon } from '@radix-ui/react-icons';
+import { TrashIcon, Pencil1Icon, PlusIcon, DoubleArrowLeftIcon, DoubleArrowRightIcon } from '@radix-ui/react-icons';
 import { Drawer, DrawerTrigger, DrawerContent, DrawerHeader, DrawerTitle, DrawerDescription, DrawerFooter, DrawerClose } from "@/components/ui/drawer";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -183,6 +183,16 @@ export function QuoteItemList({
     setCurrentPage(prev => Math.min(prev + 1, totalPages));
   };
 
+  const handleFirstPage = (e: React.MouseEvent<HTMLButtonElement>) => {
+    e.preventDefault();
+    setCurrentPage(1);
+  };
+
+  const handleLastPage = (e: React.MouseEvent<HTMLButtonElement>) => {
+    e.preventDefault();
+    setCurrentPage(totalPages);
+  };
+
   if (isLoading) {
     return (
       <div className="space-y-2">
@@ -319,21 +329,41 @@ export function QuoteItemList({
       <div className="flex items-center justify-between mt-4">
         {allItems.length > 0 && (
           <>
-            <Button 
-              onClick={handlePreviousPage}
-              disabled={currentPage === 1}
-              variant='outline'
-            >
-              Précédent
-            </Button>
+            <div className="flex space-x-2">
+              <Button 
+                onClick={handleFirstPage}
+                disabled={currentPage === 1}
+                variant='outline'
+                aria-label="Première page"
+              >
+                <DoubleArrowLeftIcon className="h-4 w-4" />
+              </Button>
+              <Button 
+                onClick={handlePreviousPage}
+                disabled={currentPage === 1}
+                variant='outline'
+              >
+                Précédent
+              </Button>
+            </div>
             <span className='text-sm text-gray-500'>Page {currentPage} sur {totalPages}</span>
-            <Button 
-              onClick={handleNextPage}
-              disabled={currentPage === totalPages}
-              variant='outline'
-            >
-              Suivant
-            </Button>
+            <div className="flex space-x-2">
+              <Button 
+                onClick={handleNextPage}
+                disabled={currentPage === totalPages}
+                variant='outline'
+              >
+                Suivant
+              </Button>
+              <Button 
+                onClick={handleLastPage}
+                disabled={currentPage === totalPages}
+                variant='outline'
+                aria-label="Dernière page"
+              >
+                <DoubleArrowRightIcon className="h-4 w-4" />
+              </Button>
+            </div>
           </>
         )}
       </div>
