@@ -1149,184 +1149,261 @@ export default function QuoteForm({ quoteId }: { quoteId: string }) {
                 />
             }
           </div>
-          <div className="mb-4 flex items-center space-x-2">
-            <Switch
-              id="is_traiteur"
-              checked={formData?.is_traiteur ?? false}
-              onCheckedChange={() => handleSwitchChange('is_traiteur')}
-              disabled={formData?.is_paid || formData?.is_deposit}
-            />
-            <Label htmlFor="is_traiteur" className="text-base">Service traiteur</Label>
-          </div>
-          <div className="mb-4">
-            <Label htmlFor="traiteur_price" className="text-base">Prix traiteur HT</Label>
-            <Input 
-              id="traiteur_price" 
-              type="number"
-              value={formData?.traiteur_price ?? ''} 
-              onChange={handleInputChange} 
-              className={`w-full text-base ${errors.traiteur_price ? 'border-red-500' : ''}`} 
-              disabled={!formData?.is_traiteur || formData?.is_paid || formData?.is_deposit}
-            />
-            {errors.traiteur_price && <p className="text-red-500 text-sm mt-1">{errors.traiteur_price}</p>}
-          </div>
-          <div className="mb-4">
-            <Label htmlFor="other_expenses" className="text-base">Frais supplémentaires HT</Label>
-            <Input 
-              id="other_expenses" 
-              type="number"
-              value={formData?.other_expenses ?? ''} 
-              onChange={handleInputChange} 
-              className={`w-full text-base ${errors.other_expenses ? 'border-red-500' : ''}`} 
-              disabled={formData?.is_paid || formData?.is_deposit}
-            />
-            {errors.other_expenses && <p className="text-red-500 text-sm mt-1">{errors.other_expenses}</p>}
-          </div>
-          <div className="mb-4">
-            <Label htmlFor="price" className="text-base">Prix total HT</Label>
-            <Input 
-              id="total_cost" 
-              type="number"
-              step="1"
-              min="0"
-              value={formData?.total_cost.toFixed(2) ?? ''} 
-              onChange={handleInputChange} 
-              className={`w-full text-base ${errors.total_cost ? 'border-red-500' : ''}`} 
-              disabled
-            />
-            {errors.total_cost && <p className="text-red-500 text-sm mt-1">{errors.total_cost}</p>}
-          </div>
-          <div className="mb-4">
-            <Label htmlFor="total_cost_ttc" className="text-base">Prix total TTC</Label>
-            <Input 
-              id="total_cost_ttc" 
-              type="number"
-              value={formData?.total_cost ? calculateTTC(formData.total_cost).toFixed(2) : ''} 
-              className="w-full text-base" 
-              disabled
-            />
-          </div>
-          <div className="mb-4 flex items-center space-x-2">
-            <Switch
-              id="is_deposit"
-              checked={formData?.is_deposit ?? false}
-              onCheckedChange={() => handleDepositChange('is_deposit')}
-            />
-            <Label htmlFor="is_deposit" className="text-base">Acompte versé (30%)</Label>
-          </div>
-          {formData?.is_deposit && (
-            <div className="mb-4">
-              <Label htmlFor="deposit_amount" className="text-base">Montant de l'acompte TTC</Label>
-              <Input 
-                id="deposit_amount" 
-                type="number"
-                value={formData.total_cost !== undefined ? (calculateTTC(formData.total_cost) * 0.3).toFixed(2) : ''} 
-                className="w-full text-base"
-                disabled
-              />
-            </div>
-          )}
-          <div className="mb-4">
-            <Label className="text-base">Montant restant à payer TTC</Label>
-            <Input 
-              type="number"
-              step="0.01"
-              value={formData ? (
-                formData.is_paid 
-                  ? "0.00"
-                  : formData.is_deposit && formData.total_cost !== undefined
-                    ? (calculateTTC(formData.total_cost) * 0.7).toFixed(2)
-                    : calculateTTC(formData.total_cost).toFixed(2)
-              ) : ''} 
-              className="w-full text-base"
-              disabled
-            />
-          </div>
-          <div className="mb-4">
-            <div className="flex justify-between items-center mb-2">
-              <Label className="text-base">Paiements</Label>
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={handleAddPayment}
-              >
-                <PlusIcon className="w-4 h-4 mr-2" />
-                Ajouter un paiement
-              </Button>
-            </div>
+          <div className="mb-8 mt-8 border border-gray-200 rounded-lg p-6 bg-gray-50">
+            <h3 className="text-lg font-semibold mb-4">Prix et Paiement</h3>
             
-            {formData?.payments?.map((payment, index) => (
-              <div key={index} className="flex gap-4 mb-4">
-                <div className="flex-1">
-                  <Select
-                    value={payment.mode}
-                    onValueChange={(value) => handlePaymentChange(index, 'mode', value)}
-                  >
-                    <SelectTrigger className={`w-full ${errors.payments?.[index]?.mode ? 'border-red-500' : ''}`}>
-                      <SelectValue placeholder="Mode de paiement" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {paymentModes.map((mode) => (
-                        <SelectItem key={mode.value} value={mode.value}>
-                          {mode.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  {errors.payments?.[index]?.mode && payment.mode !== '' && (
-                    <p className="text-red-500 text-sm mt-1">{errors.payments[index].mode}</p>
-                  )}
-                </div>
-                
-                <div className="flex-1">
-                  <Input
+            <div className="p-4 border border-gray-200 rounded-lg bg-white mb-4">
+              <h4 className="text-base font-medium mb-3">Détail du prix</h4>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  <Label htmlFor="total_cost" className="text-sm text-gray-600">Prix total HT</Label>
+                  <Input 
+                    id="total_cost" 
                     type="number"
-                    value={payment.amount ?? ''}
-                    onChange={(e) => handlePaymentChange(index, 'amount', e.target.value)}
-                    className={`w-full ${errors.payments?.[index]?.amount ? 'border-red-500' : ''}`}
-                    placeholder="Montant"
+                    step="1"
+                    min="0"
+                    value={formData?.total_cost.toFixed(2) ?? ''} 
+                    onChange={handleInputChange} 
+                    className={`w-full text-base font-semibold ${errors.total_cost ? 'border-red-500' : 'border-gray-300'}`} 
+                    disabled
                   />
-                  {errors.payments?.[index]?.amount && payment.amount !== null && (
-                    <p className="text-red-500 text-sm mt-1">{errors.payments[index].amount}</p>
-                  )}
+                  {errors.total_cost && <p className="text-red-500 text-sm mt-1">{errors.total_cost}</p>}
                 </div>
                 
+                <div>
+                  <Label htmlFor="tva_amount" className="text-sm text-gray-600">TVA (20%)</Label>
+                  <Input 
+                    id="tva_amount" 
+                    type="number"
+                    value={formData?.total_cost ? (formData.total_cost * 0.2).toFixed(2) : '0.00'} 
+                    className="w-full text-base font-semibold bg-gray-100" 
+                    disabled
+                  />
+                </div>
+                
+                <div className="md:col-span-2">
+                  <Label htmlFor="total_cost_ttc" className="text-sm text-gray-600">Prix total TTC</Label>
+                  <Input 
+                    id="total_cost_ttc" 
+                    type="number"
+                    value={formData?.total_cost ? calculateTTC(formData.total_cost).toFixed(2) : ''} 
+                    className="w-full text-base font-semibold bg-gray-100 border-gray-300" 
+                    disabled
+                  />
+                </div>
+              </div>
+            </div>
+            <div className="mb-4">
+            <Label htmlFor="is_traiteur" className="text-base font-medium">Options supplémentaires</Label>
+            <div className="mt-2 grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="p-4 border border-gray-200 rounded-lg bg-white">
+                <div className="flex items-center space-x-2 mb-4">
+                  <Switch
+                    id="is_traiteur"
+                    checked={formData?.is_traiteur ?? false}
+                    onCheckedChange={() => handleSwitchChange('is_traiteur')}
+                    disabled={formData?.is_paid || formData?.is_deposit}
+                  />
+                  <Label htmlFor="is_traiteur" className="text-base">Service traiteur</Label>
+                </div>
+                
+                <div>
+                  <Label htmlFor="traiteur_price" className="text-sm text-gray-600">Prix traiteur HT</Label>
+                  <Input 
+                    id="traiteur_price" 
+                    type="number"
+                    value={formData?.traiteur_price ?? ''} 
+                    onChange={handleInputChange} 
+                    className={`w-full text-base mt-1 ${errors.traiteur_price ? 'border-red-500' : ''}`} 
+                    disabled={!formData?.is_traiteur || formData?.is_paid || formData?.is_deposit}
+                  />
+                  {errors.traiteur_price && <p className="text-red-500 text-sm mt-1">{errors.traiteur_price}</p>}
+                </div>
+              </div>
+              
+              <div className="p-4 border border-gray-200 rounded-lg bg-white">
+                <Label htmlFor="other_expenses" className="text-base mb-4">Frais supplémentaires</Label>
+                <div>
+                  <Label htmlFor="other_expenses" className="text-sm text-gray-600">Montant HT</Label>
+                  <Input 
+                    id="other_expenses" 
+                    type="number"
+                    value={formData?.other_expenses ?? ''} 
+                    onChange={handleInputChange} 
+                    className={`w-full text-base mt-1 ${errors.other_expenses ? 'border-red-500' : ''}`} 
+                    disabled={formData?.is_paid || formData?.is_deposit}
+                  />
+                  {errors.other_expenses && <p className="text-red-500 text-sm mt-1">{errors.other_expenses}</p>}
+                </div>
+              </div>
+            </div>
+          </div>
+            <div className="p-4 border border-gray-200 rounded-lg bg-white mb-6">
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center space-x-2">
+                  <Switch
+                    id="is_deposit"
+                    checked={formData?.is_deposit ?? false}
+                    onCheckedChange={() => handleDepositChange('is_deposit')}
+                    className="data-[state=checked]:bg-lime-500"
+                  />
+                  <Label htmlFor="is_deposit" className="text-base font-medium">Acompte versé (30%)</Label>
+                </div>
+                <div className="text-sm text-gray-500">
+                  {formData?.is_deposit ? "Acompte payé" : "Acompte non payé"}
+                </div>
+              </div>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  <Label htmlFor="deposit_amount" className="text-sm text-gray-600">Montant de l'acompte TTC (30%)</Label>
+                  <Input 
+                    id="deposit_amount" 
+                    type="number"
+                    value={formData?.total_cost !== undefined ? (calculateTTC(formData.total_cost) * 0.3).toFixed(2) : '0.00'} 
+                    className={`w-full text-base font-semibold ${formData?.is_deposit ? 'bg-lime-50 border-lime-200' : 'bg-gray-100'}`}
+                    disabled
+                  />
+                </div>
+                
+                <div>
+                  <Label className="text-sm text-gray-600">Montant restant à payer TTC</Label>
+                  <Input 
+                    type="number"
+                    step="0.01"
+                    value={formData ? (
+                      formData.is_paid 
+                        ? "0.00"
+                        : (() => {
+                            // Calculate total payments
+                            const totalPayments = formData.payments?.reduce(
+                              (sum, payment) => sum + (payment.amount === null ? 0 : Number(payment.amount)),
+                              0
+                            ) || 0;
+                            
+                            // Calculate remaining amount based on deposit status
+                            const totalTTC = calculateTTC(formData.total_cost);
+                            const remainingAmount = formData.is_deposit 
+                              ? totalTTC * 0.7 - totalPayments
+                              : totalTTC - totalPayments;
+                            
+                            return Math.max(0, remainingAmount).toFixed(2);
+                          })()
+                    ) : '0.00'} 
+                    className="w-full text-base font-semibold bg-gray-100"
+                    disabled
+                  />
+                </div>
+              </div>
+            </div>
+
+            <div className="p-4 border border-gray-200 rounded-lg bg-white mb-6">
+              <div className="flex justify-between items-center mb-4">
+                <Label className="text-base font-medium">Modes de Paiement</Label>
                 <Button
                   type="button"
-                  variant="ghost"
-                  size="icon"
-                  onClick={() => handleRemovePayment(index)}
-                  className="flex-shrink-0"
+                  variant="outline"
+                  size="sm"
+                  onClick={handleAddPayment}
+                  className="border-lime-500 text-lime-700 hover:bg-lime-50"
                 >
-                  <TrashIcon className="w-4 h-4" />
+                  <PlusIcon className="w-4 h-4 mr-2" />
+                  Ajouter un paiement
                 </Button>
               </div>
-            ))}
-            
-            {formData?.payments && formData.payments.length > 0 && (
-              <div className="mt-2">
-                <Label className="text-base">Total payé</Label>
-                <Input
-                  type="number"
-                  value={formData.payments.reduce((sum, payment) => 
-                    sum + (payment.amount === null ? 0 : Number(payment.amount)), 
-                    0
-                  ).toFixed(2)}
-                  className="w-full"
-                  disabled
-                />
+              
+              {formData?.payments?.length === 0 && (
+                <div className="text-gray-500 text-center py-4 border border-dashed border-gray-200 rounded-md">
+                  Aucun paiement enregistré
+                </div>
+              )}
+              
+              {formData?.payments?.map((payment, index) => (
+                <div key={index} className="flex gap-4 mb-4 p-3 border border-gray-100 rounded-md bg-gray-50">
+                  <div className="flex-1">
+                    <Label className="text-sm text-gray-600">Mode de paiement</Label>
+                    <Select
+                      value={payment.mode}
+                      onValueChange={(value) => handlePaymentChange(index, 'mode', value)}
+                    >
+                      <SelectTrigger className={`w-full mt-1 ${errors.payments?.[index]?.mode ? 'border-red-500' : ''}`}>
+                        <SelectValue placeholder="Mode de paiement" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {paymentModes.map((mode) => (
+                          <SelectItem key={mode.value} value={mode.value}>
+                            {mode.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    {errors.payments?.[index]?.mode && payment.mode !== '' && (
+                      <p className="text-red-500 text-sm mt-1">{errors.payments[index].mode}</p>
+                    )}
+                  </div>
+                  
+                  <div className="flex-1">
+                    <Label className="text-sm text-gray-600">Montant</Label>
+                    <Input
+                      type="number"
+                      value={payment.amount ?? ''}
+                      onChange={(e) => handlePaymentChange(index, 'amount', e.target.value)}
+                      className={`w-full mt-1 ${errors.payments?.[index]?.amount ? 'border-red-500' : ''}`}
+                      placeholder="Montant"
+                    />
+                    {errors.payments?.[index]?.amount && payment.amount !== null && (
+                      <p className="text-red-500 text-sm mt-1">{errors.payments[index].amount}</p>
+                    )}
+                  </div>
+                  
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => handleRemovePayment(index)}
+                    className="flex-shrink-0 self-end mb-1 text-gray-500 hover:text-red-500"
+                  >
+                    <TrashIcon className="w-4 h-4" />
+                  </Button>
+                </div>
+              ))}
+              
+              {formData?.payments && formData.payments.length > 0 && (
+                <div className="mt-4 p-3 border border-lime-100 rounded-md bg-lime-50">
+                  <Label className="text-sm text-gray-600">Total payé</Label>
+                  <Input
+                    type="number"
+                    value={formData.payments.reduce((sum, payment) => 
+                      sum + (payment.amount === null ? 0 : Number(payment.amount)), 
+                      0
+                    ).toFixed(2)}
+                    className="w-full mt-1 text-base font-semibold bg-white border-lime-200"
+                    disabled
+                  />
+                </div>
+              )}
+            </div>
+
+            <div className="p-4 border border-gray-200 rounded-lg bg-white">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-2">
+                  <Switch
+                    id="is_paid"
+                    checked={formData?.is_paid ?? false}
+                    onCheckedChange={() => handleSwitchChange('is_paid')}
+                    className="data-[state=checked]:bg-lime-500"
+                  />
+                  <Label htmlFor="is_paid" className="text-base font-medium">Payé intégralement</Label>
+                </div>
+                {formData?.is_paid && (
+                  <div className="px-3 py-1 bg-lime-100 text-lime-800 text-sm font-medium rounded-full">
+                    Payé
+                  </div>
+                )}
               </div>
-            )}
+            </div>
           </div>
-          <div className="mb-4 flex items-center space-x-2">
-            <Switch
-              id="is_paid"
-              checked={formData?.is_paid ?? false}
-              onCheckedChange={() => handleSwitchChange('is_paid')}
-            />
-            <Label htmlFor="is_paid" className="text-base">Payé</Label>
-          </div>
+          
           <div className="mb-4">
             <Label className="text-base">Date de création du devis</Label>
             <Input id="created_at" value={formData?.created_at ? new Date(formData.created_at).toLocaleString('fr-FR', {
