@@ -6,7 +6,7 @@ import { Product } from "@/utils/types/products";
 import { getProduct } from "@/services/products";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
-import { TrashIcon, Pencil1Icon, PlusIcon, DoubleArrowLeftIcon, DoubleArrowRightIcon } from '@radix-ui/react-icons';
+import { TrashIcon, Pencil1Icon, PlusIcon, DoubleArrowLeftIcon, DoubleArrowRightIcon, ChevronLeftIcon, ChevronRightIcon } from '@radix-ui/react-icons';
 import { Drawer, DrawerTrigger, DrawerContent, DrawerHeader, DrawerTitle, DrawerDescription, DrawerFooter, DrawerClose } from "@/components/ui/drawer";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -335,6 +335,7 @@ export function QuoteItemList({
                 disabled={currentPage === 1}
                 variant='outline'
                 aria-label="Première page"
+                className="flex"
               >
                 <DoubleArrowLeftIcon className="h-4 w-4" />
               </Button>
@@ -342,24 +343,32 @@ export function QuoteItemList({
                 onClick={handlePreviousPage}
                 disabled={currentPage === 1}
                 variant='outline'
+                aria-label="Page précédente"
               >
-                Précédent
+                <ChevronLeftIcon className="h-4 w-4 sm:hidden" />
+                <span className="hidden sm:inline">Précédent</span>
               </Button>
             </div>
-            <span className='text-sm text-gray-500'>Page {currentPage} sur {totalPages}</span>
+            <span className='text-sm text-gray-500 text-center'>
+              <span className="hidden sm:inline">Page </span>
+              {currentPage}<span className="hidden sm:inline"> sur </span>/<span className="sm:hidden"> </span>{totalPages}
+            </span>
             <div className="flex space-x-2">
               <Button 
                 onClick={handleNextPage}
                 disabled={currentPage === totalPages}
                 variant='outline'
+                aria-label="Page suivante"
               >
-                Suivant
+                <ChevronRightIcon className="h-4 w-4 sm:hidden" />
+                <span className="hidden sm:inline">Suivant</span>
               </Button>
               <Button 
                 onClick={handleLastPage}
                 disabled={currentPage === totalPages}
                 variant='outline'
                 aria-label="Dernière page"
+                className="flex"
               >
                 <DoubleArrowRightIcon className="h-4 w-4" />
               </Button>
