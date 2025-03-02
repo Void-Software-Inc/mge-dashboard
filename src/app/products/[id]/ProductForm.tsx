@@ -12,11 +12,18 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Toaster, toast } from 'sonner'
 import { Skeleton } from "@/components/ui/skeleton"
 import { ChevronLeftIcon, DownloadIcon, Cross2Icon, UploadIcon } from "@radix-ui/react-icons"
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip"
+import { InfoCircledIcon } from "@radix-ui/react-icons"
 
 import { useRouter } from 'next/navigation'
 import { useAppContext } from '@/app/context/AppContext'
 import { getProduct, getProductImages, updateProduct, deleteProductImage, createProductImage } from "@/services/products"
-import { Product, productTypes, ProductImage, productColors } from "@/utils/types/products"
+import { Product, productTypes, ProductImage, productColors, productCategories } from "@/utils/types/products"
 
 interface FormErrors {
   name?: string;
@@ -24,6 +31,7 @@ interface FormErrors {
   color?: string;
   price?: string;
   stock?: string;
+  category?: string;
 }
 
 export default function ProductForm({ productId }: { productId: string }) {
@@ -79,6 +87,27 @@ export default function ProductForm({ productId }: { productId: string }) {
     )
   }, [product, formData, selectedFile, taintedImages, createdImages])
 
+  // Set default values when category changes
+  useEffect(() => {
+    if (formData?.category === 'traiteur') {
+      // For traiteur products, set default color and unlimited stock
+      setFormData(prev => prev ? {
+        ...prev,
+        color: 'blanc', // Default color for food items
+        stock: 999999, // Very high number to represent unlimited stock
+      } : null);
+    } else if (formData?.category === 'decoration') {
+      // Reset to default values for decoration products if they're not already set
+      if (formData.color === 'blanc' && formData.stock === 999999) {
+        setFormData(prev => prev ? {
+          ...prev,
+          color: '', // Empty to show placeholder
+          stock: 0, // Default stock value
+        } : null);
+      }
+    }
+  }, [formData?.category]);
+
   const validateForm = useCallback(() => {
     const newErrors: FormErrors = {}
     let isValid = true
@@ -87,20 +116,30 @@ export default function ProductForm({ productId }: { productId: string }) {
       newErrors.name = "Le nom du produit est obligatoire"
       isValid = false
     }
+    if (!formData?.category) {
+      newErrors.category = "La catégorie du produit est obligatoire"
+      isValid = false
+    }
     if (!formData?.type) {
       newErrors.type = "Le type du produit est obligatoire"
       isValid = false
     }
-    if (!formData?.color) {
+    
+    // Only validate color for decoration products
+    if (formData?.category === 'decoration' && !formData?.color) {
       newErrors.color = "La couleur du produit est obligatoire"
       isValid = false
     }
-    if (!formData?.price) {
-      newErrors.price = "Le prix du produit est invalide"
+    
+    // Only validate stock for decoration products
+    if (formData?.category === 'decoration' && 
+        (!formData?.stock || formData?.stock <= 0)) {
+      newErrors.stock = "Le stock du produit est invalide"
       isValid = false
     }
-    if (!formData?.stock) {
-      newErrors.stock = "Le stock du produit est invalide"
+    
+    if (!formData?.price || formData?.price <= 0) {
+      newErrors.price = "Le prix du produit est invalide"
       isValid = false
     }
 
@@ -340,251 +379,332 @@ export default function ProductForm({ productId }: { productId: string }) {
           </Button>
         </div>
       </div>
-      <form onSubmit={handleSubmit} className="flex flex-col items-center justify-center pt-20 px-4 md:px-0">
-        <div className="w-full max-w-5xl">
-          <div className="mb-4">
-            <Label className="text-base">Identifiant du produit</Label>
-            <Input id="id" value={formData?.id ?? ''} className="w-full text-base" disabled />
-          </div>
-          <div className="mb-4">
-            <Label htmlFor="name" className="text-base">Nom du produit</Label>
-            <Input 
-              id="name" 
-              value={formData?.name ?? ''} 
-              onChange={handleInputChange} 
-              className={`w-full text-base ${errors.name ? 'border-red-500' : ''}`} 
-            />
-            {errors.name && <p className="text-red-500 text-sm mt-1">{errors.name}</p>}
-          </div>
-          <div className="mb-4">
-            <Label htmlFor="type" className="text-base">Type de produit</Label>
-            <Select
-              onValueChange={(value) => handleSelectChange('type', value)}
-              value={formData?.type ?? ''}
-            >
-              <SelectTrigger className={`w-full ${errors.type ? 'border-red-500' : ''}`}>
-                <SelectValue placeholder="Select a product type" />
-              </SelectTrigger>
-              <SelectContent className="text-base">
-                {productTypes.map((type) => (
-                  <SelectItem key={type.value} value={type.value}>
-                    {type.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            {errors.type && <p className="text-red-500 text-sm mt-1">{errors.type}</p>}
-          </div>
-          <div className="mb-4">
-            <Label htmlFor="color" className="text-base">Couleur du produit</Label>
-            <Select
-              onValueChange={(value) => handleSelectChange('color', value)}
-              value={formData?.color ?? ''}
-            >
-              <SelectTrigger className={`w-full ${errors.color ? 'border-red-500' : ''}`}>
-                <SelectValue placeholder="Sélectionner une couleur" />
-              </SelectTrigger>
-              <SelectContent>
-                {productColors.map((color) => (
-                  <SelectItem key={color.value} value={color.value}>
-                    <div className="flex items-center">
-                      {color.value === 'transparent' ? (
-                        <div className="w-4 h-4 mr-2 rounded-full overflow-hidden border border-gray-300 bg-white relative">
-                          <div className="absolute inset-0 bg-gray-200 bg-opacity-50" style={{
-                            backgroundImage: `
-                              linear-gradient(45deg, #ccc 25%, transparent 25%),
-                              linear-gradient(-45deg, #ccc 25%, transparent 25%),
-                              linear-gradient(45deg, transparent 75%, #ccc 75%),
-                              linear-gradient(-45deg, transparent 75%, #ccc 75%)
-                            `,
-                            backgroundSize: '4px 4px',
-                            backgroundPosition: '0 0, 0 2px, 2px -2px, -2px 0px'
-                          }} />
-                        </div>
-                      ) : color.value === 'multicolore' ? (
-                        <div className="w-4 h-4 mr-2 rounded-full overflow-hidden flex flex-wrap">
-                          <div className="w-2 h-2 bg-yellow-400"></div>
-                          <div className="w-2 h-2 bg-green-500"></div>
-                          <div className="w-2 h-2 bg-pink-400"></div>
-                          <div className="w-2 h-2 bg-blue-500"></div>
-                        </div>
-                      ) : color.value === 'gold' || color.value === 'silver' ? (
-                        <div 
-                          className="w-4 h-4 rounded-full mr-2"
-                          style={{ background: getMetallicBackground(color.value) }}
-                        />
-                      ) : (
-                        <div 
-                          className={`w-4 h-4 rounded-full mr-2 ${color.value === 'blanc' ? 'border border-gray-300' : ''}`}
-                          style={{ backgroundColor: color.hex }}
-                        />
-                      )}
-                      {color.name}
+      <TooltipProvider>
+        <form onSubmit={handleSubmit} className="flex flex-col items-center justify-center pt-20 px-4 md:px-0">
+          <div className="w-full max-w-5xl">
+            <div className="mb-4">
+              <Label className="text-base">Identifiant du produit</Label>
+              <Input id="id" value={formData?.id ?? ''} className="w-full text-base" disabled />
+            </div>
+            <div className="mb-4">
+              <Label htmlFor="name" className="text-base">Nom du produit</Label>
+              <Input 
+                id="name" 
+                value={formData?.name ?? ''} 
+                onChange={handleInputChange} 
+                className={`w-full text-base ${errors.name ? 'border-red-500' : ''}`} 
+              />
+              {errors.name && <p className="text-red-500 text-sm mt-1">{errors.name}</p>}
+            </div>
+            <div className="mb-4">
+              <Label htmlFor="category" className="text-base flex items-center">
+                Catégorie du produit
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <InfoCircledIcon className="w-3 h-3 text-gray-500 ml-1 cursor-help" />
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>La catégorie du produit est obligatoire</p>
+                  </TooltipContent>
+                </Tooltip>
+              </Label>
+              <Select
+                onValueChange={(value) => handleSelectChange('category', value)}
+                value={formData?.category ?? ''}
+              >
+                <SelectTrigger className={`w-full ${errors.category ? 'border-red-500' : ''}`}>
+                  <SelectValue placeholder="Sélectionner une catégorie" />
+                </SelectTrigger>
+                <SelectContent className="text-base">
+                  {productCategories.map((category) => (
+                    <SelectItem key={category.value} value={category.value}>
+                      {category.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {errors.category && <p className="text-red-500 text-sm mt-1">{errors.category}</p>}
+            </div>
+            <div className="mb-4">
+              <Label htmlFor="type" className={`text-base flex items-center ${!formData?.category ? 'text-gray-400' : ''}`}>
+                Type du produit
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <InfoCircledIcon className="w-3 h-3 text-gray-500 ml-1 cursor-help" />
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>Le type du produit est obligatoire</p>
+                  </TooltipContent>
+                </Tooltip>
+              </Label>
+              <Select
+                onValueChange={(value) => handleSelectChange('type', value)}
+                value={formData?.type ?? ''}
+                disabled={!formData?.category}
+              >
+                <SelectTrigger className={`w-full ${errors.type ? 'border-red-500' : ''} ${!formData?.category ? 'bg-gray-100' : ''}`}>
+                  <SelectValue placeholder="Sélectionner un type de produit" />
+                </SelectTrigger>
+                <SelectContent className="text-base">
+                  {productTypes
+                    .filter(type => type.category === formData?.category)
+                    .map((type) => (
+                      <SelectItem key={type.value} value={type.value}>
+                        {type.name}
+                      </SelectItem>
+                    ))}
+                </SelectContent>
+              </Select>
+              {!formData?.category && (
+                <p className="text-gray-500 text-sm mt-1">Veuillez d'abord sélectionner une catégorie</p>
+              )}
+              {errors.type && <p className="text-red-500 text-sm mt-1">{errors.type}</p>}
+            </div>
+            <div className="mb-4">
+              <Label htmlFor="color" className={`text-base flex items-center ${formData?.category === 'traiteur' ? 'text-gray-400' : ''}`}>
+                Couleur du produit
+                {formData?.category === 'decoration' && (
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <InfoCircledIcon className="w-3 h-3 text-gray-500 ml-1 cursor-help" />
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>La couleur du produit est obligatoire</p>
+                    </TooltipContent>
+                  </Tooltip>
+                )}
+                {formData?.category === 'traiteur' && (
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <InfoCircledIcon className="w-3 h-3 text-gray-500 ml-1 cursor-help" />
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>Non applicable pour les produits traiteur</p>
+                    </TooltipContent>
+                  </Tooltip>
+                )}
+              </Label>
+              <Select
+                onValueChange={(value) => handleSelectChange('color', value)}
+                value={formData?.color ?? ''}
+                disabled={formData?.category === 'traiteur'}
+              >
+                <SelectTrigger className={`w-full ${errors.color ? 'border-red-500' : ''} ${formData?.category === 'traiteur' ? 'bg-gray-100' : ''}`}>
+                  <SelectValue placeholder="Sélectionner une couleur" />
+                </SelectTrigger>
+                <SelectContent>
+                  {productColors.map((color) => (
+                    <SelectItem key={color.value} value={color.value}>
+                      <div className="flex items-center">
+                        {color.value === 'multicolore' ? (
+                          <div className="w-4 h-4 mr-2 rounded-full overflow-hidden flex flex-wrap">
+                            <div className="w-2 h-2 bg-yellow-400"></div>
+                            <div className="w-2 h-2 bg-green-500"></div>
+                            <div className="w-2 h-2 bg-pink-400"></div>
+                            <div className="w-2 h-2 bg-blue-500"></div>
+                          </div>
+                        ) : (
+                          <div 
+                            className={`w-4 h-4 rounded-full mr-2 ${color.value === 'blanc' ? 'border border-gray-300' : ''}`}
+                            style={{ backgroundColor: color.hex, backgroundImage: getMetallicBackground(color.value) }}
+                          />
+                        )}
+                        {color.name}
+                      </div>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {formData?.category === 'traiteur' && (
+                <p className="text-gray-500 text-sm mt-1">Valeur par défaut pour les produits traiteur</p>
+              )}
+              {errors.color && <p className="text-red-500 text-sm mt-1">{errors.color}</p>}
+            </div>
+            <div className="mb-4">
+              <Label htmlFor="stock" className={`text-base flex items-center ${formData?.category === 'traiteur' ? 'text-gray-400' : ''}`}>
+                Stock du produit
+                {formData?.category === 'decoration' && (
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <InfoCircledIcon className="w-3 h-3 text-gray-500 ml-1 cursor-help" />
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>Le stock du produit est obligatoire</p>
+                    </TooltipContent>
+                  </Tooltip>
+                )}
+                {formData?.category === 'traiteur' && (
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <InfoCircledIcon className="w-3 h-3 text-gray-500 ml-1 cursor-help" />
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>Non applicable pour les produits traiteur</p>
+                    </TooltipContent>
+                  </Tooltip>
+                )}
+              </Label>
+              <Input 
+                id="stock"
+                type="number"
+                step="1"
+                min="0"
+                value={formData?.category === 'traiteur' ? '∞' : formData?.stock ?? ''} 
+                onChange={handleInputChange} 
+                className={`w-full text-base ${errors.stock ? 'border-red-500' : ''} ${formData?.category === 'traiteur' ? 'bg-gray-100' : ''}`} 
+                disabled={formData?.category === 'traiteur'}
+              />
+              {formData?.category === 'traiteur' && (
+                <p className="text-gray-500 text-sm mt-1">Stock illimité pour les produits traiteur</p>
+              )}
+              {errors.stock && <p className="text-red-500 text-sm mt-1">{errors.stock}</p>}
+            </div>
+            <div className="mb-4">
+              <Label htmlFor="price" className="text-base">Prix du produit</Label>
+              <Input 
+                id="price" 
+                type="number"
+                step="1"
+                min="0"
+                value={formData?.price ?? ''} 
+                onChange={handleInputChange} 
+                className={`w-full text-base ${errors.price ? 'border-red-500' : ''}`} 
+              />
+              {errors.price && <p className="text-red-500 text-sm mt-1">{errors.price}</p>}
+            </div>
+            <div className="mb-4">
+              <Label htmlFor="description" className="text-base">Description du produit</Label>
+              <Textarea id="description" value={formData?.description ?? ''} onChange={handleInputChange} className="w-full text-base" />
+            </div>
+            <div className="mb-4">
+              <Label className="text-base">Image principale du produit</Label>
+              <div className="relative w-full h-auto mb-2">
+                <div className={`w-full h-auto flex items-center justify-center ${previewUrl ? 'border-4 rounded-md border-lime-300' : ''}`}>
+                  <Image 
+                    src={previewUrl || product.image_url} 
+                    alt={product.name} 
+                    width={500}
+                    height={500}
+                  />
+                </div>
+                {previewUrl && (
+                  <>
+                    <div className="absolute bottom-0 left-0 right-0 bg-lime-300 text-black text-xs p-1 text-center">
+                      Cette image remplacera l'image principale lors de la validation
                     </div>
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            {errors.color && <p className="text-red-500 text-sm mt-1">{errors.color}</p>}
-          </div>
-          <div className="mb-4">
-            <Label htmlFor="price" className="text-base">Prix du produit</Label>
-            <Input 
-              id="price" 
-              type="number"
-              step="1"
-              min="0"
-              value={formData?.price ?? ''} 
-              onChange={handleInputChange} 
-              className={`w-full text-base ${errors.price ? 'border-red-500' : ''}`} 
-            />
-            {errors.price && <p className="text-red-500 text-sm mt-1">{errors.price}</p>}
-          </div>
-          <div className="mb-4">
-            <Label htmlFor="stock" className="text-base">Stock du produit</Label>
-            <Input 
-              id="stock"
-              type="number"
-              step="1"
-              min="0"
-              value={formData?.stock ?? ''} 
-              onChange={handleInputChange} 
-              className={`w-full text-base ${errors.stock ? 'border-red-500' : ''}`} 
-            />
-            {errors.stock && <p className="text-red-500 text-sm mt-1">{errors.stock}</p>}
-          </div>
-          <div className="mb-4">
-            <Label htmlFor="description" className="text-base">Description du produit</Label>
-            <Textarea id="description" value={formData?.description ?? ''} onChange={handleInputChange} className="w-full text-base" />
-          </div>
-          <div className="mb-4">
-            <Label className="text-base">Image principale du produit</Label>
-            <div className="relative w-full h-auto mb-2">
-              <div className={`w-full h-auto flex items-center justify-center ${previewUrl ? 'border-4 rounded-md border-lime-300' : ''}`}>
-                <Image 
-                  src={previewUrl || product.image_url} 
-                  alt={product.name} 
-                  width={500}
-                  height={500}
+                    <button
+                      type="button"
+                      onClick={handleCancelMainImageChange}
+                      className="absolute top-2 right-2 bg-red-400 text-white rounded-md p-1 hover:bg-red-600"
+                    >
+                      <Cross2Icon className="w-4 h-4" />
+                    </button>
+                  </>
+                )}
+              </div>
+              <div 
+                className="mt-2 p-4 border-2 border-dashed border-gray-300 rounded-md cursor-pointer flex items-center justify-center"
+                onClick={() => document.getElementById('main-image-upload')?.click()}
+              >
+                <UploadIcon className="w-6 h-6 text-gray-400 mr-2" />
+                <span className="text-gray-600">Changer l'image principale</span>
+                <input
+                  id="main-image-upload"
+                  type="file"
+                  className="hidden"
+                  onChange={handleMainImageChange}
+                  accept="image/*"
                 />
               </div>
-              {previewUrl && (
-                <>
-                  <div className="absolute bottom-0 left-0 right-0 bg-lime-300 text-black text-xs p-1 text-center">
-                    Cette image remplacera l'image principale lors de la validation
-                  </div>
-                  <button
-                    type="button"
-                    onClick={handleCancelMainImageChange}
-                    className="absolute top-2 right-2 bg-red-400 text-white rounded-md p-1 hover:bg-red-600"
-                  >
-                    <Cross2Icon className="w-4 h-4" />
-                  </button>
-                </>
-              )}
             </div>
-            <div 
-              className="mt-2 p-4 border-2 border-dashed border-gray-300 rounded-md cursor-pointer flex items-center justify-center"
-              onClick={() => document.getElementById('main-image-upload')?.click()}
-            >
-              <UploadIcon className="w-6 h-6 text-gray-400 mr-2" />
-              <span className="text-gray-600">Changer l'image principale</span>
-              <input
-                id="main-image-upload"
-                type="file"
-                className="hidden"
-                onChange={handleMainImageChange}
-                accept="image/*"
-              />
-            </div>
-          </div>
-          <div className="mb-4">
-            <Label className="text-base">Images secondaires du produit</Label>
-            <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mt-2">
-              <div 
-                  className="aspect-square flex items-center justify-center border-2 border-dashed border-gray-300 rounded-md cursor-pointer"
-                  onClick={() => document.getElementById('image-upload')?.click()}
-                >
-                  <label htmlFor="image-upload" className="cursor-pointer">
-                    <UploadIcon className="w-8 h-8 text-gray-400" />
-                  <input
-                    id="image-upload"
-                    type="file"
-                    className="hidden"
-                    onChange={handleSecondaryImageUpload}
-                    accept="image/*"
-                  />
-                </label>
-              </div>
-              {secondaryImages?.map((image) => (
+            <div className="mb-4">
+              <Label className="text-base">Images secondaires du produit</Label>
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mt-2">
                 <div 
-                  key={image.id} 
-                  className={`relative aspect-square ${taintedImages.has(image.id) ? 'border-2 border-red-400 rounded-md' : ''}`}
-                >
-                  <img 
-                    src={image.url} 
-                    alt={`Secondary image ${image.id}`} 
-                    className="w-full h-full object-cover rounded-md cursor-pointer" 
-                  />
-                  <button
-                    type="button"
-                    onClick={() => handleImageTaint(image.id)}
-                    className="absolute top-2 right-2 bg-red-400 text-white rounded-md p-1 hover:bg-red-500"
+                    className="aspect-square flex items-center justify-center border-2 border-dashed border-gray-300 rounded-md cursor-pointer"
+                    onClick={() => document.getElementById('image-upload')?.click()}
                   >
-                    <Cross2Icon className="w-4 h-4" />
-                  </button>
-                  {taintedImages.has(image.id) && (
-                    <div className="absolute bottom-0 left-0 right-0 bg-red-400 text-black text-xs p-1 text-center">
-                      Cette image sera supprimée lors de la validation
-                    </div>
-                  )}
+                    <label htmlFor="image-upload" className="cursor-pointer">
+                      <UploadIcon className="w-8 h-8 text-gray-400" />
+                    <input
+                      id="image-upload"
+                      type="file"
+                      className="hidden"
+                      onChange={handleSecondaryImageUpload}
+                      accept="image/*"
+                    />
+                  </label>
                 </div>
-              ))}
-              {createdImages.map((file, index) => (
-                <div key={index} className="relative aspect-square border-2 border-lime-300 rounded-md">
-                  <img 
-                    src={URL.createObjectURL(file)} 
-                    alt={`New image ${index + 1}`} 
-                    className="w-full h-full object-cover rounded-md" 
-                  />
-                  <button
-                    type="button"
-                    onClick={() => handleRemoveCreatedImage(index)}
-                    className="absolute top-2 right-2 bg-red-400 text-white rounded-md p-1 hover:bg-red-600"
+                {secondaryImages?.map((image) => (
+                  <div 
+                    key={image.id} 
+                    className={`relative aspect-square ${taintedImages.has(image.id) ? 'border-2 border-red-400 rounded-md' : ''}`}
                   >
-                    <Cross2Icon className="w-4 h-4" />
-                  </button>
-                  <div className="absolute bottom-0 left-0 right-0 bg-lime-300 text-black text-xs p-1 text-center">
-                    L'image sera ajoutée lors de la validation
+                    <img 
+                      src={image.url} 
+                      alt={`Secondary image ${image.id}`} 
+                      className="w-full h-full object-cover rounded-md cursor-pointer" 
+                    />
+                    <button
+                      type="button"
+                      onClick={() => handleImageTaint(image.id)}
+                      className="absolute top-2 right-2 bg-red-400 text-white rounded-md p-1 hover:bg-red-500"
+                    >
+                      <Cross2Icon className="w-4 h-4" />
+                    </button>
+                    {taintedImages.has(image.id) && (
+                      <div className="absolute bottom-0 left-0 right-0 bg-red-400 text-black text-xs p-1 text-center">
+                        Cette image sera supprimée lors de la validation
+                      </div>
+                    )}
                   </div>
-                </div>
-              ))}
+                ))}
+                {createdImages.map((file, index) => (
+                  <div key={index} className="relative aspect-square border-2 border-lime-300 rounded-md">
+                    <img 
+                      src={URL.createObjectURL(file)} 
+                      alt={`New image ${index + 1}`} 
+                      className="w-full h-full object-cover rounded-md" 
+                    />
+                    <button
+                      type="button"
+                      onClick={() => handleRemoveCreatedImage(index)}
+                      className="absolute top-2 right-2 bg-red-400 text-white rounded-md p-1 hover:bg-red-600"
+                    >
+                      <Cross2Icon className="w-4 h-4" />
+                    </button>
+                    <div className="absolute bottom-0 left-0 right-0 bg-lime-300 text-black text-xs p-1 text-center">
+                      L'image sera ajoutée lors de la validation
+                    </div>
+                  </div>
+                ))}
+              </div>
+              <Button 
+                onClick={handleDownloadAllMedia}
+                className="mt-4 w-full bg-lime-300 text-blqck hover:bg-lime-400"
+              >
+                Télécharger toutes les images
+              </Button>
             </div>
-            <Button 
-              onClick={handleDownloadAllMedia}
-              className="mt-4 w-full bg-lime-300 text-blqck hover:bg-lime-400"
-            >
-              Télécharger toutes les images
-            </Button>
+            <div className="mb-4">
+              <Label className="text-base">Date de création du produit</Label>
+              <Input id="created_at" value={formData?.created_at ? new Date(formData.created_at).toLocaleString('fr-FR', {
+                dateStyle: 'short',
+                timeStyle: 'short',
+                  timeZone: 'Europe/Paris'
+                }) : ''} className="w-full text-base" disabled />
+            </div>
+            <div className="mb-4">
+              <Label className="text-base">Date de dernière mise à jour du produit</Label>
+              <Input id="last_update" value={formData?.last_update ? new Date(formData.last_update).toLocaleString('fr-FR', {
+                dateStyle: 'short',
+                timeStyle: 'short',
+                  timeZone: 'Europe/Paris'
+                }) : ''} className="w-full text-base" disabled />
+            </div>
           </div>
-          <div className="mb-4">
-            <Label className="text-base">Date de création du produit</Label>
-            <Input id="created_at" value={formData?.created_at ? new Date(formData.created_at).toLocaleString('fr-FR', {
-              dateStyle: 'short',
-              timeStyle: 'short',
-                timeZone: 'Europe/Paris'
-              }) : ''} className="w-full text-base" disabled />
-          </div>
-          <div className="mb-4">
-            <Label className="text-base">Date de dernière mise à jour du produit</Label>
-            <Input id="last_update" value={formData?.last_update ? new Date(formData.last_update).toLocaleString('fr-FR', {
-              dateStyle: 'short',
-              timeStyle: 'short',
-                timeZone: 'Europe/Paris'
-              }) : ''} className="w-full text-base" disabled />
-          </div>
-        </div>
-      </form>
+        </form>
+      </TooltipProvider>
       <Toaster />
     </>
   )
