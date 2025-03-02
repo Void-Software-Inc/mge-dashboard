@@ -47,6 +47,7 @@ export async function POST(request: NextRequest) {
     price: formData.get('price'),
     description: formData.get('description'),
     image_url: imageUrl,
+    category: formData.get('category'),
     created_at: parisDate,
     last_update: parisDate
   }
