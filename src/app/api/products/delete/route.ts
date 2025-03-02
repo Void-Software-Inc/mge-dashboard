@@ -39,6 +39,7 @@ export async function POST(request: NextRequest) {
                     price: product.price,
                     description: product.description,
                     image_url: product.image_url,
+                    category: product.category,
                     deleted_at: new Date().toISOString()
                 })
                 .select()

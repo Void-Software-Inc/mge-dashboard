@@ -39,8 +39,9 @@ export async function POST(request: NextRequest) {
                     price: productRecord.price,
                     description: productRecord.description,
                     image_url: productRecord.image_url,
+                    category: productRecord.category,
                     created_at: productRecord.created_at,
-                    last_updated: productRecord.last_updated
+                    last_update: new Date().toISOString()
                 })
                 .select()
                 .single();
