@@ -7,6 +7,7 @@ export type Product = {
     price: number,
     description: string,
     image_url: string,
+    category: string,
     created_at: string,
     last_update: string,
 }
@@ -32,20 +33,27 @@ export type ProductImage = {
 export type ProductType = {
     value: string;
     name: string;
+    category: string;
 };
 
 export const productTypes: ProductType[] = [
-    { value: "tables", name: "Tables" },
-    { value: "chaises", name: "Chaises" },
-    { value: "nappes", name: "Nappes" },
-    { value: "housses", name: "Housses" },
-    { value: "chapiteau", name: "Chapiteau" },
-    { value: "vaiselle", name: "Vaiselle" },
-    { value: "vaisselleHG", name: "Vaisselle Haut de Gamme" },
-    { value: "centreTable", name: "Centre Table" },
-    { value: "decoration", name: "Decoration" },
-    { value: "acessoires", name: "Accessoires" },
-    { value: "noeudChaise", name: "Noeud de Chaise" },
+    { value: "tables", name: "Tables", category: "decoration" },
+    { value: "chaises", name: "Chaises", category: "decoration" },
+    { value: "nappes", name: "Nappes", category: "decoration" },
+    { value: "housses", name: "Housses", category: "decoration" },
+    { value: "chapiteau", name: "Chapiteau", category: "decoration" },
+    { value: "vaiselle", name: "Vaiselle", category: "decoration" },
+    { value: "vaisselleHG", name: "Vaisselle Haut de Gamme", category: "decoration" },
+    { value: "centreTable", name: "Centre Table", category: "decoration" },
+    { value: "decoration", name: "Decoration", category: "decoration" },
+    { value: "acessoires", name: "Accessoires", category: "decoration" },
+    { value: "noeudChaise", name: "Noeud de Chaise", category: "decoration" },
+    { value: "entrees", name: "Entrées", category: "traiteur" },
+    { value: "plats", name: "Plats principaux", category: "traiteur" },
+    { value: "desserts", name: "Desserts", category: "traiteur" },
+    { value: "boissons", name: "Boissons", category: "traiteur" },
+    { value: "buffet", name: "Buffet", category: "traiteur" },
+    { value: "cocktail", name: "Cocktail", category: "traiteur" },
 ];
 
 export type ProductColor = {
@@ -73,3 +81,13 @@ export const productColors: ProductColor[] = [
     { value: "multicolore", name: "Multicolore", hex: "#000000" },
     { value: "transparent", name: "Transparent", hex: "#FFFFFF" },
 ]
+
+export type ProductCategory = {
+    value: string;
+    name: string;
+};
+
+export const productCategories: ProductCategory[] = [
+    { value: "decoration", name: "Décoration" },
+    { value: "traiteur", name: "Traiteur" },
+];
