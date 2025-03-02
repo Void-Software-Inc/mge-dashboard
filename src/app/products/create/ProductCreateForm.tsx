@@ -1,7 +1,7 @@
 'use client'
 
 import { useCallback, useEffect, useState } from 'react'
-import { Product, productTypes, productColors } from "@/utils/types/products"
+import { Product, productTypes, productColors, productCategories } from "@/utils/types/products"
 import Image from 'next/image'
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
@@ -27,6 +27,7 @@ interface FormErrors {
   price?: string;
   stock?: string;
   image_url?: string;
+  category?: string;
 }
 
 interface TouchedFields {
@@ -36,6 +37,7 @@ interface TouchedFields {
   price: boolean;
   stock: boolean;
   image_url: boolean;
+  category: boolean;
 }
 
 const initialProduct: Partial<Product> = {
@@ -46,6 +48,7 @@ const initialProduct: Partial<Product> = {
   price: 0,
   description: '',
   image_url: '',
+  category: '',
 }
 
 export default function ProductCreateForm() {
@@ -66,12 +69,32 @@ export default function ProductCreateForm() {
     price: false,
     stock: false,
     image_url: false,
+    category: false,
   })
   const [isFormValid, setIsFormValid] = useState(false)
 
   const handleGoBack = useCallback(() => {
     router.push('/products')
   }, [router])
+
+  // Set default values when category changes
+  useEffect(() => {
+    if (formData.category === 'traiteur') {
+      // For catering products, set default color and unlimited stock
+      setFormData(prev => ({
+        ...prev,
+        color: 'blanc', // Default color for food items
+        stock: 999999, // Very high number to represent unlimited stock
+      }));
+    } else if (formData.category === 'decoration') {
+      // Reset to default values for decoration products
+      setFormData(prev => ({
+        ...prev,
+        color: '', // Empty to show placeholder
+        stock: 0, // Default stock value
+      }));
+    }
+  }, [formData.category]);
 
   const validateForm = useCallback(() => {
     const newErrors: FormErrors = {}
@@ -81,34 +104,55 @@ export default function ProductCreateForm() {
       newErrors.name = "Le nom du produit est obligatoire"
       isValid = false
     }
+    if (!formData.category && touched.category) {
+      newErrors.category = "La catégorie du produit est obligatoire"
+      isValid = false
+    }
     if (!formData.type && touched.type) {
       newErrors.type = "Le type du produit est obligatoire"
       isValid = false
     }
-    if (!formData.color && touched.color) {
+    
+    // Only validate color for decoration products
+    if (formData.category === 'decoration' && !formData.color && touched.color) {
       newErrors.color = "La couleur du produit est obligatoire"
       isValid = false
     }
+    
+    // Only validate stock for decoration products
+    if (formData.category === 'decoration' && 
+        formData.stock !== undefined && 
+        (formData.stock === null || formData.stock <= 0) && 
+        touched.stock) {
+      newErrors.stock = "Le stock du produit est invalide"
+      isValid = false
+    }
+    
     if (formData.price !== undefined && (formData.price === null || formData.price <= 0) && touched.price) {
       newErrors.price = "Le prix du produit est invalide"
       isValid = false
     }
-    if (formData.stock !== undefined && (formData.stock === null || formData.stock <= 0) && touched.stock) {
-      newErrors.stock = "Le stock du produit est invalide"
-      isValid = false
-    }
+    
     if (!selectedFile && touched.image_url) {
       newErrors.image_url = "L'image principale du produit est obligatoire"
       isValid = false
     }
-    if(formData.name && formData.type && formData.color && formData.price && formData.stock && selectedFile) {
-      isValid = true
+    
+    // Adjust validation criteria based on category
+    if (formData.category === 'decoration') {
+      if(formData.name && formData.category && formData.type && formData.color && formData.price && formData.stock && selectedFile) {
+        isValid = true
+      }
+    } else { // catering
+      if(formData.name && formData.category && formData.type && formData.price && selectedFile) {
+        isValid = true
+      }
     }
 
     setErrors(newErrors)
     setIsFormValid(isValid)
     return isValid
-  }, [formData, selectedFile])
+  }, [formData, selectedFile, touched])
 
   useEffect(() => {
     validateForm()
@@ -266,7 +310,36 @@ export default function ProductCreateForm() {
               {errors.name && <p className="text-red-500 text-sm mt-1">{errors.name}</p>}
             </div>
             <div className="mb-4">
-              <Label htmlFor="type" className="text-base flex items-center">
+              <Label htmlFor="category" className="text-base flex items-center">
+                Catégorie du produit
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <InfoCircledIcon className="w-3 h-3 text-gray-500 ml-1 cursor-help" />
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>La catégorie du produit est obligatoire</p>
+                  </TooltipContent>
+                </Tooltip>
+              </Label>
+              <Select 
+                onValueChange={(value) => handleSelectChange('category', value)}
+                value={formData.category}
+              >
+                <SelectTrigger className={`w-full ${errors.category ? 'border-red-500' : ''}`}>
+                  <SelectValue placeholder="Sélectionner une catégorie" />
+                </SelectTrigger>
+                <SelectContent className="text-base">
+                  {productCategories.map((category) => (
+                    <SelectItem key={category.value} value={category.value}>
+                      {category.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {errors.category && <p className="text-red-500 text-sm mt-1">{errors.category}</p>}
+            </div>
+            <div className="mb-4">
+              <Label htmlFor="type" className={`text-base flex items-center ${!formData.category ? 'text-gray-400' : ''}`}>
                 Type du produit
                 <Tooltip>
                   <TooltipTrigger asChild>
@@ -277,37 +350,58 @@ export default function ProductCreateForm() {
                   </TooltipContent>
                 </Tooltip>
               </Label>
-              <Select onValueChange={(value) => handleSelectChange('type', value)}>
-                <SelectTrigger className={`w-full ${errors.type ? 'border-red-500' : ''}`}>
+              <Select 
+                onValueChange={(value) => handleSelectChange('type', value)}
+                disabled={!formData.category}
+              >
+                <SelectTrigger className={`w-full ${errors.type ? 'border-red-500' : ''} ${!formData.category ? 'bg-gray-100' : ''}`}>
                   <SelectValue placeholder="Sélectionner un type de produit" />
                 </SelectTrigger>
                 <SelectContent className="text-base">
-                  {productTypes.map((type) => (
-                    <SelectItem key={type.value} value={type.value}>
-                      {type.name}
-                    </SelectItem>
-                  ))}
+                  {productTypes
+                    .filter(type => type.category === formData.category)
+                    .map((type) => (
+                      <SelectItem key={type.value} value={type.value}>
+                        {type.name}
+                      </SelectItem>
+                    ))}
                 </SelectContent>
-            </Select>
-            {errors.type && <p className="text-red-500 text-sm mt-1">{errors.type}</p>}
+              </Select>
+              {!formData.category && (
+                <p className="text-gray-500 text-sm mt-1">Veuillez d'abord sélectionner une catégorie</p>
+              )}
+              {errors.type && <p className="text-red-500 text-sm mt-1">{errors.type}</p>}
             </div>
             <div className="mb-4">
-              <Label htmlFor="color" className="text-base flex items-center">
+              <Label htmlFor="color" className={`text-base flex items-center ${formData.category === 'traiteur' ? 'text-gray-400' : ''}`}>
                 Couleur du produit
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <InfoCircledIcon className="w-3 h-3 text-gray-500 ml-1 cursor-help" />
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    <p>La couleur du produit est obligatoire</p>
-                  </TooltipContent>
-                </Tooltip>
+                {formData.category === 'decoration' && (
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <InfoCircledIcon className="w-3 h-3 text-gray-500 ml-1 cursor-help" />
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>La couleur du produit est obligatoire</p>
+                    </TooltipContent>
+                  </Tooltip>
+                )}
+                {formData.category === 'traiteur' && (
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <InfoCircledIcon className="w-3 h-3 text-gray-500 ml-1 cursor-help" />
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>Non applicable pour les produits traiteur</p>
+                    </TooltipContent>
+                  </Tooltip>
+                )}
               </Label>
               <Select
                 onValueChange={(value) => handleSelectChange('color', value)}
                 value={formData.color}
+                disabled={formData.category === 'traiteur'}
               >
-                <SelectTrigger className={`w-full ${errors.color ? 'border-red-500' : ''}`}>
+                <SelectTrigger className={`w-full ${errors.color ? 'border-red-500' : ''} ${formData.category === 'traiteur' ? 'bg-gray-100' : ''}`}>
                   <SelectValue placeholder="Sélectionner une couleur" />
                 </SelectTrigger>
                 <SelectContent>
@@ -336,25 +430,38 @@ export default function ProductCreateForm() {
               {errors.color && <p className="text-red-500 text-sm mt-1">{errors.color}</p>}
             </div>
             <div className="mb-4">
-              <Label htmlFor="stock" className="text-base flex items-center">
+              <Label htmlFor="stock" className={`text-base flex items-center ${formData.category === 'traiteur' ? 'text-gray-400' : ''}`}>
                 Stock du produit
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <InfoCircledIcon className="w-3 h-3 text-gray-500 ml-1 cursor-help" />
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    <p>Le stock du produit est obligatoire</p>
-                  </TooltipContent>
-                </Tooltip>
+                {formData.category === 'decoration' && (
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <InfoCircledIcon className="w-3 h-3 text-gray-500 ml-1 cursor-help" />
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>Le stock du produit est obligatoire</p>
+                    </TooltipContent>
+                  </Tooltip>
+                )}
+                {formData.category === 'traiteur' && (
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <InfoCircledIcon className="w-3 h-3 text-gray-500 ml-1 cursor-help" />
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>Non applicable pour les produits traiteur</p>
+                    </TooltipContent>
+                  </Tooltip>
+                )}
               </Label>
               <Input 
                 id="stock" 
                 type="number"
                 step="1"
                 min="0"
-                value={formData.stock} 
+                value={formData.category === 'traiteur' ? '∞' : formData.stock} 
                 onChange={handleInputChange} 
-                className={`w-full text-base ${errors.stock ? 'border-red-500' : ''}`}
+                className={`w-full text-base ${errors.stock ? 'border-red-500' : ''} ${formData.category === 'traiteur' ? 'bg-gray-100' : ''}`}
+                disabled={formData.category === 'traiteur'}
               />
               {errors.stock && <p className="text-red-500 text-sm mt-1">{errors.stock}</p>}
             </div>

@@ -72,6 +72,7 @@ export async function PUT(request: NextRequest) {
     price: formData.get('price'),
     description: formData.get('description'),
     image_url: imageUrl,
+    category: formData.get('category'),
     last_update: parisDate
   };
 
