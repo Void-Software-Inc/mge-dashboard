@@ -190,6 +190,7 @@ export async function getProductsRecords(): Promise<ProductRecord[]> {
       price: product.price,
       description: product.description,
       image_url: product.image_url,
+      category: product.category,
       deleted_at: product.deleted_at,
     }))
     return cleanProductsRecords;

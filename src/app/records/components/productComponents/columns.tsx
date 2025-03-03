@@ -34,7 +34,7 @@ import {
 } from "@/components/ui/alert-dialog"
 import { cn } from "@/lib/utils"
 import Image from "next/image"
-import { ProductRecord, productTypes, productColors } from "@/utils/types/products"
+import { ProductRecord, productTypes, productColors, productCategories } from "@/utils/types/products"
 import { useState } from "react"
 import { useAppContext } from "@/app/context/AppContext"
 import { toast } from "sonner"
@@ -219,6 +219,62 @@ export const columns: ColumnDef<ProductRecord>[] = [
     },
   },
   {
+    accessorKey: "category",
+    header: ({ column }) => {
+      return (
+        <div className={cn("flex items-center space-x-2")}>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="-ml-3 h-8 data-[state=open]:bg-accent"
+              >
+                <span>Catégorie</span>
+                <MixerVerticalIcon className="ml-2 h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="start" className="w-[200px]">
+              <ScrollArea className="h-fit w-full rounded-md">
+                {productCategories.map((category) => (
+                  <DropdownMenuCheckboxItem
+                    key={category.value}
+                    className="capitalize"
+                    checked={column.getFilterValue() === category.value}
+                    onCheckedChange={(value) => {
+                      if (value) {
+                        column.setFilterValue(category.value);
+                      } else {
+                        column.setFilterValue(null);
+                      }
+                    }}
+                  >
+                    {category.name}
+                  </DropdownMenuCheckboxItem>
+                ))}
+              </ScrollArea>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
+      );
+    },
+    cell: ({ row }) => {
+      const product = row.original;
+      console.log("Full product record:", product);
+      
+      const categoryValue = product.category || row.getValue("category");
+      console.log("Category value from original:", categoryValue);
+      
+      const category = productCategories.find(c => c.value === categoryValue);
+      
+      return (
+        <Badge variant="outline" className="whitespace-nowrap overflow-hidden overflow-ellipsis">
+          {category ? category.name : (categoryValue || "Non défini")}
+        </Badge>
+      );
+    },
+  },
+  {
     accessorKey: "type",
     header: ({ column }) => {
       return (
@@ -259,10 +315,11 @@ export const columns: ColumnDef<ProductRecord>[] = [
       );
     },
     cell: ({ row }) => {
-      const type = row.getValue("type");
+      const typeValue = row.getValue("type") as string;
+      const type = productTypes.find(t => t.value === typeValue);
       return (
         <Badge variant="outline" className="whitespace-nowrap overflow-hidden overflow-ellipsis">
-          {String(type)}
+          {type ? type.name : typeValue}
         </Badge>
       );
     },

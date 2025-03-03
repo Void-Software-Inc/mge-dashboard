@@ -38,6 +38,9 @@ import { Input } from "@/components/ui/input"
 import { ProductRecord } from "@/utils/types/products"
 import { Skeleton } from "@/components/ui/skeleton"
 import { useAppContext } from "@/app/context/AppContext"
+import { Cross2Icon, TrashIcon } from "@radix-ui/react-icons"
+import { getDisplayColumnName, getDisplayFilterValue } from "@/components/shared/ColumnUtils"
+import { ColorDisplay } from "@/components/shared/ColorDisplay"
 
 interface DataTableProps<TData, TValue> {
   columns: ColumnDef<TData, TValue>[]
@@ -61,6 +64,7 @@ export function DataTable({
     setIsLoading(true)
     try {
       const productsRecords = await getProductsRecords()
+      console.log("Fetched product records:", productsRecords);
       setProductsRecords(productsRecords)
       if (typeof window !== 'undefined') {
         sessionStorage.setItem('cachedProductsRecords', JSON.stringify(productsRecords))
@@ -155,7 +159,7 @@ export function DataTable({
 
   return (
     <div>
-       <div className="flex flex-col md:flex-row items-center justify-between gap-4 py-4">
+      <div className="flex flex-col md:flex-row items-center justify-between gap-4 py-4">
         <div className="w-full md:w-auto md:flex-grow">
           <Input
             placeholder="Chercher par produit..."
@@ -189,7 +193,7 @@ export function DataTable({
                         column.toggleVisibility(!!value)
                       }
                     >
-                      {column.id}
+                      {getDisplayColumnName(column.id)}
                     </DropdownMenuCheckboxItem>
                   )
                 })}
@@ -197,6 +201,89 @@ export function DataTable({
           </DropdownMenu>
         </div>
       </div>
+
+      <div className="mb-4 min-h-[40px]">
+        {(columnFilters.length > 0 || sorting.length > 0) ? (
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="text-sm font-medium mr-1">Filtres actifs:</span>
+            
+            {/* Display column filters */}
+            {columnFilters.map((filter) => {
+              const column = table.getColumn(filter.id);
+              const columnName = getDisplayColumnName(filter.id);
+              const filterValue = getDisplayFilterValue(filter.id, filter.value as string);
+              
+              return (
+                <div 
+                  key={`filter-${filter.id}-${filterValue}`}
+                  className="flex items-center gap-1 rounded-md border border-input bg-background px-3 py-1.5 text-sm shadow-sm"
+                >
+                  <span className="font-medium">{columnName}:</span>
+                  {filter.id === "color" && (
+                    <ColorDisplay colorValue={filter.value as string} className="mr-2" />
+                  )}
+                  <span>{filterValue}</span>
+                  <button
+                    onClick={() => {
+                      column?.setFilterValue(undefined);
+                    }}
+                    className="ml-2 rounded-full hover:bg-muted p-1 h-6 w-6 inline-flex items-center justify-center hover:text-red-500 transition-colors"
+                  >
+                    <Cross2Icon className="h-4 w-4" />
+                  </button>
+                </div>
+              );
+            })}
+            
+            {/* Display sorting */}
+            {sorting.map((sort) => {
+              const column = table.getColumn(sort.id);
+              const columnName = getDisplayColumnName(sort.id);
+              
+              return (
+                <div 
+                  key={`sort-${sort.id}`}
+                  className="flex items-center gap-1 rounded-md border border-input bg-background px-3 py-1.5 text-sm shadow-sm"
+                >
+                  <span className="font-medium">{columnName}:</span>
+                  <span>{sort.desc ? 'Décroissant' : 'Croissant'}</span>
+                  <button
+                    onClick={() => {
+                      setSorting(sorting.filter(s => s.id !== sort.id));
+                    }}
+                    className="ml-2 rounded-full hover:bg-muted p-1 h-6 w-6 inline-flex items-center justify-center hover:text-red-500 transition-colors"
+                  >
+                    <Cross2Icon className="h-4 w-4" />
+                  </button>
+                </div>
+              );
+            })}
+            
+            {/* Clear all button */}
+            <Button
+              variant="outline"
+              size="default"
+              onClick={() => {
+                // Clear all filters
+                columnFilters.forEach((filter) => {
+                  table.getColumn(filter.id)?.setFilterValue(undefined);
+                });
+                // Clear all sorting
+                setSorting([]);
+              }}
+              className="ml-1 flex items-center gap-1"
+            >
+              <TrashIcon className="h-4 w-4" />
+              Effacer tous les filtres
+            </Button>
+          </div>
+        ) : (
+          <div className="text-sm text-muted-foreground">
+            Aucun filtre sélectionné
+          </div>
+        )}
+      </div>
+
       <div className="rounded-md border">
         <Table>
           <TableHeader>

@@ -21,6 +21,7 @@ export type ProductRecord = {
     price: number,
     description: string,
     image_url: string,
+    category: string,
     deleted_at: string,
 }
 
