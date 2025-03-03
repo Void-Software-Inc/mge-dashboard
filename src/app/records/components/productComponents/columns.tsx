@@ -34,11 +34,12 @@ import {
 } from "@/components/ui/alert-dialog"
 import { cn } from "@/lib/utils"
 import Image from "next/image"
-import { ProductRecord, productTypes, productColors } from "@/utils/types/products"
+import { ProductRecord, productTypes, productColors, productCategories } from "@/utils/types/products"
 import { useState } from "react"
 import { useAppContext } from "@/app/context/AppContext"
 import { toast } from "sonner"
 import { restoreProductRecord, deleteProductRecord } from "@/services/products"
+import { ColorDisplay } from "@/components/shared/ColorDisplay"
 
 export const columns: ColumnDef<ProductRecord>[] = [
   /*{
@@ -218,6 +219,57 @@ export const columns: ColumnDef<ProductRecord>[] = [
     },
   },
   {
+    accessorKey: "category",
+    header: ({ column }) => {
+      return (
+        <div className={cn("flex items-center space-x-2")}>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="-ml-3 h-8 data-[state=open]:bg-accent"
+              >
+                <span>Catégorie</span>
+                <MixerVerticalIcon className="ml-2 h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="start" className="w-[200px]">
+              <ScrollArea className="h-fit w-full rounded-md">
+                {productCategories.map((category) => (
+                  <DropdownMenuCheckboxItem
+                    key={category.value}
+                    className="capitalize"
+                    checked={column.getFilterValue() === category.value}
+                    onCheckedChange={(value) => {
+                      if (value) {
+                        column.setFilterValue(category.value);
+                      } else {
+                        column.setFilterValue(null);
+                      }
+                    }}
+                  >
+                    {category.name}
+                  </DropdownMenuCheckboxItem>
+                ))}
+              </ScrollArea>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
+      );
+    },
+    cell: ({ row }) => {
+      const categoryValue = row.getValue("category") as string;
+      const category = productCategories.find(c => c.value === categoryValue);
+      
+      return (
+        <Badge variant="outline" className="whitespace-nowrap overflow-hidden overflow-ellipsis">
+          {category ? category.name : categoryValue || "Non défini"}
+        </Badge>
+      );
+    },
+  },
+  {
     accessorKey: "type",
     header: ({ column }) => {
       return (
@@ -258,10 +310,11 @@ export const columns: ColumnDef<ProductRecord>[] = [
       );
     },
     cell: ({ row }) => {
-      const type = row.getValue("type");
+      const typeValue = row.getValue("type") as string;
+      const type = productTypes.find(t => t.value === typeValue);
       return (
         <Badge variant="outline" className="whitespace-nowrap overflow-hidden overflow-ellipsis">
-          {String(type)}
+          {type ? type.name : typeValue}
         </Badge>
       );
     },
@@ -298,19 +351,7 @@ export const columns: ColumnDef<ProductRecord>[] = [
                     }}
                   >
                     <div className="flex items-center">
-                      {color.value === 'multicolore' ? (
-                        <div className="w-4 h-4 mr-2 rounded-full overflow-hidden flex flex-wrap">
-                          <div className="w-2 h-2 bg-yellow-400"></div>
-                          <div className="w-2 h-2 bg-green-500"></div>
-                          <div className="w-2 h-2 bg-pink-400"></div>
-                          <div className="w-2 h-2 bg-blue-500"></div>
-                        </div>
-                      ) : (
-                        <div 
-                          className={`w-4 h-4 rounded-full mr-2 ${color.value === 'blanc' ? 'border border-gray-300' : ''}`}
-                          style={{ backgroundColor: color.hex }}
-                        />
-                      )}
+                      <ColorDisplay colorValue={color.value} className="mr-2" />
                       {color.name}
                     </div>
                   </DropdownMenuCheckboxItem>
@@ -328,19 +369,7 @@ export const columns: ColumnDef<ProductRecord>[] = [
         <div className="flex items-center">
           {color && (
             <>
-              {color.value === 'multicolore' ? (
-                <div className="w-4 h-4 mr-2 rounded-full overflow-hidden flex flex-wrap">
-                  <div className="w-2 h-2 bg-yellow-400"></div>
-                  <div className="w-2 h-2 bg-green-500"></div>
-                  <div className="w-2 h-2 bg-pink-400"></div>
-                  <div className="w-2 h-2 bg-blue-500"></div>
-                </div>
-              ) : (
-                <div 
-                  className={`w-4 h-4 rounded-full mr-2 ${color.value === 'blanc' ? 'border border-gray-300' : ''}`}
-                  style={{ backgroundColor: color.hex }}
-                />
-              )}
+              <ColorDisplay colorValue={colorValue} className="mr-2" />
               <span>{color.name}</span>
             </>
           )}
