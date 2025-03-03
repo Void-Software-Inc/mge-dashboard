@@ -24,6 +24,7 @@ import { useRouter } from 'next/navigation'
 import { useAppContext } from '@/app/context/AppContext'
 import { getProduct, getProductImages, updateProduct, deleteProductImage, createProductImage } from "@/services/products"
 import { Product, productTypes, ProductImage, productColors, productCategories } from "@/utils/types/products"
+import { ColorDisplay } from "@/components/shared/ColorDisplay"
 
 interface FormErrors {
   name?: string;
@@ -496,19 +497,7 @@ export default function ProductForm({ productId }: { productId: string }) {
                   {productColors.map((color) => (
                     <SelectItem key={color.value} value={color.value}>
                       <div className="flex items-center">
-                        {color.value === 'multicolore' ? (
-                          <div className="w-4 h-4 mr-2 rounded-full overflow-hidden flex flex-wrap">
-                            <div className="w-2 h-2 bg-yellow-400"></div>
-                            <div className="w-2 h-2 bg-green-500"></div>
-                            <div className="w-2 h-2 bg-pink-400"></div>
-                            <div className="w-2 h-2 bg-blue-500"></div>
-                          </div>
-                        ) : (
-                          <div 
-                            className={`w-4 h-4 rounded-full mr-2 ${color.value === 'blanc' ? 'border border-gray-300' : ''}`}
-                            style={{ backgroundColor: color.hex, backgroundImage: getMetallicBackground(color.value) }}
-                          />
-                        )}
+                        <ColorDisplay colorValue={color.value} className="mr-2" />
                         {color.name}
                       </div>
                     </SelectItem>
