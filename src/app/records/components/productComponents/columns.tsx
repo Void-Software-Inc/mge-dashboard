@@ -259,17 +259,12 @@ export const columns: ColumnDef<ProductRecord>[] = [
       );
     },
     cell: ({ row }) => {
-      const product = row.original;
-      console.log("Full product record:", product);
-      
-      const categoryValue = product.category || row.getValue("category");
-      console.log("Category value from original:", categoryValue);
-      
+      const categoryValue = row.getValue("category") as string;
       const category = productCategories.find(c => c.value === categoryValue);
       
       return (
         <Badge variant="outline" className="whitespace-nowrap overflow-hidden overflow-ellipsis">
-          {category ? category.name : (categoryValue || "Non défini")}
+          {category ? category.name : categoryValue || "Non défini"}
         </Badge>
       );
     },

@@ -64,7 +64,6 @@ export function DataTable({
     setIsLoading(true)
     try {
       const productsRecords = await getProductsRecords()
-      console.log("Fetched product records:", productsRecords);
       setProductsRecords(productsRecords)
       if (typeof window !== 'undefined') {
         sessionStorage.setItem('cachedProductsRecords', JSON.stringify(productsRecords))
