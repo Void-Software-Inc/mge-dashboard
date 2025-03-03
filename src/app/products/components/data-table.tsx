@@ -40,7 +40,19 @@ import { Product } from "@/utils/types/products"
 import { Skeleton } from "@/components/ui/skeleton"
 import { useAppContext } from "@/app/context/AppContext"
 import { useRouter, usePathname } from 'next/navigation'
-import { PlusIcon } from "@radix-ui/react-icons"
+import { PlusIcon, TrashIcon, ArrowUpIcon, ArrowDownIcon, Cross2Icon } from "@radix-ui/react-icons"
+import { productCategories, productColors, productTypes } from "@/utils/types/products"
+import { getDisplayColumnName, getDisplayFilterValue } from "@/components/shared/ColumnUtils"
+import { ColorDisplay } from "@/components/shared/ColorDisplay"
+
+const getMetallicBackground = (color: string) => {
+  if (color === 'gold') {
+    return `linear-gradient(45deg, #B8860B, #FFD700, #DAA520)`;
+  } else if (color === 'silver') {
+    return `linear-gradient(45deg, #C0C0C0, #E8E8E8, #A9A9A9)`;
+  }
+  return '';
+};
 
 interface DataTableProps<TData, TValue> {
   columns: ColumnDef<TData, TValue>[]
@@ -239,6 +251,94 @@ export function DataTable({
           </Button>
         </div>
       </div>
+      
+      {/* Active Filters Display - Always visible section with fixed height */}
+      <div className="mb-4 min-h-[40px]">
+        {(columnFilters.length > 0 || sorting.length > 0) ? (
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="text-sm font-medium mr-1">Filtres actifs:</span>
+            
+            {/* Display column filters */}
+            {columnFilters.map((filter) => {
+              const column = table.getColumn(filter.id);
+              const columnName = getDisplayColumnName(filter.id);
+              const filterValue = getDisplayFilterValue(filter.id, filter.value as string);
+              
+              return (
+                <div 
+                  key={`filter-${filter.id}-${filterValue}`}
+                  className="flex items-center gap-1 rounded-md border border-input bg-background px-3 py-1.5 text-sm shadow-sm"
+                >
+                  <span className="font-medium">{columnName}:</span>
+                  {filter.id === "color" && (
+                    <ColorDisplay colorValue={filter.value as string} className="mr-2" />
+                  )}
+                  <span>{filterValue}</span>
+                  <button
+                    onClick={() => {
+                      column?.setFilterValue(undefined);
+                    }}
+                    className="ml-2 rounded-full hover:bg-muted p-1 h-6 w-6 inline-flex items-center justify-center hover:text-red-500 transition-colors"
+                  >
+                    <Cross2Icon className="h-4 w-4" />
+                  </button>
+                </div>
+              );
+            })}
+            
+            {/* Display sorting */}
+            {sorting.map((sort) => {
+              const column = table.getColumn(sort.id);
+              const columnName = getDisplayColumnName(sort.id);
+              
+              return (
+                <div 
+                  key={`sort-${sort.id}`}
+                  className="flex items-center gap-1 rounded-md border border-input bg-background px-3 py-1.5 text-sm shadow-sm"
+                >
+                  <span className="font-medium">Tri: {columnName}</span>
+                  {sort.desc ? (
+                    <ArrowDownIcon className="h-3.5 w-3.5" />
+                  ) : (
+                    <ArrowUpIcon className="h-3.5 w-3.5" />
+                  )}
+                  <button
+                    onClick={() => {
+                      setSorting(sorting.filter(s => s.id !== sort.id));
+                    }}
+                    className="ml-2 rounded-full hover:bg-muted p-1 h-6 w-6 inline-flex items-center justify-center hover:text-red-500 transition-colors"
+                  >
+                    <Cross2Icon className="h-4 w-4" />
+                  </button>
+                </div>
+              );
+            })}
+            
+            {/* Clear all button */}
+            <Button
+              variant="outline"
+              size="default"
+              onClick={() => {
+                // Clear all filters
+                columnFilters.forEach((filter) => {
+                  table.getColumn(filter.id)?.setFilterValue(undefined);
+                });
+                // Clear all sorting
+                setSorting([]);
+              }}
+              className="ml-1 flex items-center gap-1"
+            >
+              <TrashIcon className="h-4 w-4" />
+              Effacer tous les filtres
+            </Button>
+          </div>
+        ) : (
+          <div className="text-sm text-muted-foreground">
+            Aucun filtre sélectionné
+          </div>
+        )}
+      </div>
+
       <div className="rounded-md border">
         <Table>
           <TableHeader>
