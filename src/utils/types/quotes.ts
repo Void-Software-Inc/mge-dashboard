@@ -62,8 +62,12 @@ export type FinishedQuote = {
   total_cost: number;
   is_paid: boolean;
   is_traiteur: boolean;
+  is_deposit: boolean;
   traiteur_price: number;
   other_expenses: number;
+  deposit_amount: number;
+  created_at: string;
+  last_update: string;
   finished_at: string;
   description: string;
   address: Address | null;

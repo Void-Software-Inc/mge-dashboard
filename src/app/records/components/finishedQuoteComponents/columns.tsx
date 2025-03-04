@@ -4,6 +4,7 @@ import {
     SymbolIcon,
     CheckIcon,
     Cross2Icon,
+    EyeOpenIcon,
   } from "@radix-ui/react-icons"
 import { ColumnDef } from "@tanstack/react-table"
 import { Button } from "@/components/ui/button"
@@ -23,6 +24,7 @@ import { restoreFinishedQuote } from "@/services/quotes"
 import { useState } from "react"
 import { useAppContext } from "@/app/context/AppContext"
 import { toast } from "sonner"
+import { useRouter } from 'next/navigation'
 
 import { cn } from "@/lib/utils"
 import { format } from 'date-fns';
@@ -83,6 +85,7 @@ export const columns: ColumnDef<FinishedQuote>[] = [
       const finishedQuote = row.original
       const [isRestoreDialogOpen, setIsRestoreDialogOpen] = useState(false)
       const { setQuotesShouldRefetch, setFinishedQuotesShouldRefetch } = useAppContext()
+      const router = useRouter()
 
       const handleRestoreFinishedQuote = async () => {
         try {
@@ -98,8 +101,21 @@ export const columns: ColumnDef<FinishedQuote>[] = [
         }
       };
 
+      const handleViewFinishedQuote = () => {
+        router.push(`/records/finished-quotes/${finishedQuote.id}`);
+      };
+
       return (
         <div className="flex justify-center">
+          <Button
+            variant="ghost"
+            onClick={handleViewFinishedQuote}
+            size="icon"
+            className="text-gray-500 hover:text-blue-600 hover:bg-gray-50"
+          >
+            <EyeOpenIcon className="h-4 w-4" />
+          </Button>
+
           <Button
             variant="ghost"
             onClick={() => setIsRestoreDialogOpen(true)}
@@ -237,9 +253,9 @@ export const columns: ColumnDef<FinishedQuote>[] = [
       return (
         <div className="flex justify-center">
           {isPaid ? (
-            <CheckIcon className="h-5 w-5 text-[#bef264] border border-2 border-[#bef264] rounded-full" />
+            <CheckIcon className="h-5 w-5 text-[#bef264] border-2 border-[#bef264] rounded-full" />
           ) : (
-            <Cross2Icon className="h-5 w-5 text-red-500 border border-2 border-red-500 rounded-full" />
+            <Cross2Icon className="h-5 w-5 text-red-500 border-2 border-red-500 rounded-full" />
           )}
         </div>
       );
