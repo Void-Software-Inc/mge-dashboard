@@ -10,7 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Toaster, toast } from 'sonner'
 import { Skeleton } from "@/components/ui/skeleton"
 import { Switch } from "@/components/ui/switch"
-import { ChevronLeftIcon, DownloadIcon, CheckIcon, Cross2Icon } from "@radix-ui/react-icons"
+import { ChevronLeftIcon, DownloadIcon, CheckIcon, Cross2Icon, ChevronRightIcon, DoubleArrowLeftIcon, DoubleArrowRightIcon } from "@radix-ui/react-icons"
 import jsPDF from 'jspdf';
 import 'jspdf-autotable';
 
@@ -21,6 +21,20 @@ import { format, parseISO } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { getProducts } from "@/services/products"
 import { Product } from "@/utils/types/products"
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table"
+
+// Define a proper union type for the items
+type QuoteDisplayItem = 
+  | { type: 'product'; item: QuoteItem; index: number }
+  | { type: 'traiteur'; price: number }
+  | { type: 'expenses'; price: number };
 
 export default function FinishedQuoteView({ quoteId }: { quoteId: string }) {
   const router = useRouter()
@@ -28,6 +42,10 @@ export default function FinishedQuoteView({ quoteId }: { quoteId: string }) {
   const [quoteItems, setQuoteItems] = useState<QuoteItem[]>([])
   const [products, setProducts] = useState<Product[]>([])
   const [isLoading, setIsLoading] = useState(true)
+  
+  // Move pagination state to the top level
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 5;
 
   // Fetch the finished quote data
   const fetchFinishedQuote = useCallback(async () => {
@@ -397,7 +415,7 @@ export default function FinishedQuoteView({ quoteId }: { quoteId: string }) {
 
   return (
     <>
-      <div className="flex flex-col items-center justify-center pt-4 px-4 md:px-0">
+      <div className="flex flex-col items-center justify-center p-0 md:px-0">
         <div className="w-full max-w-5xl">
           <div className="mb-6 flex justify-between items-center">
             <Button variant="secondary" size="icon" onClick={handleGoBack}>
@@ -591,53 +609,133 @@ export default function FinishedQuoteView({ quoteId }: { quoteId: string }) {
             </div>
           </div>
           
-          {/* Add Products Section */}
+          {/* Products Section */}
           <div className="mb-8 border border-gray-200 rounded-lg p-6 bg-gray-50">
             <h3 className="text-lg font-semibold mb-4">Produits du devis</h3>
             <div className="p-4 border border-gray-200 rounded-lg bg-white">
               {quoteItems.length === 0 ? (
                 <div className="text-center py-4 text-gray-500">Aucun produit dans ce devis</div>
               ) : (
-                <div className="overflow-x-auto">
-                  <table className="w-full border-collapse">
-                    <thead>
-                      <tr className="bg-gray-100">
-                        <th className="p-2 text-left">Produit</th>
-                        <th className="p-2 text-right">Quantité</th>
-                        <th className="p-2 text-right">Prix unitaire HT</th>
-                        <th className="p-2 text-right">Total HT</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {quoteItems.map((item, index) => {
-                        const product = products.find(p => p.id === item.product_id);
-                        return (
-                          <tr key={index} className="border-t border-gray-200">
-                            <td className="p-2">{product?.name || `Produit inconnu (ID: ${item.product_id})`}</td>
-                            <td className="p-2 text-right">{item.quantity}</td>
-                            <td className="p-2 text-right">{(product?.price || 0).toFixed(2)}€</td>
-                            <td className="p-2 text-right">{((product?.price || 0) * item.quantity).toFixed(2)}€</td>
-                          </tr>
-                        );
-                      })}
-                      {quote.is_traiteur && quote.traiteur_price && (
-                        <tr className="border-t border-gray-200">
-                          <td className="p-2">Service traiteur</td>
-                          <td className="p-2 text-right">1</td>
-                          <td className="p-2 text-right">{quote.traiteur_price.toFixed(2)}€</td>
-                          <td className="p-2 text-right">{quote.traiteur_price.toFixed(2)}€</td>
-                        </tr>
-                      )}
-                      {quote.other_expenses && quote.other_expenses > 0 && (
-                        <tr className="border-t border-gray-200">
-                          <td className="p-2">Frais supplémentaires</td>
-                          <td className="p-2 text-right">1</td>
-                          <td className="p-2 text-right">{quote.other_expenses.toFixed(2)}€</td>
-                          <td className="p-2 text-right">{quote.other_expenses.toFixed(2)}€</td>
-                        </tr>
-                      )}
-                    </tbody>
-                  </table>
+                <div>
+                  {/* Calculate pagination values here instead of using hooks */}
+                  {(() => {
+                    const totalItems = quoteItems.length;
+                    const totalPages = Math.max(1, Math.ceil(totalItems / itemsPerPage));
+                    
+                    // Create items array
+                    const allItems: QuoteDisplayItem[] = quoteItems.map((item, index) => ({
+                      type: 'product' as const,
+                      item,
+                      index
+                    }));
+                    
+                    // Get items for current page
+                    const startIndex = (currentPage - 1) * itemsPerPage;
+                    const endIndex = Math.min(startIndex + itemsPerPage, totalItems);
+                    const currentItems = allItems.slice(startIndex, endIndex);
+                    
+                    return (
+                      <>
+                        <div className="overflow-x-auto">
+                          <Table className="w-full">
+                            <TableHeader>
+                              <TableRow className="h-16">
+                                <TableHead className="w-1/6 whitespace-nowrap">Image</TableHead>
+                                <TableHead className="w-1/3 whitespace-nowrap">Nom</TableHead>
+                                <TableHead className="w-1/6 whitespace-nowrap">Quantité</TableHead>
+                                <TableHead className="w-1/6 whitespace-nowrap">Prix unitaire</TableHead>
+                                <TableHead className="w-1/6 whitespace-nowrap">Total HT</TableHead>
+                              </TableRow>
+                            </TableHeader>
+                            <TableBody>
+                              {currentItems.map((item, idx) => {
+                                if (item.type === 'product') {
+                                  const product = products.find(p => p.id === item.item.product_id);
+                                  return (
+                                    <TableRow key={`product-${idx}`} className="h-20">
+                                      <TableCell className="align-middle">
+                                        {product?.image_url ? (
+                                          <div className="relative w-16 h-16 rounded-md overflow-hidden">
+                                            <img 
+                                              src={product.image_url} 
+                                              alt={product?.name || 'Product'} 
+                                              className="object-cover w-full h-full"
+                                            />
+                                          </div>
+                                        ) : (
+                                          <div className="w-16 h-16 bg-gray-100 rounded-md flex items-center justify-center text-gray-400">
+                                            No image
+                                          </div>
+                                        )}
+                                      </TableCell>
+                                      <TableCell>{product?.name || `Produit inconnu (ID: ${item.item.product_id})`}</TableCell>
+                                      <TableCell className="text-left">{item.item.quantity}</TableCell>
+                                      <TableCell className="text-left">{(product?.price || 0).toFixed(2)}€</TableCell>
+                                      <TableCell className="text-left">{((product?.price || 0) * item.item.quantity).toFixed(2)}€</TableCell>
+                                    </TableRow>
+                                  );
+                                }
+                                return null;
+                              })}
+                            </TableBody>
+                          </Table>
+                        </div>
+                        
+                        {/* Pagination controls */}
+                        <div className="flex items-center justify-between mt-4">
+                          <div className="flex space-x-2">
+                            <Button 
+                              onClick={() => setCurrentPage(1)}
+                              disabled={currentPage === 1}
+                              variant='outline'
+                              aria-label="Première page"
+                              className="flex"
+                            >
+                              <DoubleArrowLeftIcon className="h-4 w-4" />
+                            </Button>
+                            <Button 
+                              onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                              disabled={currentPage === 1}
+                              variant='outline'
+                              aria-label="Page précédente"
+                            >
+                              <ChevronLeftIcon className="h-4 w-4 sm:hidden" />
+                              <span className="hidden sm:inline">Précédent</span>
+                            </Button>
+                          </div>
+                          {/* Pagination text - for larger screens */}
+                          <span className='hidden sm:block text-sm text-gray-500 text-center'>
+                            <span>Page </span>
+                            {currentPage}<span> sur </span>{totalPages}
+                          </span>
+                          {/* Pagination text for small screens - only visible on small screens */}
+                          <span className='sm:hidden text-sm text-gray-500 text-center mt-2 w-full'>
+                            {currentPage} / {totalPages}
+                          </span>
+                          <div className="flex space-x-2">
+                            <Button 
+                              onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                              disabled={currentPage === totalPages}
+                              variant='outline'
+                              aria-label="Page suivante"
+                            >
+                              <ChevronRightIcon className="h-4 w-4 sm:hidden" />
+                              <span className="hidden sm:inline">Suivant</span>
+                            </Button>
+                            <Button 
+                              onClick={() => setCurrentPage(totalPages)}
+                              disabled={currentPage === totalPages}
+                              variant='outline'
+                              aria-label="Dernière page"
+                              className="flex"
+                            >
+                              <DoubleArrowRightIcon className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        </div>
+                      </>
+                    );
+                  })()}
                 </div>
               )}
             </div>
