@@ -772,7 +772,7 @@ export default function FinishedQuoteView({ quoteId }: { quoteId: string }) {
                   <Label htmlFor="total_cost_ttc" className="text-sm text-gray-600">Prix total TTC</Label>
                   <Input 
                     id="total_cost_ttc" 
-                    value={quote?.total_cost ? (quote.total_cost * 1.2).toFixed(2) : '0.00'} 
+                    value={quote?.total_cost ? calculateTTC(quote.total_cost).toFixed(2) : '0.00'} 
                     className="w-full text-base font-semibold bg-gray-50" 
                     disabled
                   />
@@ -840,7 +840,7 @@ export default function FinishedQuoteView({ quoteId }: { quoteId: string }) {
                   <Label htmlFor="deposit_amount" className="text-sm text-gray-600">Montant de l'acompte TTC</Label>
                   <Input 
                     id="deposit_amount" 
-                    value={quote?.deposit_amount?.toFixed(2) ?? '0.00'} 
+                    value={quote?.deposit_amount?.toFixed(2) ?? (quote?.total_cost ? (calculateTTC(quote.total_cost) * 0.3).toFixed(2) : '0.00')} 
                     className="w-full text-base font-semibold bg-gray-50"
                     disabled
                   />
@@ -863,7 +863,7 @@ export default function FinishedQuoteView({ quoteId }: { quoteId: string }) {
                           ) || 0;
                           
                           // Calculate remaining amount based on deposit status
-                          const totalTTC = quote.total_cost * 1.2;
+                          const totalTTC = calculateTTC(quote.total_cost);
                           const remainingAmount = quote.is_deposit 
                             ? totalTTC * 0.7 - totalPayments
                             : totalTTC - totalPayments;
@@ -911,15 +911,24 @@ export default function FinishedQuoteView({ quoteId }: { quoteId: string }) {
                 </div>
               ))}
               
-              {quote?.payments && quote.payments.length > 0 && (
+              {(quote?.payments && quote.payments.length > 0 || quote?.is_paid || quote?.is_deposit) && (
                 <div className="mt-4 p-3 border border-lime-100 rounded-md bg-lime-50">
                   <Label className="text-sm text-gray-600">Total payé</Label>
                   <Input
                     type="number"
-                    value={quote.payments.reduce((sum, payment) => 
-                      sum + (payment.amount === null ? 0 : Number(payment.amount)), 
-                      0
-                    ).toFixed(2)}
+                    value={quote?.is_paid 
+                      ? calculateTTC(quote.total_cost).toFixed(2)  // If fully paid, show the total TTC
+                      : (
+                          // Sum payments
+                          (quote.payments?.reduce((sum, payment) => 
+                            sum + (payment.amount === null ? 0 : Number(payment.amount)), 
+                            0
+                          ) || 0) + 
+                          // Add deposit amount if deposit is paid - calculate based on TTC
+                          (quote.is_deposit && quote.total_cost 
+                            ? calculateTTC(quote.total_cost) * 0.3
+                            : 0)
+                        ).toFixed(2)}
                     className="w-full mt-1 text-base font-semibold bg-white border-lime-200"
                     disabled
                   />
