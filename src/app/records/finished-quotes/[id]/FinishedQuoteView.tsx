@@ -15,17 +15,18 @@ import jsPDF from 'jspdf';
 import 'jspdf-autotable';
 
 import { useRouter } from 'next/navigation'
-import { getFinishedQuotes, getQuoteItems } from "@/services/quotes"
+import { getFinishedQuotes, getFinishedQuoteItems } from "@/services/quotes"
 import { FinishedQuote, quoteStatus, QuoteItem, paymentModes } from "@/utils/types/quotes"
 import { format, parseISO } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { getProducts } from "@/services/products"
+import { Product } from "@/utils/types/products"
 
 export default function FinishedQuoteView({ quoteId }: { quoteId: string }) {
   const router = useRouter()
   const [quote, setQuote] = useState<FinishedQuote | null>(null)
   const [quoteItems, setQuoteItems] = useState<QuoteItem[]>([])
-  const [products, setProducts] = useState<any[]>([])
+  const [products, setProducts] = useState<Product[]>([])
   const [isLoading, setIsLoading] = useState(true)
 
   // Fetch the finished quote data
@@ -43,13 +44,14 @@ export default function FinishedQuoteView({ quoteId }: { quoteId: string }) {
       
       setQuote(quoteData)
       
-      // Fetch quote items using the regular getQuoteItems function
-      const items = await getQuoteItems(parseInt(quoteId))
+      // Fetch quote items from the finished_quoteItems table
+      const items = await getFinishedQuoteItems(parseInt(quoteId))
       setQuoteItems(items)
       
       // Fetch products for reference
       const productsData = await getProducts()
       setProducts(productsData)
+      
     } catch (error) {
       console.error('Error fetching finished quote:', error)
       toast.error('Erreur lors du chargement du devis')
@@ -175,11 +177,12 @@ export default function FinishedQuoteView({ quoteId }: { quoteId: string }) {
       ]
       
       const data = quoteItems.map(item => {
-        const product = products.find(p => p.id === item.product_id)
+        const product = products.find(p => p.id === item.product_id);
+
         return [
-          product?.name || 'Produit inconnu',
+          product?.name || `Produit inconnu (ID: ${item.product_id})`,
           item.quantity.toString(),
-          `${product?.price.toFixed(2)}€` || '0.00€',
+          `${(product?.price || 0).toFixed(2)}€`,
           `${((product?.price || 0) * item.quantity).toFixed(2)}€`,
         ]
       })
@@ -610,7 +613,7 @@ export default function FinishedQuoteView({ quoteId }: { quoteId: string }) {
                         const product = products.find(p => p.id === item.product_id);
                         return (
                           <tr key={index} className="border-t border-gray-200">
-                            <td className="p-2">{product?.name || 'Produit inconnu'}</td>
+                            <td className="p-2">{product?.name || `Produit inconnu (ID: ${item.product_id})`}</td>
                             <td className="p-2 text-right">{item.quantity}</td>
                             <td className="p-2 text-right">{(product?.price || 0).toFixed(2)}€</td>
                             <td className="p-2 text-right">{((product?.price || 0) * item.quantity).toFixed(2)}€</td>
