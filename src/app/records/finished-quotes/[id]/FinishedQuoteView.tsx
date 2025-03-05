@@ -15,17 +15,18 @@ import jsPDF from 'jspdf';
 import 'jspdf-autotable';
 
 import { useRouter } from 'next/navigation'
-import { getFinishedQuotes, getQuoteItems } from "@/services/quotes"
+import { getFinishedQuotes, getFinishedQuoteItems } from "@/services/quotes"
 import { FinishedQuote, quoteStatus, QuoteItem, paymentModes } from "@/utils/types/quotes"
 import { format, parseISO } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { getProducts } from "@/services/products"
+import { Product } from "@/utils/types/products"
 
 export default function FinishedQuoteView({ quoteId }: { quoteId: string }) {
   const router = useRouter()
   const [quote, setQuote] = useState<FinishedQuote | null>(null)
   const [quoteItems, setQuoteItems] = useState<QuoteItem[]>([])
-  const [products, setProducts] = useState<any[]>([])
+  const [products, setProducts] = useState<Product[]>([])
   const [isLoading, setIsLoading] = useState(true)
 
   // Fetch the finished quote data
@@ -43,13 +44,14 @@ export default function FinishedQuoteView({ quoteId }: { quoteId: string }) {
       
       setQuote(quoteData)
       
-      // Fetch quote items using the regular getQuoteItems function
-      const items = await getQuoteItems(parseInt(quoteId))
+      // Fetch quote items from the finished_quoteItems table
+      const items = await getFinishedQuoteItems(parseInt(quoteId))
       setQuoteItems(items)
       
       // Fetch products for reference
       const productsData = await getProducts()
       setProducts(productsData)
+      
     } catch (error) {
       console.error('Error fetching finished quote:', error)
       toast.error('Erreur lors du chargement du devis')
@@ -175,11 +177,12 @@ export default function FinishedQuoteView({ quoteId }: { quoteId: string }) {
       ]
       
       const data = quoteItems.map(item => {
-        const product = products.find(p => p.id === item.product_id)
+        const product = products.find(p => p.id === item.product_id);
+
         return [
-          product?.name || 'Produit inconnu',
+          product?.name || `Produit inconnu (ID: ${item.product_id})`,
           item.quantity.toString(),
-          `${product?.price.toFixed(2)}€` || '0.00€',
+          `${(product?.price || 0).toFixed(2)}€`,
           `${((product?.price || 0) * item.quantity).toFixed(2)}€`,
         ]
       })
@@ -394,26 +397,25 @@ export default function FinishedQuoteView({ quoteId }: { quoteId: string }) {
 
   return (
     <>
-      <div className="w-[100vw] h-14 fixed bg-transparent flex items-center z-10">
-        <div className="p-4 flex justify-start w-[80%]">
-          <Button variant="secondary" size="icon" onClick={handleGoBack}>
-            <ChevronLeftIcon className="w-4 h-4" />
-          </Button>
-        </div>
-        <div className="p-4 md:p-6 flex justify-end">
-          <Button 
-            className="bg-lime-300 hover:bg-lime-400 whitespace-nowrap"
-            variant="secondary"
-            onClick={downloadPDF}
-            disabled
-          >
-            <DownloadIcon className="w-4 h-4 mr-2" />
-            Télécharger le devis en PDF
-          </Button>
-        </div>
-      </div>
-      <div className="flex flex-col items-center justify-center pt-20 px-4 md:px-0">
+      <div className="flex flex-col items-center justify-center pt-4 px-4 md:px-0">
         <div className="w-full max-w-5xl">
+          <div className="mb-6 flex justify-between items-center">
+            <Button variant="secondary" size="icon" onClick={handleGoBack}>
+              <ChevronLeftIcon className="w-4 h-4" />
+            </Button>
+            
+            <Button 
+              className="bg-gray-300 hover:bg-gray-400 whitespace-nowrap"
+              variant="secondary"
+              onClick={downloadPDF}
+              disabled
+            >
+              <DownloadIcon className="w-4 h-4 mr-2" />
+              <span className="hidden sm:inline">Télécharger le devis en PDF</span>
+              <span className="inline sm:hidden">Télécharger PDF</span>
+            </Button>
+          </div>
+          
           <div className="mb-4">
             <Label className="text-base">Numéro du devis</Label>
             <Input id="id" value={quote?.id ?? ''} className="w-full text-base" disabled />
@@ -611,7 +613,7 @@ export default function FinishedQuoteView({ quoteId }: { quoteId: string }) {
                         const product = products.find(p => p.id === item.product_id);
                         return (
                           <tr key={index} className="border-t border-gray-200">
-                            <td className="p-2">{product?.name || 'Produit inconnu'}</td>
+                            <td className="p-2">{product?.name || `Produit inconnu (ID: ${item.product_id})`}</td>
                             <td className="p-2 text-right">{item.quantity}</td>
                             <td className="p-2 text-right">{(product?.price || 0).toFixed(2)}€</td>
                             <td className="p-2 text-right">{((product?.price || 0) * item.quantity).toFixed(2)}€</td>
