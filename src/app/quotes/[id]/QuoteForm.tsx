@@ -1418,15 +1418,24 @@ export default function QuoteForm({ quoteId }: { quoteId: string }) {
                 </div>
               ))}
               
-              {formData?.payments && formData.payments.length > 0 && (
+              {(formData?.payments && formData.payments.length > 0 || formData?.is_paid || formData?.is_deposit) && (
                 <div className="mt-4 p-3 border border-lime-100 rounded-md bg-lime-50">
                   <Label className="text-sm text-gray-600">Total payé</Label>
                   <Input
                     type="number"
-                    value={formData.payments.reduce((sum, payment) => 
-                      sum + (payment.amount === null ? 0 : Number(payment.amount)), 
-                      0
-                    ).toFixed(2)}
+                    value={formData?.is_paid 
+                      ? calculateTTC(formData.total_cost).toFixed(2)  // If fully paid, show the total TTC
+                      : (
+                          // Sum payments
+                          (formData.payments?.reduce((sum, payment) => 
+                            sum + (payment.amount === null ? 0 : Number(payment.amount)), 
+                            0
+                          ) || 0) + 
+                          // Add deposit amount if deposit is paid - calculate based on TTC
+                          (formData.is_deposit && formData.total_cost 
+                            ? calculateTTC(formData.total_cost) * 0.3
+                            : 0)
+                        ).toFixed(2)}
                     className="w-full mt-1 text-base font-semibold bg-white border-lime-200"
                     disabled
                   />
