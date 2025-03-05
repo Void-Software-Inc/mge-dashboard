@@ -394,26 +394,25 @@ export default function FinishedQuoteView({ quoteId }: { quoteId: string }) {
 
   return (
     <>
-      <div className="w-[100vw] h-14 fixed bg-transparent flex items-center z-10">
-        <div className="p-4 flex justify-start w-[80%]">
-          <Button variant="secondary" size="icon" onClick={handleGoBack}>
-            <ChevronLeftIcon className="w-4 h-4" />
-          </Button>
-        </div>
-        <div className="p-4 md:p-6 flex justify-end">
-          <Button 
-            className="bg-lime-300 hover:bg-lime-400 whitespace-nowrap"
-            variant="secondary"
-            onClick={downloadPDF}
-            disabled
-          >
-            <DownloadIcon className="w-4 h-4 mr-2" />
-            Télécharger le devis en PDF
-          </Button>
-        </div>
-      </div>
-      <div className="flex flex-col items-center justify-center pt-20 px-4 md:px-0">
+      <div className="flex flex-col items-center justify-center pt-4 px-4 md:px-0">
         <div className="w-full max-w-5xl">
+          <div className="mb-6 flex justify-between items-center">
+            <Button variant="secondary" size="icon" onClick={handleGoBack}>
+              <ChevronLeftIcon className="w-4 h-4" />
+            </Button>
+            
+            <Button 
+              className="bg-gray-300 hover:bg-gray-400 whitespace-nowrap"
+              variant="secondary"
+              onClick={downloadPDF}
+              disabled
+            >
+              <DownloadIcon className="w-4 h-4 mr-2" />
+              <span className="hidden sm:inline">Télécharger le devis en PDF</span>
+              <span className="inline sm:hidden">Télécharger PDF</span>
+            </Button>
+          </div>
+          
           <div className="mb-4">
             <Label className="text-base">Numéro du devis</Label>
             <Input id="id" value={quote?.id ?? ''} className="w-full text-base" disabled />
