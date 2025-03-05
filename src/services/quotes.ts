@@ -369,3 +369,18 @@ export async function restoreFinishedQuote(ids: number[]): Promise<void> {
     throw error;
   }
 }
+
+export async function getFinishedQuoteItems(quoteId: number): Promise<QuoteItem[]> {
+  try {
+    const url = `${API_URL}/records/finishedQuotes/${quoteId}/items`;
+    const response = await fetch(url);
+    if (!response.ok) {
+      throw new Error(`Failed to fetch finished quote items for quote with id ${quoteId}`);
+    }
+    const data = await response.json();
+    return data.items;
+  } catch (error) {
+    console.error(`Error fetching finished quote items for quote with id ${quoteId}:`, error);
+    throw error;
+  }
+}
