@@ -914,14 +914,77 @@ export default function QuoteForm({ quoteId }: { quoteId: string }) {
   const handlePaymentChange = (index: number, field: 'mode' | 'amount', value: string) => {
     setFormData(prev => {
       if (!prev) return prev;
+      
       const newPayments = [...(prev.payments || [])];
-      newPayments[index] = {
-        ...newPayments[index],
-        [field]: field === 'amount' ? (value === '' ? null : parseFloat(value)) : value
-      };
+      
+      if (field === 'amount') {
+        // Parse the input value
+        const numValue = value === '' ? null : parseFloat(value);
+        
+        // Calculate total TTC
+        const totalTTC = calculateTTC(prev.total_cost);
+        
+        // Calculate amount already paid (excluding current payment)
+        const paidSoFar = (prev.payments || [])
+          .filter((_, i) => i !== index)
+          .reduce((sum, payment) => sum + (payment.amount === null ? 0 : Number(payment.amount)), 0);
+        
+        // Add deposit if applicable
+        const depositAmount = prev.is_deposit && prev.total_cost ? calculateTTC(prev.total_cost) * 0.3 : 0;
+        const totalPaidExcludingCurrent = paidSoFar + depositAmount;
+        
+        // Calculate maximum allowed payment
+        const maxPayment = Math.max(0, totalTTC - totalPaidExcludingCurrent);
+        
+        // Limit the payment amount and round to 2 decimal places
+        const limitedValue = numValue === null ? null : Math.round(Math.min(numValue, maxPayment) * 100) / 100;
+        
+        newPayments[index] = {
+          ...newPayments[index],
+          [field]: limitedValue
+        };
+      } else {
+        newPayments[index] = {
+          ...newPayments[index],
+          [field]: value
+        };
+      }
+      
       return { ...prev, payments: newPayments };
     });
   };
+
+  // Add this useEffect to automatically update is_paid status when payments match total
+  useEffect(() => {
+    if (formData) {
+      const totalTTC = calculateTTC(formData.total_cost);
+      
+      // Calculate total payments
+      const totalPayments = (formData.payments?.reduce((sum, payment) => 
+        sum + (payment.amount === null ? 0 : Number(payment.amount)), 
+        0
+      ) || 0);
+      
+      // Add deposit if applicable
+      const totalPaid = totalPayments + 
+        (formData.is_deposit && formData.total_cost 
+          ? calculateTTC(formData.total_cost) * 0.3
+          : 0);
+      
+      // Check if total paid matches or exceeds total TTC (with small tolerance for floating point errors)
+      const isPaidInFull = Math.abs(totalPaid - totalTTC) < 0.01 || totalPaid > totalTTC;
+      
+      // Only update if the status would change
+      if (isPaidInFull !== formData.is_paid) {
+        setFormData(prev => prev ? { ...prev, is_paid: isPaidInFull } : null);
+      }
+    }
+  }, [
+    formData?.total_cost,
+    formData?.is_deposit,
+    formData?.payments,
+    calculateTTC
+  ]);
 
   if (isLoading) {
     return (
@@ -1355,7 +1418,11 @@ export default function QuoteForm({ quoteId }: { quoteId: string }) {
                   variant="outline"
                   size="sm"
                   onClick={handleAddPayment}
-                  className="border-lime-500 text-lime-700 hover:bg-lime-50"
+                  className={`
+                    border-lime-500 text-lime-700 hover:bg-lime-50
+                    ${formData?.is_paid ? 'opacity-50 cursor-not-allowed' : ''}
+                  `}
+                  disabled={formData?.is_paid}
                 >
                   <PlusIcon className="w-4 h-4 mr-2" />
                   Ajouter un paiement
@@ -1418,15 +1485,24 @@ export default function QuoteForm({ quoteId }: { quoteId: string }) {
                 </div>
               ))}
               
-              {formData?.payments && formData.payments.length > 0 && (
+              {(formData?.payments && formData.payments.length > 0 || formData?.is_paid || formData?.is_deposit) && (
                 <div className="mt-4 p-3 border border-lime-100 rounded-md bg-lime-50">
                   <Label className="text-sm text-gray-600">Total payé</Label>
                   <Input
                     type="number"
-                    value={formData.payments.reduce((sum, payment) => 
-                      sum + (payment.amount === null ? 0 : Number(payment.amount)), 
-                      0
-                    ).toFixed(2)}
+                    value={formData?.is_paid 
+                      ? calculateTTC(formData.total_cost).toFixed(2)  // If fully paid, show the total TTC
+                      : (
+                          // Sum payments
+                          (formData.payments?.reduce((sum, payment) => 
+                            sum + (payment.amount === null ? 0 : Number(payment.amount)), 
+                            0
+                          ) || 0) + 
+                          // Add deposit amount if deposit is paid - calculate based on TTC
+                          (formData.is_deposit && formData.total_cost 
+                            ? calculateTTC(formData.total_cost) * 0.3
+                            : 0)
+                        ).toFixed(2)}
                     className="w-full mt-1 text-base font-semibold bg-white border-lime-200"
                     disabled
                   />

@@ -741,7 +741,7 @@ export default function FinishedQuoteView({ quoteId }: { quoteId: string }) {
             </div>
           </div>
           
-          {/* Add Price and Payment Section */}
+          {/* Price and Payment Section */}
           <div className="mb-8 border border-gray-200 rounded-lg p-6 bg-gray-50">
             <h3 className="text-lg font-semibold mb-4">Prix et Paiement</h3>
             
@@ -779,8 +779,47 @@ export default function FinishedQuoteView({ quoteId }: { quoteId: string }) {
                 </div>
               </div>
             </div>
-            
-            <div className="p-4 border border-gray-200 rounded-lg bg-white mb-4">
+
+            <div className="mb-4">
+              <Label htmlFor="is_traiteur" className="text-base font-medium">Options supplémentaires</Label>
+              <div className="mt-2 grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="p-4 border border-gray-200 rounded-lg bg-white">
+                  <div className="flex items-center space-x-2 mb-4">
+                    <Switch
+                      id="is_traiteur"
+                      checked={quote?.is_traiteur ?? false}
+                      disabled
+                    />
+                    <Label htmlFor="is_traiteur" className="text-base">Service traiteur</Label>
+                  </div>
+                  
+                  <div>
+                    <Label htmlFor="traiteur_price" className="text-sm text-gray-600">Prix traiteur HT</Label>
+                    <Input 
+                      id="traiteur_price" 
+                      value={quote?.traiteur_price?.toFixed(2) ?? '0.00'} 
+                      className="w-full text-base mt-1 bg-gray-50" 
+                      disabled
+                    />
+                  </div>
+                </div>
+                
+                <div className="p-4 border border-gray-200 rounded-lg bg-white">
+                  <h4 className="text-base font-medium mb-3 text-gray-700">Frais supplémentaires</h4>
+                  <div>
+                    <Label htmlFor="other_expenses" className="text-sm text-gray-600">Montant HT</Label>
+                    <Input 
+                      id="other_expenses" 
+                      value={quote?.other_expenses?.toFixed(2) ?? '0.00'} 
+                      className="w-full text-base mt-1 bg-gray-50" 
+                      disabled
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="p-4 border border-gray-200 rounded-lg bg-white mb-6">
               <div className="flex items-center justify-between mb-4">
                 <div className="flex items-center space-x-2">
                   <Switch
@@ -807,8 +846,87 @@ export default function FinishedQuoteView({ quoteId }: { quoteId: string }) {
                   />
                 </div>
               )}
+
+              <div className="mt-4">
+                <Label className="text-sm text-gray-600">Montant restant à payer TTC</Label>
+                <Input 
+                  type="number"
+                  step="0.01"
+                  value={quote ? (
+                    quote.is_paid 
+                      ? "0.00"
+                      : (() => {
+                          // Calculate total payments
+                          const totalPayments = quote.payments?.reduce(
+                            (sum, payment) => sum + (payment.amount === null ? 0 : Number(payment.amount)),
+                            0
+                          ) || 0;
+                          
+                          // Calculate remaining amount based on deposit status
+                          const totalTTC = quote.total_cost * 1.2;
+                          const remainingAmount = quote.is_deposit 
+                            ? totalTTC * 0.7 - totalPayments
+                            : totalTTC - totalPayments;
+                          
+                          return Math.max(0, remainingAmount).toFixed(2);
+                        })()
+                  ) : '0.00'} 
+                  className="w-full text-base font-semibold bg-gray-50"
+                  disabled
+                />
+              </div>
             </div>
-            
+
+            <div className="p-4 border border-gray-200 rounded-lg bg-white mb-6">
+              <div className="flex justify-between items-center mb-4">
+                <Label className="text-base font-medium">Modes de Paiement</Label>
+              </div>
+              
+              {(!quote?.payments || quote.payments.length === 0) && (
+                <div className="text-gray-500 text-center py-4 border border-dashed border-gray-200 rounded-md">
+                  Aucun paiement enregistré
+                </div>
+              )}
+              
+              {quote?.payments?.map((payment, index) => (
+                <div key={index} className="flex gap-4 mb-4 p-3 border border-gray-100 rounded-md bg-gray-50">
+                  <div className="flex-1">
+                    <Label className="text-sm text-gray-600">Mode de paiement</Label>
+                    <Input
+                      value={paymentModes.find(mode => mode.value === payment.mode)?.name || payment.mode}
+                      className="w-full mt-1 bg-gray-50"
+                      disabled
+                    />
+                  </div>
+                  
+                  <div className="flex-1">
+                    <Label className="text-sm text-gray-600">Montant</Label>
+                    <Input
+                      type="number"
+                      value={payment.amount?.toFixed(2) ?? '0.00'}
+                      className="w-full mt-1 bg-gray-50"
+                      disabled
+                    />
+                  </div>
+                </div>
+              ))}
+              
+              {quote?.payments && quote.payments.length > 0 && (
+                <div className="mt-4 p-3 border border-lime-100 rounded-md bg-lime-50">
+                  <Label className="text-sm text-gray-600">Total payé</Label>
+                  <Input
+                    type="number"
+                    value={quote.payments.reduce((sum, payment) => 
+                      sum + (payment.amount === null ? 0 : Number(payment.amount)), 
+                      0
+                    ).toFixed(2)}
+                    className="w-full mt-1 text-base font-semibold bg-white border-lime-200"
+                    disabled
+                  />
+                </div>
+              )}
+            </div>
+
             <div className="p-4 border border-gray-200 rounded-lg bg-white">
               <div className="flex items-center justify-between">
                 <div className="flex items-center space-x-2">
