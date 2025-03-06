@@ -29,7 +29,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
-import { generateQuotePDF } from "@/utils/pdf/generateQuotePDF"
+import { generateQuotePDF, generateInvoicePDF } from "@/utils/pdf/generateDocumentPDF"
 
 // Define a proper union type for the items
 type QuoteDisplayItem = 
@@ -108,10 +108,23 @@ export default function FinishedQuoteView({ quoteId }: { quoteId: string }) {
     
     try {
       await generateQuotePDF(quote, quoteItems, products);
-      toast.success('PDF généré avec succès');
+      toast.success('Devis généré avec succès');
     } catch (error) {
       console.error('Error generating PDF:', error);
-      toast.error('Erreur lors de la génération du PDF');
+      toast.error('Erreur lors de la génération du devis');
+    }
+  };
+
+  // Add a new function for downloading the invoice
+  const downloadInvoice = async () => {
+    if (!quote) return;
+    
+    try {
+      await generateInvoicePDF(quote, quoteItems, products);
+      toast.success('Facture générée avec succès');
+    } catch (error) {
+      console.error('Error generating invoice:', error);
+      toast.error('Erreur lors de la génération de la facture');
     }
   };
 
@@ -148,15 +161,27 @@ export default function FinishedQuoteView({ quoteId }: { quoteId: string }) {
               <ChevronLeftIcon className="w-4 h-4" />
             </Button>
             
-            <Button 
-              className="bg-lime-300 hover:bg-lime-400 whitespace-nowrap"
-              variant="secondary"
-              onClick={downloadPDF}
-            >
-              <DownloadIcon className="w-4 h-4 mr-2" />
-              <span className="hidden sm:inline">Télécharger le devis en PDF</span>
-              <span className="inline sm:hidden">Télécharger PDF</span>
-            </Button>
+            <div className="flex space-x-2">
+              <Button 
+                className="bg-lime-300 hover:bg-lime-400 whitespace-nowrap"
+                variant="secondary"
+                onClick={downloadPDF}
+              >
+                <DownloadIcon className="w-4 h-4 mr-2" />
+                <span className="hidden sm:inline">Télécharger le devis en PDF</span>
+                <span className="inline sm:hidden">Devis PDF</span>
+              </Button>
+              
+              <Button 
+                className="bg-blue-300 hover:bg-blue-400 whitespace-nowrap"
+                variant="secondary"
+                onClick={downloadInvoice}
+              >
+                <DownloadIcon className="w-4 h-4 mr-2" />
+                <span className="hidden sm:inline">Télécharger la facture en PDF</span>
+                <span className="inline sm:hidden">Facture PDF</span>
+              </Button>
+            </div>
           </div>
           
           <div className="mb-4">
