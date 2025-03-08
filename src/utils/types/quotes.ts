@@ -26,6 +26,7 @@ export type Quote = {
   description: string;
   is_deposit: boolean;
   deposit_amount: number;
+  deposit_percentage: number;
   address: Address | null;
   payments?: QuotePayment[];
 };

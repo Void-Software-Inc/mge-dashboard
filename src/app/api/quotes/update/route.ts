@@ -47,6 +47,7 @@ export async function PUT(request: NextRequest) {
     last_update: parisDate,
     is_deposit: formData.get('is_deposit') === 'true',
     deposit_amount: formData.get('deposit_amount'),
+    deposit_percentage: formData.get('deposit_percentage'),
     address: {
       voie: formData.get('address.voie') || '',
       compl: formData.get('address.compl'),
