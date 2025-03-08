@@ -377,8 +377,10 @@ export default function QuoteForm({ quoteId }: { quoteId: string }) {
       if (!prevData) return null;
       const newIsDeposit = !prevData.is_deposit;
       
-      // Keep the current percentage when toggling off
-      const currentPercentage = prevData.deposit_percentage || 30;
+      // Keep the current percentage or use a default of 30 if none exists
+      const currentPercentage = prevData.deposit_percentage !== undefined && prevData.deposit_percentage !== null
+        ? prevData.deposit_percentage
+        : 30;
       
       return {
         ...prevData,
