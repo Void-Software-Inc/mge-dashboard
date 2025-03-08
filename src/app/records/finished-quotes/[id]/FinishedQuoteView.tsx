@@ -578,52 +578,73 @@ export default function FinishedQuoteView({ quoteId }: { quoteId: string }) {
                     disabled
                     className="data-[state=checked]:bg-lime-500"
                   />
-                  <Label htmlFor="is_deposit" className="text-base font-medium">Acompte versé (30%)</Label>
+                  <Label htmlFor="is_deposit" className="text-base font-medium">Acompte versé</Label>
                 </div>
                 <div className="text-sm text-gray-500">
                   {quote?.is_deposit ? "Acompte payé" : "Acompte non payé"}
                 </div>
               </div>
               
-              {quote?.is_deposit && (
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-4">
+                <div>
+                  <Label htmlFor="deposit_percentage" className="text-sm text-gray-600">Pourcentage de l'acompte (%)</Label>
+                  <Input 
+                    id="deposit_percentage" 
+                    value={
+                      quote?.deposit_percentage !== undefined && quote?.deposit_percentage !== null
+                        ? quote.deposit_percentage.toString()
+                        : '0'
+                    } 
+                    className="w-full text-base bg-gray-50"
+                    disabled
+                  />
+                </div>
+                
                 <div>
                   <Label htmlFor="deposit_amount" className="text-sm text-gray-600">Montant de l'acompte TTC</Label>
                   <Input 
                     id="deposit_amount" 
-                    value={quote?.deposit_amount?.toFixed(2) ?? (quote?.total_cost ? (calculateTTC(quote.total_cost) * 0.3).toFixed(2) : '0.00')} 
+                    value={
+                      quote?.total_cost && (quote?.deposit_percentage || quote?.deposit_percentage === 0)
+                        ? (quote.is_deposit 
+                            ? quote.deposit_amount?.toFixed(2) 
+                            : (calculateTTC(quote.total_cost) * (quote.deposit_percentage || 0) / 100).toFixed(2))
+                        : '0.00'
+                    } 
+                    className={`w-full text-base font-semibold ${quote?.is_deposit ? 'bg-lime-50 border-lime-200' : 'bg-gray-50'}`}
+                    disabled
+                  />
+                </div>
+                
+                <div>
+                  <Label className="text-sm text-gray-600">Montant restant à payer TTC</Label>
+                  <Input 
+                    type="number"
+                    step="0.01"
+                    value={quote ? (
+                      quote.is_paid 
+                        ? "0.00"
+                        : (() => {
+                            // Calculate total payments
+                            const totalPayments = quote.payments?.reduce(
+                              (sum, payment) => sum + (payment.amount === null ? 0 : Number(payment.amount)),
+                              0
+                            ) || 0;
+                            
+                            // Calculate remaining amount based on deposit status
+                            const totalTTC = calculateTTC(quote.total_cost);
+                            const depositAmount = quote.is_deposit 
+                              ? calculateTTC(quote.total_cost) * (quote.deposit_percentage || 0) / 100
+                              : 0;
+                            const remainingAmount = totalTTC - depositAmount - totalPayments;
+                            
+                            return Math.max(0, remainingAmount).toFixed(2);
+                          })()
+                    ) : '0.00'} 
                     className="w-full text-base font-semibold bg-gray-50"
                     disabled
                   />
                 </div>
-              )}
-
-              <div className="mt-4">
-                <Label className="text-sm text-gray-600">Montant restant à payer TTC</Label>
-                <Input 
-                  type="number"
-                  step="0.01"
-                  value={quote ? (
-                    quote.is_paid 
-                      ? "0.00"
-                      : (() => {
-                          // Calculate total payments
-                          const totalPayments = quote.payments?.reduce(
-                            (sum, payment) => sum + (payment.amount === null ? 0 : Number(payment.amount)),
-                            0
-                          ) || 0;
-                          
-                          // Calculate remaining amount based on deposit status
-                          const totalTTC = calculateTTC(quote.total_cost);
-                          const remainingAmount = quote.is_deposit 
-                            ? totalTTC * 0.7 - totalPayments
-                            : totalTTC - totalPayments;
-                          
-                          return Math.max(0, remainingAmount).toFixed(2);
-                        })()
-                  ) : '0.00'} 
-                  className="w-full text-base font-semibold bg-gray-50"
-                  disabled
-                />
               </div>
             </div>
 
@@ -674,9 +695,9 @@ export default function FinishedQuoteView({ quoteId }: { quoteId: string }) {
                             sum + (payment.amount === null ? 0 : Number(payment.amount)), 
                             0
                           ) || 0) + 
-                          // Add deposit amount if deposit is paid - calculate based on TTC
+                          // Add deposit amount if deposit is paid - calculate based on percentage
                           (quote.is_deposit && quote.total_cost 
-                            ? calculateTTC(quote.total_cost) * 0.3
+                            ? calculateTTC(quote.total_cost) * (quote.deposit_percentage || 0) / 100
                             : 0)
                         ).toFixed(2)}
                     className="w-full mt-1 text-base font-semibold bg-white border-lime-200"
