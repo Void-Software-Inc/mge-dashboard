@@ -262,6 +262,7 @@ export async function getQuotesRecords(): Promise<QuoteRecord[]> {
       is_traiteur: quotes.is_traiteur,
       description: quotes.description,
       deleted_at: quotes.deleted_at,
+      deposit_percentage: quotes.deposit_percentage,
     }))
     return cleanQuotesRecords;
   } catch (error) {
@@ -336,6 +337,7 @@ export async function getFinishedQuotes(): Promise<FinishedQuote[]> {
       traiteur_price: quotes.traiteur_price,
       other_expenses: quotes.other_expenses,
       deposit_amount: quotes.deposit_amount,
+      deposit_percentage: quotes.deposit_percentage,
       created_at: quotes.created_at,
       last_update: quotes.last_update,
       description: quotes.description,

@@ -49,6 +49,9 @@ export type QuoteRecord = {
   description: string;
   address: Address | null;
   payments?: QuotePayment[];
+  is_deposit: boolean;
+  deposit_amount: number;
+  deposit_percentage: number;
 };
 
 export type FinishedQuote = {
@@ -67,6 +70,7 @@ export type FinishedQuote = {
   traiteur_price: number;
   other_expenses: number;
   deposit_amount: number;
+  deposit_percentage: number;
   created_at: string;
   last_update: string;
   finished_at: string;
