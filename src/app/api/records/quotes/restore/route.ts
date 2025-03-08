@@ -47,6 +47,7 @@ export async function POST(request: NextRequest) {
                     description: quoteRecord.description,
                     is_deposit: quoteRecord.is_deposit,
                     deposit_amount: quoteRecord.deposit_amount,
+                    deposit_percentage: quoteRecord.deposit_percentage,
                     address: quoteRecord.address,
                     payments: quoteRecord.payments || [],
                     created_at: new Date().toISOString(),
@@ -55,7 +56,10 @@ export async function POST(request: NextRequest) {
                 .select()
                 .single();
 
-            if (quoteError) throw new Error('Failed to create quote' + quoteError);
+            if (quoteError) {
+                console.error('Quote error details:', quoteError);
+                throw new Error('Failed to create quote: ' + quoteError.message);
+            }
 
             createdQuote = quote;
 
