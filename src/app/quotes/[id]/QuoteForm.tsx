@@ -38,6 +38,7 @@ interface FormErrors {
   traiteur_price?: string;
   other_expenses?: string;
   deposit_amount?: string;
+  deposit_percentage?: string;
   address?: {
     voie?: string;
     compl?: string;
@@ -197,6 +198,10 @@ export default function QuoteForm({ quoteId }: { quoteId: string }) {
     }
     if (formData?.deposit_amount !== undefined && (formData.deposit_amount === null || formData.deposit_amount < 0)) {
       newErrors.deposit_amount = "Le montant de l'acompte est invalide";
+      isValid = false;
+    }
+    if (formData?.deposit_percentage !== undefined && (formData.deposit_percentage === null || formData.deposit_percentage < 0 || formData.deposit_percentage > 100)) {
+      newErrors.deposit_percentage = "Le pourcentage de l'acompte doit être entre 0 et 100";
       isValid = false;
     }
 
@@ -371,16 +376,58 @@ export default function QuoteForm({ quoteId }: { quoteId: string }) {
     setFormData((prevData) => {
       if (!prevData) return null;
       const newIsDeposit = !prevData.is_deposit;
+      
+      // Keep the current percentage when toggling off
+      const currentPercentage = prevData.deposit_percentage || 30;
+      
       return {
         ...prevData,
         is_deposit: newIsDeposit,
+        deposit_percentage: currentPercentage,
         deposit_amount: newIsDeposit && prevData.total_cost 
-          ? prevData.total_cost * 0.3
+          ? calculateTTC(prevData.total_cost) * (currentPercentage / 100)
           : 0
       };
     });
     setIsChanged(true);
   };
+
+  const handleDepositPercentageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    
+    // Allow empty input or valid numbers
+    if (value === '' || /^\d*\.?\d*$/.test(value)) {
+      // Convert to number only if there's a value
+      const percentage = value === '' ? 0 : Math.min(100, parseFloat(value));
+      
+      setFormData(prev => {
+        if (!prev) return null;
+        return {
+          ...prev,
+          deposit_percentage: percentage,
+          deposit_amount: prev.total_cost 
+            ? calculateTTC(prev.total_cost) * (percentage / 100)
+            : prev.deposit_amount
+        };
+      });
+    }
+  };
+
+  // Add a useEffect to calculate deposit amount when form loads
+  useEffect(() => {
+    if (formData && formData.total_cost && formData.deposit_percentage) {
+      // Calculate deposit amount based on percentage, even if deposit isn't paid yet
+      const calculatedAmount = calculateTTC(formData.total_cost) * (formData.deposit_percentage / 100);
+      
+      // Only update if the calculated amount is different from current amount
+      if (calculatedAmount !== formData.deposit_amount) {
+        setFormData(prev => prev ? {
+          ...prev,
+          deposit_amount: formData.is_deposit ? calculatedAmount : 0
+        } : null);
+      }
+    }
+  }, [formData?.total_cost, formData?.deposit_percentage, formData?.is_deposit]);
 
   //watches for any changes on total price, if it changes, it resets the deposit to false and amount to 0
   useEffect(() => {
@@ -930,7 +977,7 @@ export default function QuoteForm({ quoteId }: { quoteId: string }) {
           .reduce((sum, payment) => sum + (payment.amount === null ? 0 : Number(payment.amount)), 0);
         
         // Add deposit if applicable
-        const depositAmount = prev.is_deposit && prev.total_cost ? calculateTTC(prev.total_cost) * 0.3 : 0;
+        const depositAmount = prev.is_deposit && prev.total_cost ? calculateTTC(prev.total_cost) * (prev.deposit_percentage / 100) : 0;
         const totalPaidExcludingCurrent = paidSoFar + depositAmount;
         
         // Calculate maximum allowed payment
@@ -966,12 +1013,13 @@ export default function QuoteForm({ quoteId }: { quoteId: string }) {
       ) || 0);
       
       // Add deposit if applicable
-      const totalPaid = totalPayments + 
-        (formData.is_deposit && formData.total_cost 
-          ? calculateTTC(formData.total_cost) * 0.3
-          : 0);
+      const depositAmount = formData.is_deposit && formData.total_cost 
+        ? calculateTTC(formData.total_cost) * (formData.deposit_percentage / 100)
+        : 0;
       
-      // Check if total paid matches or exceeds total TTC (with small tolerance for floating point errors)
+      const totalPaid = totalPayments + depositAmount;
+      
+      // Check if total paid matches or exceeds total TTC
       const isPaidInFull = Math.abs(totalPaid - totalTTC) < 0.01 || totalPaid > totalTTC;
       
       // Only update if the status would change
@@ -982,6 +1030,7 @@ export default function QuoteForm({ quoteId }: { quoteId: string }) {
   }, [
     formData?.total_cost,
     formData?.is_deposit,
+    formData?.deposit_percentage,
     formData?.payments,
     calculateTTC
   ]);
@@ -1360,20 +1409,39 @@ export default function QuoteForm({ quoteId }: { quoteId: string }) {
                     onCheckedChange={() => handleDepositChange('is_deposit')}
                     className="data-[state=checked]:bg-lime-500"
                   />
-                  <Label htmlFor="is_deposit" className="text-base font-medium">Acompte versé (30%)</Label>
+                  <Label htmlFor="is_deposit" className="text-base font-medium">Acompte versé</Label>
                 </div>
                 <div className="text-sm text-gray-500">
                   {formData?.is_deposit ? "Acompte payé" : "Acompte non payé"}
                 </div>
               </div>
               
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 <div>
-                  <Label htmlFor="deposit_amount" className="text-sm text-gray-600">Montant de l'acompte TTC (30%)</Label>
+                  <Label htmlFor="deposit_percentage" className="text-sm text-gray-600">Pourcentage de l'acompte (%)</Label>
+                  <Input 
+                    id="deposit_percentage" 
+                    type="text"
+                    inputMode="decimal"
+                    value={formData?.deposit_percentage?.toString() || '30'} 
+                    onChange={handleDepositPercentageChange}
+                    className={`w-full text-base ${formData?.is_deposit ? 'bg-gray-100' : ''}`}
+                    disabled={formData?.is_deposit}
+                  />
+                </div>
+                
+                <div>
+                  <Label htmlFor="deposit_amount" className="text-sm text-gray-600">Montant de l'acompte TTC</Label>
                   <Input 
                     id="deposit_amount" 
                     type="number"
-                    value={formData?.total_cost !== undefined ? (calculateTTC(formData.total_cost) * 0.3).toFixed(2) : '0.00'} 
+                    value={
+                      formData?.total_cost && formData?.deposit_percentage
+                        ? (formData.is_deposit 
+                            ? formData.deposit_amount?.toFixed(2) 
+                            : (calculateTTC(formData.total_cost) * (formData.deposit_percentage / 100)).toFixed(2))
+                        : '0.00'
+                    } 
                     className={`w-full text-base font-semibold ${formData?.is_deposit ? 'bg-lime-50 border-lime-200' : 'bg-gray-100'}`}
                     disabled
                   />
@@ -1396,9 +1464,10 @@ export default function QuoteForm({ quoteId }: { quoteId: string }) {
                             
                             // Calculate remaining amount based on deposit status
                             const totalTTC = calculateTTC(formData.total_cost);
-                            const remainingAmount = formData.is_deposit 
-                              ? totalTTC * 0.7 - totalPayments
-                              : totalTTC - totalPayments;
+                            const depositAmount = formData.is_deposit 
+                              ? calculateTTC(formData.total_cost) * (formData.deposit_percentage / 100)
+                              : 0;
+                            const remainingAmount = totalTTC - depositAmount - totalPayments;
                             
                             return Math.max(0, remainingAmount).toFixed(2);
                           })()
@@ -1498,9 +1567,9 @@ export default function QuoteForm({ quoteId }: { quoteId: string }) {
                             sum + (payment.amount === null ? 0 : Number(payment.amount)), 
                             0
                           ) || 0) + 
-                          // Add deposit amount if deposit is paid - calculate based on TTC
+                          // Add deposit amount if deposit is paid - calculate based on current percentage
                           (formData.is_deposit && formData.total_cost 
-                            ? calculateTTC(formData.total_cost) * 0.3
+                            ? calculateTTC(formData.total_cost) * (formData.deposit_percentage / 100)
                             : 0)
                         ).toFixed(2)}
                     className="w-full mt-1 text-base font-semibold bg-white border-lime-200"
