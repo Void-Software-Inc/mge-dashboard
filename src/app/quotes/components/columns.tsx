@@ -65,6 +65,7 @@ export const onRowClick = (row: Quote, router: ReturnType<typeof useRouter>) => 
 }
 
 const calculateTTC = (ht: number): number => {
+  // Add 20% VAT to the HT (tax-excluded) price
   return ht * 1.20;
 };
 
@@ -351,8 +352,8 @@ export const columns: ColumnDef<Quote>[] = [
     accessorKey: "total_cost",
     header: () => <div className="text-right font-extrabold whitespace-nowrap overflow-hidden overflow-ellipsis">Prix total TTC</div>,
     cell: ({ row }) => {
-      const priceHT = parseFloat(row.getValue("total_cost"))
-      const priceTTC = calculateTTC(priceHT)
+      // Assuming total_cost in the database is HT (without tax)
+      const priceTTC = parseFloat(row.getValue("total_cost"))
       const formatted = new Intl.NumberFormat("en-US", {
         style: "currency",
         currency: "EUR",
@@ -368,9 +369,9 @@ export const columns: ColumnDef<Quote>[] = [
       return (
         <div className="flex justify-center">
           {isDeposit ? (
-            <CheckIcon className="h-5 w-5 text-[#bef264] border border-2 border-[#bef264] rounded-full" />
+            <CheckIcon className="h-5 w-5 text-[#bef264] border border-[#bef264] rounded-full" />
           ) : (
-            <Cross2Icon className="h-5 w-5 text-red-500 border border-2 border-red-500 rounded-full" />
+            <Cross2Icon className="h-5 w-5 text-red-500 border border-red-500 rounded-full" />
           )}
         </div>
       );
@@ -384,9 +385,9 @@ export const columns: ColumnDef<Quote>[] = [
       return (
         <div className="flex justify-center">
           {isPaid ? (
-            <CheckIcon className="h-5 w-5 text-[#bef264] border border-2 border-[#bef264] rounded-full" />
+            <CheckIcon className="h-5 w-5 text-[#bef264] border border-[#bef264] rounded-full" />
           ) : (
-            <Cross2Icon className="h-5 w-5 text-red-500 border border-2 border-red-500 rounded-full" />
+            <Cross2Icon className="h-5 w-5 text-red-500 border border-red-500 rounded-full" />
           )}
         </div>
       );
