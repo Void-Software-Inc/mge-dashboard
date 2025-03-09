@@ -174,28 +174,28 @@ export const generateDocumentPDF = (
         doc.line(15, footerY, pageWidth - 15, footerY);
 
         // Add the three sections below the line
-        doc.setFontSize(9);
+        doc.setFontSize(8);
         
         // Company section
         doc.setFont('helvetica', 'bold');
         doc.setTextColor(89, 89, 89);
-        doc.text("Entreprise", 15, footerY + 10);
+        doc.text("Entreprise", 15, footerY + 7);
         doc.setFont('helvetica', 'normal');
-        doc.text("MG Événements\nChemin des droits de l'homme\net du citoyen, 31450 Ayguevives", 15, footerY + 15);
+        doc.text("MG Événements EI\nChemin des droits de l'homme\net du citoyen, 31450 Ayguevives\nSIREN : 918 638 008\nCode APE : 5320Z\nNuméro de TVA : FR88918638008", 15, footerY + 10);
 
         // Contact section
         const contactX = pageWidth / 3 + 10;
         doc.setFont('helvetica', 'bold');
-        doc.text("Coordonnées", contactX, footerY + 10);
+        doc.text("Coordonnées", contactX, footerY + 7);
         doc.setFont('helvetica', 'normal');
-        doc.text("Mani Grimaudo\n07 68 10 96 17\nmgevenementiel31@gmail.com\nwww.mgevenements.fr", contactX, footerY + 15);
+        doc.text("Mani Grimaudo\n07 68 10 96 17\nmgevenementiel31@gmail.com\nwww.mgevenements.fr", contactX, footerY + 10);
 
         // Bank details section
         const bankX = (2 * pageWidth) / 3;
         doc.setFont('helvetica', 'bold');
-        doc.text("Coordonnées bancaires", bankX, footerY + 10);
+        doc.text("Coordonnées bancaires", bankX, footerY + 7);
         doc.setFont('helvetica', 'normal');
-        doc.text("IBAN FR76 2823 3000 0113 2935 6527 041\nCode BIC / SWIFT REVOFRP2\nPaypal: mani.grimaudo@icloud.com", bankX, footerY + 15);
+        doc.text("IBAN FR76 2823 3000 0113 2935 6527 041\nCode BIC / SWIFT REVOFRP2\nPaypal: mani.grimaudo@icloud.com", bankX, footerY + 10);
       };
 
       // First calculate total pages by doing a dry run
