@@ -24,6 +24,7 @@ import { QuoteItemList } from "../components/quote-item-list"
 import { format, parseISO } from 'date-fns';
 import { Product } from "@/utils/types/products"
 import { getProducts } from "@/services/products"
+import { generateQuotePDF } from "@/utils/pdf/generateDocumentPDF"
 
 interface FormErrors {
   first_name?: string;
@@ -605,11 +606,6 @@ export default function QuoteForm({ quoteId }: { quoteId: string }) {
     });
   };
 
-  const formatDateToParisTime = (date: string | undefined) => {
-    if (!date) return '';
-    return new Date(date).toLocaleDateString('fr-FR', { timeZone: 'Europe/Paris' });
-  };
-
   const downloadPDF = () => {
     if (isProductsLoading) {
       toast.error('Chargement des produits en cours...');
@@ -634,313 +630,22 @@ export default function QuoteForm({ quoteId }: { quoteId: string }) {
       return;
     }
 
-    // First pass: Generate document to get total pages
-    const tempDoc = new jsPDF();
-    const pageWidth = tempDoc.internal.pageSize.getWidth();
-    const rightMargin = 15;
-    const lineSpacing = 7;
+    // Filter out tainted items
+    const filteredQuoteItems = quoteItems.filter(item => !taintedItems.has(item.id));
 
-    // Create image and wait for it to load
-    const img = new Image();
-    const logoPath = `${window.location.origin}/quote-mg-events.png`;
-    img.crossOrigin = "anonymous";
-    img.src = logoPath;
-    
-    img.onload = () => {
-      // Calculate dimensions maintaining aspect ratio
-      const originalWidth = 788;
-      const originalHeight = 380;
-      const desiredWidth = 65;
-      const scaledHeight = (desiredWidth * originalHeight) / originalWidth;
-      
-      // Generate the actual document
-      const doc = new jsPDF();
-
-      doc.setFontSize(50);
-      doc.setTextColor(51);
-      doc.text(`Devis`, 15, 30);
-      doc.setTextColor(0);
-
-      doc.addImage(img, 'PNG', 133, 5, desiredWidth, scaledHeight);
-
-      const contentStartY = 5 + scaledHeight;
-
-      const quoteDate = new Date().toLocaleDateString('fr-FR');
-      
-      // Date and quote info on the left
-      doc.setFontSize(9);
-
-      // Date
-      doc.setFont('helvetica', 'bold');
-      doc.text("Date:", 15, contentStartY + 15);
-      doc.setFont('helvetica', 'normal');
-      doc.text(quoteDate, 15 + doc.getTextWidth("Date:   "), contentStartY + 15);
-
-      // Quote number
-      doc.setFont('helvetica', 'bold');
-      doc.text("Numéro devis: ", 15, contentStartY + 21);
-      doc.setFont('helvetica', 'normal');
-      doc.text(formData.id.toString(), 15 + doc.getTextWidth("Numéro devis:   "), contentStartY + 21);
-
-      // Event dates
-      const eventFromDate = formatDateToParisTime(formData.event_start_date);
-      const eventToDate = formatDateToParisTime(formData.event_end_date);
-      const eventDateValue = eventFromDate === eventToDate ? eventFromDate : `du ${eventFromDate} au ${eventToDate}`;
-      doc.setFont('helvetica', 'bold');
-      doc.text("Date(s) de l'événement:", 15, contentStartY + 27);
-      doc.setFont('helvetica', 'normal');
-      doc.text(eventDateValue, 15, contentStartY + 33);
-
-      // Traiteur option
-      const traiteurValue = formData.is_traiteur ? 'Oui' : 'Non';
-      doc.setFont('helvetica', 'bold');
-      doc.text("Option traiteur:", 15, contentStartY + 39);
-      doc.setFont('helvetica', 'normal');
-      doc.text(traiteurValue, 15 + doc.getTextWidth("Option traiteur:    "), contentStartY + 39);
-
-      // Add client info aligned to the right
-      doc.setFontSize(9);
-      doc.setFont('helvetica', 'bold');
-      doc.text("Client", pageWidth - 15 - doc.getTextWidth("Client"), contentStartY + 15);
-      doc.setFont('helvetica', 'normal');
-
-      // Always create 6 lines of client info, using empty strings for missing address fields
-      const clientInfo = [
-        `${formData.first_name} ${formData.last_name}`,
-        formData.email,
-        formData.phone_number,
-        formData.address?.voie ? `${formData.address.voie}${formData.address?.compl ? `, ${formData.address.compl}` : ''}` : '',
-        formData.address?.cp || formData.address?.ville ? `${formData.address?.cp || ''} ${formData.address?.ville || ''}`.trim() : '',
-        formData.address?.depart || ''
-      ];
-
-      // Fixed position for the last line
-      const lastClientInfoY = contentStartY + 21 + (5 * 6); // 5 is the number of spaces between 6 lines
-
-      clientInfo.forEach((line, index) => {
-        if (line) { // Only render non-empty lines
-          const lineWidth = doc.getTextWidth(line);
-          doc.text(line, pageWidth - 15 - lineWidth, contentStartY + 21 + (index * 6));
-        }
+    // Generate the PDF using the centralized utility
+    (generateQuotePDF(
+      formData, 
+      filteredQuoteItems || [], 
+      products || []
+    ) as Promise<void>)
+      .then(() => {
+        toast.success('PDF généré avec succès');
+      })
+      .catch((error) => {
+        console.error('Error generating PDF:', error);
+        toast.error('Erreur lors de la génération du PDF');
       });
-
-      // Add payment terms and conditions on the left
-      doc.setFontSize(9);
-      doc.setFont('helvetica', 'bold');
-      doc.text("Termes et conditions", 15, lastClientInfoY + 15);
-      doc.setFont('helvetica', 'normal');
-      doc.text("Devis valable un mois", 15, lastClientInfoY + 20);
-      doc.text("Un acompte de 30% est requis", 15, lastClientInfoY + 25);
-
-      // Add address section on the right
-      doc.setFont('helvetica', 'bold');
-      const addressTitle = "Adresse de récupération du matériel";
-      const addressTitleWidth = doc.getTextWidth(addressTitle);
-      doc.text(addressTitle, pageWidth - 15 - addressTitleWidth, lastClientInfoY + 15);
-
-      doc.setFont('helvetica', 'normal');
-      const addressText = "Chemin des droits de l'homme et du citoyen, 31450 Ayguevives";
-      const addressWidth = doc.getTextWidth(addressText);
-      doc.text(addressText, pageWidth - 15 - addressWidth, lastClientInfoY + 20);
-
-      // Generate table with the product details
-      const headers = [['Produit', 'Quantité', 'Prix unitaire HT', 'Sous-Total HT']];
-      const data = quoteItems
-        .filter(item => !taintedItems.has(item.id))
-        .map(item => {
-          const product = products.find((p: Product) => p.id === item.product_id);
-          const unitPriceHT = (product?.price || 0);
-          const subtotalHT = unitPriceHT * item.quantity;
-          return [
-            product?.name || 'Produit inconnu',
-            item.quantity,
-            `${unitPriceHT.toFixed(2)}€`,
-            `${subtotalHT.toFixed(2)}€`
-          ];
-        });
-
-      const addFooter = (doc: any, pageHeight: number) => {
-        const footerY = pageHeight - 35;
-
-        // Add horizontal line
-        doc.setDrawColor(168, 168, 168);
-        doc.setLineWidth(0.5);
-        doc.line(15, footerY, pageWidth - 15, footerY);
-
-        // Add the three sections below the line
-        doc.setFontSize(8);
-        
-        // Company section
-        doc.setFont('helvetica', 'bold');
-        doc.setTextColor(89, 89, 89);
-        doc.text("Entreprise", 15, footerY + 7);
-        doc.setFont('helvetica', 'normal');
-        doc.text("MG Événements EI\nChemin des droits de l'homme\net du citoyen, 31450 Ayguevives\nSIREN : 918 638 008\nCode APE : 5320Z\nNuméro de TVA : FR88918638008", 15, footerY + 10);
-
-        // Contact section
-        const contactX = pageWidth / 3 + 10;
-        doc.setFont('helvetica', 'bold');
-        doc.text("Coordonnées", contactX, footerY + 7);
-        doc.setFont('helvetica', 'normal');
-        doc.text("Mani Grimaudo\n07 68 10 96 17\nmgevenementiel31@gmail.com\nwww.mgevenements.fr", contactX, footerY + 10);
-
-        // Bank details section
-        const bankX = (2 * pageWidth) / 3;
-        doc.setFont('helvetica', 'bold');
-        doc.text("Coordonnées bancaires", bankX, footerY + 7);
-        doc.setFont('helvetica', 'normal');
-        doc.text("IBAN FR76 2823 3000 0113 2935 6527 041\nCode BIC / SWIFT REVOFRP2\nPaypal: mani.grimaudo@icloud.com", bankX, footerY + 10);
-      };
-
-      // First calculate total pages by doing a dry run
-      const totalPages = Math.ceil(data.length / 20); // Approximate rows per page
-
-      (doc as any).autoTable({
-        head: headers,
-        headStyles: { fillColor: [50, 50, 50], textColor: [255, 255, 255] },
-        body: data,
-        startY: lastClientInfoY + 30,
-        styles: {
-          fontSize: 9
-        },
-        columnStyles: {
-          0: { cellWidth: 'auto' },
-          1: { cellWidth: 30 },
-          2: { cellWidth: 40 },
-          3: { cellWidth: 40 },
-        },
-        margin: { bottom: 60 },
-        didDrawPage: function(data: any) {
-          const pageHeight = doc.internal.pageSize.getHeight();
-          addFooter(doc, pageHeight);
-          
-          // Add page numbers using the pre-calculated total
-          doc.setFontSize(8);
-          const text = `Page ${data.pageNumber} sur ${totalPages}`;
-          const textWidth = doc.getTextWidth(text);
-          doc.text(
-            text,
-            doc.internal.pageSize.getWidth() - 15 - textWidth,
-            pageHeight - 5
-          );
-        }
-      });
-
-      // After autoTable, check if we need to add a new page for totals
-      const finalY = (doc as any).lastAutoTable.finalY + 10;
-      const requiredSpace = 90;
-      const pageHeight = doc.internal.pageSize.getHeight();
-      
-      if (finalY + requiredSpace > pageHeight) {
-        doc.addPage();
-        addFooter(doc, pageHeight);
-        
-        // Calculate total from items
-        const totalFromItems = quoteItems.reduce((total, item) => {
-          const product = products.find(p => p.id === item.product_id);
-          return total + ((product?.price || 0) * item.quantity);
-        }, 0);
-        
-        // Add other costs
-        const totalHT = totalFromItems + (formData.traiteur_price || 0) + (formData.other_expenses || 0);
-        
-        addTotalsAndSignature(
-          doc,
-          20,
-          pageWidth,
-          totalHT,
-          totalHT * 0.2,
-          totalHT * 1.2,
-          rightMargin,
-          lineSpacing
-        );
-      } else {
-        // Calculate total from items
-        const totalFromItems = quoteItems.reduce((total, item) => {
-          const product = products.find(p => p.id === item.product_id);
-          return total + ((product?.price || 0) * item.quantity);
-        }, 0);
-        
-        // Add other costs
-        const totalHT = totalFromItems + (formData.traiteur_price || 0) + (formData.other_expenses || 0);
-        
-        addTotalsAndSignature(
-          doc,
-          finalY,
-          pageWidth,
-          totalHT,
-          totalHT * 0.2,
-          totalHT * 1.2,
-          rightMargin,
-          lineSpacing
-        );
-      }
-
-      doc.save(`Devis_${formData.id}_${formData.last_name}_${new Date().toLocaleDateString('fr-FR')}.pdf`);
-    };
-
-    img.onerror = () => {
-      console.error('Error loading logo image');
-      toast.error('Erreur lors du chargement du logo');
-    };
-  };
-
-  const addTotalsAndSignature = (
-    doc: any,
-    startY: number,
-    pageWidth: number,
-    totalHT: number,
-    tva: number,
-    totalTTC: number,
-    rightMargin: number,
-    lineSpacing: number
-  ) => {
-    doc.setFontSize(9);
-    doc.setTextColor(0);
-    doc.setFont('helvetica', 'bold');
-
-    const totalHTText = `Total HT:  ${totalHT.toFixed(2)}€`;
-    const totalHTWidth = doc.getTextWidth(totalHTText);
-    doc.text(totalHTText, pageWidth - rightMargin - totalHTWidth, startY);
-
-    const tvaText = `TVA 20%:  ${tva.toFixed(2)}€`;
-    const tvaWidth = doc.getTextWidth(tvaText);
-    doc.text(tvaText, pageWidth - rightMargin - tvaWidth, startY + lineSpacing);
-
-    const totalTTCText = `Total TTC:  ${totalTTC.toFixed(2)}€`;
-    const totalTTCWidth = doc.getTextWidth(totalTTCText);
-    doc.text(totalTTCText, pageWidth - rightMargin - totalTTCWidth, startY + (lineSpacing * 2));
-
-    const signatureText = "Signature du client (précédée de la mention « Bon pour accord »)";
-    const signatureBoxWidth = totalHTWidth + 80;
-    const signatureBoxHeight = 30;
-    const signatureBoxX = pageWidth - rightMargin - signatureBoxWidth;
-    const signatureBoxY = startY + (lineSpacing * 3);
-
-    addSignatureAndCompanyInfo(doc, signatureBoxX, signatureBoxY, signatureBoxWidth, signatureBoxHeight, signatureText, pageWidth);
-  };
-
-  const addSignatureAndCompanyInfo = (
-    doc: any,
-    signatureBoxX: number,
-    signatureBoxY: number,
-    signatureBoxWidth: number,
-    signatureBoxHeight: number,
-    signatureText: string,
-    pageWidth: number
-  ) => {
-    doc.setFillColor(240, 240, 240);
-    doc.rect(signatureBoxX, signatureBoxY, signatureBoxWidth, signatureBoxHeight, 'F');
-
-    doc.setFontSize(9);
-    doc.setTextColor(133, 133, 132);
-    const signatureTextWidth = doc.getTextWidth(signatureText);
-    doc.text(signatureText, 
-      signatureBoxX + (signatureBoxWidth - signatureTextWidth) / 2, 
-      signatureBoxY + 7
-    );
-    
-    doc.setTextColor(0);
   };
 
   const handleAddPayment = () => {
@@ -1566,7 +1271,7 @@ export default function QuoteForm({ quoteId }: { quoteId: string }) {
                       : (
                           // Sum payments
                           (formData.payments?.reduce((sum, payment) => 
-                            sum + (payment.amount === null ? 0 : Number(payment.amount)), 
+                            sum + (payment.amount === null ? 0 : Number(payment.amount)),
                             0
                           ) || 0) + 
                           // Add deposit amount if deposit is paid - calculate based on current percentage
