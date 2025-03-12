@@ -119,10 +119,14 @@ export const generateDocumentPDF = (
       // Add payment terms and conditions on the left
       doc.setFontSize(9);
       doc.setFont('helvetica', 'bold');
-      doc.text("Termes et conditions", 15, lastClientInfoY + 15);
-      doc.setFont('helvetica', 'normal');
-      doc.text("Devis valable un mois", 15, lastClientInfoY + 20);
-      doc.text("Un acompte de 30% est requis", 15, lastClientInfoY + 25);
+
+      // Only show terms and conditions at the top for quotes
+      if (documentType === DocumentType.QUOTE) {
+        doc.text("Termes et conditions", 15, lastClientInfoY + 15);
+        doc.setFont('helvetica', 'normal');
+        doc.text("Devis valable un mois", 15, lastClientInfoY + 20);
+        doc.text("Un acompte de 30% est requis", 15, lastClientInfoY + 25);
+      }
 
       // Add address section on the right
       doc.setFont('helvetica', 'bold');
@@ -181,6 +185,31 @@ export const generateDocumentPDF = (
         });
       }
 
+      // We'll count pages as we create them
+      let totalPages = 1;
+
+      // Create a function to update all footers with the correct page count
+      const updateAllFooters = () => {
+        for (let i = 1; i <= totalPages; i++) {
+          doc.setPage(i);
+          
+          // Clear the area where page numbers will be drawn
+          const pageNumberY = pageHeight - 5;
+          const clearWidth = 30; // Width of area to clear
+          doc.setFillColor(255, 255, 255); // White background
+          doc.rect(
+            doc.internal.pageSize.getWidth() - 15 - clearWidth, 
+            pageNumberY - 5, 
+            clearWidth, 
+            8, 
+            'F'
+          );
+          
+          addFooter(doc, pageHeight, i, totalPages);
+        }
+      };
+
+      // Now use this totalPages value consistently throughout the document
       const addFooter = (doc: any, pageHeight: number, currentPage: number = 1, totalPages: number = 1) => {
         const footerY = pageHeight - 35;
 
@@ -224,14 +253,6 @@ export const generateDocumentPDF = (
         );
       };
 
-      // Calculate total pages based on content
-      const totalPages = Math.ceil(
-        (decorationProducts.length + traiteurProducts.length) / 20
-      ) + (decorationProducts.length > 0 && traiteurProducts.length > 0 ? 1 : 0);
-
-      // Add footer to the first page
-      addFooter(doc, pageHeight, currentPage, totalPages);
-      
       // Start with client info section
       let finalY = lastClientInfoY + 30;
 
@@ -272,6 +293,7 @@ export const generateDocumentPDF = (
           if (currentY + rowHeight > pageHeight - 60) {
             doc.addPage();
             currentPage++;
+            totalPages++; // Increment total pages when adding a page
             addFooter(doc, pageHeight, currentPage, totalPages);
             currentY = 20;
             
@@ -329,6 +351,7 @@ export const generateDocumentPDF = (
         if (currentY + rowHeight > pageHeight - 60) {
           doc.addPage();
           currentPage++;
+          totalPages++; // Increment total pages when adding a page
           addFooter(doc, pageHeight, currentPage, totalPages);
           currentY = 20;
         }
@@ -361,6 +384,7 @@ export const generateDocumentPDF = (
       if (traiteurProducts.length > 0 && finalY + traiteurTableHeight > pageHeight - 60) {
         doc.addPage();
         currentPage++;
+        totalPages++; // Increment total pages when adding a page
         addFooter(doc, pageHeight, currentPage, totalPages);
         finalY = 20;
       }
@@ -402,6 +426,7 @@ export const generateDocumentPDF = (
           if (currentY + rowHeight > pageHeight - 60) {
             doc.addPage();
             currentPage++;
+            totalPages++; // Increment total pages when adding a page
             addFooter(doc, pageHeight, currentPage, totalPages);
             currentY = 20;
             
@@ -459,6 +484,7 @@ export const generateDocumentPDF = (
         if (currentY + rowHeight > pageHeight - 60) {
           doc.addPage();
           currentPage++;
+          totalPages++; // Increment total pages when adding a page
           addFooter(doc, pageHeight, currentPage, totalPages);
           currentY = 20;
         }
@@ -491,12 +517,13 @@ export const generateDocumentPDF = (
       const totalTTC = totalHT * 1.2;
 
       // Check if there's enough space for totals and signature
-      const requiredSpace = 100; // Approximate space needed for totals, signature box, and company info
+      const requiredSpace = 80;
       
       // If there isn't enough space, add a new page
       if (finalY + requiredSpace > pageHeight) {
         doc.addPage();
         currentPage++;
+        totalPages++; // Increment total pages when adding a page
         addFooter(doc, pageHeight, currentPage, totalPages);
         addTotalsAndSignature(
           doc,
@@ -522,6 +549,9 @@ export const generateDocumentPDF = (
           documentType
         );
       }
+      
+      // Then at the end of the document generation:
+      updateAllFooters();
       
       const fileName = documentType === DocumentType.QUOTE 
         ? `Devis_${quote.id}_${quote.last_name}_${new Date().toLocaleDateString('fr-FR')}.pdf`
@@ -582,19 +612,28 @@ const addTotalsAndSignature = (
   const totalTTCWidth = doc.getTextWidth(totalTTCText);
   doc.text(totalTTCText, pageWidth - rightMargin - totalTTCWidth, startY + (lineSpacing * 3));
   
-  // Add signature box only for quotes
+  // Add signature box only for quotes or terms and conditions for invoices
   if (documentType === DocumentType.QUOTE) {
-    const signatureY = startY + (lineSpacing * 5);
+    // Place signature box at the same level as the totals box
     doc.setFontSize(9);
     doc.setFont('helvetica', 'bold');
-    doc.text("Signature du client", 15, signatureY);
+    doc.text("Signature du client", 15, startY);
     doc.setFont('helvetica', 'normal');
-    doc.text("(précédée de la mention « Bon pour accord »)", 15, signatureY + 5);
+    doc.text("(précédée de la mention « Bon pour accord »)", 15, startY + 5);
     
     // Draw signature box
     doc.setDrawColor(200, 200, 200);
     doc.setLineWidth(0.5);
-    doc.rect(15, signatureY + 10, 80, 40);
+    doc.rect(15, startY + 10, 85, lineSpacing * 4);
+  } else {
+    // Add terms and conditions for invoices after the totals
+    const termsY = startY + (lineSpacing * 5);
+    doc.setFontSize(8);
+    doc.setFont('helvetica', 'bold');
+    doc.text("Termes et conditions", 15, termsY);
+    doc.setFont('helvetica', 'normal');
+    doc.text("Date d'échéance : Paiement sous 30 jours à compter de la facture, sauf accord contraire.\nPénalités de retard : Intérêts de retard au taux légal en vigueur en cas de retard.\nIndemnité de recouvrement : 40 € dus uniquement pour les professionnels (art. L441-10 C. com.).\nDates de réalisation de la prestation : Dates de l'événement.", 15, termsY + 5);
+
   }
 };
 
