@@ -55,6 +55,10 @@ export const productTypes: ProductType[] = [
     { value: "boissons", name: "Boissons", category: "traiteur" },
     { value: "buffet", name: "Buffet", category: "traiteur" },
     { value: "cocktail", name: "Cocktail", category: "traiteur" },
+    { value: "fromages", name: "Fromages", category: "traiteur" },
+    { value: "mignardises", name: "Mignardises", category: "traiteur" },
+    { value: "menus", name: "Menus", category: "traiteur" },
+    { value: "stands", name: "Stands", category: "traiteur" },
 ];
 
 export type ProductColor = {
