@@ -119,10 +119,14 @@ export const generateDocumentPDF = (
       // Add payment terms and conditions on the left
       doc.setFontSize(9);
       doc.setFont('helvetica', 'bold');
-      doc.text("Termes et conditions", 15, lastClientInfoY + 15);
-      doc.setFont('helvetica', 'normal');
-      doc.text("Devis valable un mois", 15, lastClientInfoY + 20);
-      doc.text("Un acompte de 30% est requis", 15, lastClientInfoY + 25);
+
+      // Only show terms and conditions at the top for quotes
+      if (documentType === DocumentType.QUOTE) {
+        doc.text("Termes et conditions", 15, lastClientInfoY + 15);
+        doc.setFont('helvetica', 'normal');
+        doc.text("Devis valable un mois", 15, lastClientInfoY + 20);
+        doc.text("Un acompte de 30% est requis", 15, lastClientInfoY + 25);
+      }
 
       // Add address section on the right
       doc.setFont('helvetica', 'bold');
@@ -491,7 +495,7 @@ export const generateDocumentPDF = (
       const totalTTC = totalHT * 1.2;
 
       // Check if there's enough space for totals and signature
-      const requiredSpace = 100; // Approximate space needed for totals, signature box, and company info
+      const requiredSpace = 75; // Approximate space needed for totals, signature box, and company info
       
       // If there isn't enough space, add a new page
       if (finalY + requiredSpace > pageHeight) {
@@ -582,19 +586,30 @@ const addTotalsAndSignature = (
   const totalTTCWidth = doc.getTextWidth(totalTTCText);
   doc.text(totalTTCText, pageWidth - rightMargin - totalTTCWidth, startY + (lineSpacing * 3));
   
-  // Add signature box only for quotes
+  // Add signature box only for quotes or terms and conditions for invoices
   if (documentType === DocumentType.QUOTE) {
-    const signatureY = startY + (lineSpacing * 5);
+    // Place signature box at the same level as the totals box
     doc.setFontSize(9);
     doc.setFont('helvetica', 'bold');
-    doc.text("Signature du client", 15, signatureY);
+    doc.text("Signature du client", 15, startY);
     doc.setFont('helvetica', 'normal');
-    doc.text("(précédée de la mention « Bon pour accord »)", 15, signatureY + 5);
+    doc.text("(précédée de la mention « Bon pour accord »)", 15, startY + 5);
     
     // Draw signature box
     doc.setDrawColor(200, 200, 200);
     doc.setLineWidth(0.5);
-    doc.rect(15, signatureY + 10, 80, 40);
+    doc.rect(15, startY + 10, 85, lineSpacing * 4);
+  } else {
+    // Add terms and conditions for invoices after the totals
+    const termsY = startY + (lineSpacing * 5);
+    doc.setFontSize(9);
+    doc.setFont('helvetica', 'bold');
+    doc.text("Termes et conditions", 15, termsY);
+    doc.setFont('helvetica', 'normal');
+    doc.text("Date d'échéance : Paiement sous 30 jours à compter de la facture, sauf accord contraire.", 15, termsY + 5);
+    doc.text("Pénalités de retard : Intérêts de retard au taux légal en vigueur en cas de retard.", 15, termsY + 10);
+    doc.text("Indemnité de recouvrement : 40 € dus uniquement pour les professionnels (art. L441-10 C. com.).", 15, termsY + 15);
+    doc.text("Dates de réalisation de la prestation : Dates de l'événement.", 15, termsY + 20);
   }
 };
 
