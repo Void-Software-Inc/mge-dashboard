@@ -742,6 +742,44 @@ export default function QuoteForm({ quoteId }: { quoteId: string }) {
     calculateTTC
   ]);
 
+  useEffect(() => {
+    if (quoteItems && quoteItems.length > 0) {
+      console.log("QuoteItems:", quoteItems);
+      // Safely check if product exists
+      if (quoteItems[0].product) {
+        console.log("First item product:", quoteItems[0].product);
+        console.log("First item product category:", (quoteItems[0].product as any).category);
+      } else {
+        console.log("Product property is undefined in quoteItems");
+      }
+    }
+  }, [quoteItems]);
+
+  // Add this helper function at the top of your component
+  const calculateSubtotal = (category: string, includeTax: boolean = false) => {
+    if (!quoteItems || !products) return '0.00';
+    
+    // Get all product IDs for the given category
+    const categoryProductIds = products
+      .filter(product => product.category === category)
+      .map(product => product.id);
+    
+    // Filter quote items by product_id
+    const filteredItems = quoteItems.filter(item => 
+      categoryProductIds.includes(item.product_id)
+    );
+    
+    if (filteredItems.length === 0) return '0.00';
+    
+    // Calculate total using product price from products array
+    const total = filteredItems.reduce((sum, item) => {
+      const product = products.find(p => p.id === item.product_id);
+      return sum + ((product?.price || 0) * item.quantity);
+    }, 0);
+    
+    return includeTax ? (total * 1.2).toFixed(2) : total.toFixed(2);
+  };
+
   if (isLoading) {
     return (
       <div className="flex flex-col items-center justify-center pt-20 px-4 md:px-0">
@@ -1024,6 +1062,50 @@ export default function QuoteForm({ quoteId }: { quoteId: string }) {
             <div className="p-4 border border-gray-200 rounded-lg bg-white mb-4">
               <h4 className="text-base font-medium mb-3">Détail du prix</h4>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  <Label htmlFor="decoration_subtotal_ht" className="text-sm text-gray-600">Sous-total meubles et décoration HT</Label>
+                  <Input 
+                    id="decoration_subtotal_ht" 
+                    type="number"
+                    value={calculateSubtotal('decoration')}
+                    className="w-full text-base font-semibold bg-gray-100" 
+                    disabled
+                  />
+                </div>
+                
+                <div>
+                  <Label htmlFor="traiteur_subtotal_ht" className="text-sm text-gray-600">Sous-total traiteur HT</Label>
+                  <Input 
+                    id="traiteur_subtotal_ht" 
+                    type="number"
+                    value={calculateSubtotal('traiteur')}
+                    className="w-full text-base font-semibold bg-gray-100" 
+                    disabled
+                  />
+                </div>
+
+                <div>
+                  <Label htmlFor="decoration_subtotal_ttc" className="text-sm text-gray-600">Sous-total meubles et décoration TTC</Label>
+                  <Input 
+                    id="decoration_subtotal_ttc" 
+                    type="number"
+                    value={calculateSubtotal('decoration', true)}
+                    className="w-full text-base font-semibold bg-gray-100" 
+                    disabled
+                  />
+                </div>
+                
+                <div>
+                  <Label htmlFor="traiteur_subtotal_ttc" className="text-sm text-gray-600">Sous-total traiteur TTC</Label>
+                  <Input 
+                    id="traiteur_subtotal_ttc" 
+                    type="number"
+                    value={calculateSubtotal('traiteur', true)}
+                    className="w-full text-base font-semibold bg-gray-100" 
+                    disabled
+                  />
+                </div>
+
                 <div>
                   <Label htmlFor="total_cost" className="text-sm text-gray-600">Prix total HT</Label>
                   <Input 
