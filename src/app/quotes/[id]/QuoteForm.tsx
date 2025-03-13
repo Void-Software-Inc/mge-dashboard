@@ -14,6 +14,7 @@ import { Switch } from "@/components/ui/switch"
 import { ChevronLeftIcon, DownloadIcon, PlusIcon, TrashIcon } from "@radix-ui/react-icons"
 import jsPDF from 'jspdf';
 import 'jspdf-autotable';
+import { isEqual as lodashEqual } from 'lodash';
 
 import { useRouter } from 'next/navigation'
 import { useAppContext } from "@/app/context/AppContext"
@@ -50,24 +51,6 @@ interface FormErrors {
   };
   payments?: { mode?: string; amount?: string }[];
 }
-
-const isEqual = (obj1: any, obj2: any): boolean => {
-  if (obj1 === obj2) return true;
-  if (typeof obj1 !== 'object' || typeof obj2 !== 'object') return obj1 === obj2;
-  if (obj1 === null || obj2 === null) return obj1 === obj2;
-  
-  const keys1 = Object.keys(obj1);
-  const keys2 = Object.keys(obj2);
-  
-  if (keys1.length !== keys2.length) return false;
-  
-  for (const key of keys1) {
-    if (!keys2.includes(key)) return false;
-    if (!isEqual(obj1[key], obj2[key])) return false;
-  }
-  
-  return true;
-};
 
 export default function QuoteForm({ quoteId }: { quoteId: string }) {
   const router = useRouter()
@@ -137,10 +120,24 @@ export default function QuoteForm({ quoteId }: { quoteId: string }) {
         const [fetchedQuote] = await Promise.all([
           getQuote(parseInt(quoteId))
         ])
+        
+        // Create a deep copy and ensure all numeric values are properly set
+        const formDataCopy = {
+          ...JSON.parse(JSON.stringify(fetchedQuote)),
+          total_cost: Number(fetchedQuote.total_cost),
+          traiteur_price: Number(fetchedQuote.traiteur_price || 0),
+          other_expenses: Number(fetchedQuote.other_expenses || 0),
+          deposit_amount: Number(fetchedQuote.deposit_amount || 0),
+          deposit_percentage: Number(fetchedQuote.deposit_percentage || 0),
+          is_paid: !!fetchedQuote.is_paid,  // Keep original is_paid value
+          is_deposit: !!fetchedQuote.is_deposit,
+          is_traiteur: !!fetchedQuote.is_traiteur,
+          payments: fetchedQuote.payments || []  // Ensure payments array exists
+        };
+
         setQuote(fetchedQuote)
-        const formDataCopy = JSON.parse(JSON.stringify(fetchedQuote));
         setFormData(formDataCopy)
-        setIsChanged(false);
+        setIsChanged(false)
         await fetchQuoteItems()
       } catch (error) {
         console.error('Error fetching quote:', error)
@@ -239,14 +236,62 @@ export default function QuoteForm({ quoteId }: { quoteId: string }) {
   }, [formData])
 
   useEffect(() => {
-    const formDataWithoutTotal = formData ? { ...formData } : null;
-    const quoteWithoutTotal = quote ? { ...quote } : null;
-    
+    const compareObjects = (obj1: any, obj2: any) => {
+      // Helper function to clean objects for comparison
+      const cleanObject = (obj: any) => {
+        if (!obj) return obj;
+        const cleaned = { ...obj };
+        
+        // Remove properties that shouldn't affect the comparison
+        delete cleaned.last_update;
+        delete cleaned.created_at;
+        delete cleaned.id; // Add this to ignore ID differences
+        
+        // Clean up numbers to ensure consistent decimal places
+        if (cleaned.total_cost !== undefined) {
+          cleaned.total_cost = Number(cleaned.total_cost.toFixed(2));
+        }
+        if (cleaned.traiteur_price !== undefined) {
+          cleaned.traiteur_price = Number((cleaned.traiteur_price || 0).toFixed(2));
+        }
+        if (cleaned.other_expenses !== undefined) {
+          cleaned.other_expenses = Number((cleaned.other_expenses || 0).toFixed(2));
+        }
+        if (cleaned.deposit_amount !== undefined) {
+          cleaned.deposit_amount = Number((cleaned.deposit_amount || 0).toFixed(2));
+        }
+        if (cleaned.deposit_percentage !== undefined) {
+          cleaned.deposit_percentage = Number((cleaned.deposit_percentage || 0).toFixed(2));
+        }
+        
+        // Ensure consistent boolean values
+        cleaned.is_paid = !!cleaned.is_paid;
+        cleaned.is_deposit = !!cleaned.is_deposit;
+        cleaned.is_traiteur = !!cleaned.is_traiteur;
+
+        // Ensure payments array is consistent
+        if (cleaned.payments) {
+          cleaned.payments = cleaned.payments.map((payment: any) => ({
+            mode: payment.mode || '',
+            amount: payment.amount ? Number(payment.amount.toFixed(2)) : null
+          }));
+        }
+        
+        return cleaned;
+      };
+      
+      const cleanedObj1 = cleanObject(obj1);
+      const cleanedObj2 = cleanObject(obj2);
+      
+      // Rename this variable to avoid the naming conflict
+      const objectsAreEqual = lodashEqual(cleanedObj1, cleanedObj2);
+      
+      return objectsAreEqual;
+    };
+
     let hasChanges = false;
-    if (formDataWithoutTotal && quoteWithoutTotal) {
-      const { total_cost: _f, ...formDataCompare } = formDataWithoutTotal;
-      const { total_cost: _q, ...quoteCompare } = quoteWithoutTotal;
-      hasChanges = !isEqual(formDataCompare, quoteCompare);
+    if (formData && quote) {
+      hasChanges = !compareObjects(formData, quote);
     }
 
     // Add check for quote item changes
@@ -707,53 +752,6 @@ export default function QuoteForm({ quoteId }: { quoteId: string }) {
       return { ...prev, payments: newPayments };
     });
   };
-
-  // Add this useEffect to automatically update is_paid status when payments match total
-  useEffect(() => {
-    if (formData) {
-      const totalTTC = calculateTTC(formData.total_cost);
-      
-      // Calculate total payments
-      const totalPayments = (formData.payments?.reduce((sum, payment) => 
-        sum + (payment.amount === null ? 0 : Number(payment.amount)), 
-        0
-      ) || 0);
-      
-      // Add deposit if applicable
-      const depositAmount = formData.is_deposit && formData.total_cost 
-        ? calculateTTC(formData.total_cost) * (formData.deposit_percentage / 100)
-        : 0;
-      
-      const totalPaid = totalPayments + depositAmount;
-      
-      // Check if total paid matches or exceeds total TTC
-      const isPaidInFull = Math.abs(totalPaid - totalTTC) < 0.01 || totalPaid > totalTTC;
-      
-      // Only update if the status would change
-      if (isPaidInFull !== formData.is_paid) {
-        setFormData(prev => prev ? { ...prev, is_paid: isPaidInFull } : null);
-      }
-    }
-  }, [
-    formData?.total_cost,
-    formData?.is_deposit,
-    formData?.deposit_percentage,
-    formData?.payments,
-    calculateTTC
-  ]);
-
-  useEffect(() => {
-    if (quoteItems && quoteItems.length > 0) {
-      console.log("QuoteItems:", quoteItems);
-      // Safely check if product exists
-      if (quoteItems[0].product) {
-        console.log("First item product:", quoteItems[0].product);
-        console.log("First item product category:", (quoteItems[0].product as any).category);
-      } else {
-        console.log("Product property is undefined in quoteItems");
-      }
-    }
-  }, [quoteItems]);
 
   // Add this helper function at the top of your component
   const calculateSubtotal = (category: string, includeTax: boolean = false) => {
