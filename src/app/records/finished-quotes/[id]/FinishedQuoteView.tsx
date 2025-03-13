@@ -21,6 +21,7 @@ import { format, parseISO } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { getProducts } from "@/services/products"
 import { Product } from "@/utils/types/products"
+import { generateQuotePDF, generateInvoicePDF } from "@/utils/pdf/generateDocumentPDF"
 import {
   Table,
   TableBody,
