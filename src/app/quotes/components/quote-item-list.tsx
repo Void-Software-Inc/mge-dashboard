@@ -155,6 +155,7 @@ export function QuoteItemList({
       product_id: product.productId,
       quantity: product.quantity,
       quote_id: quoteId,
+      product: { name: '', price: 0 } // Provide the required structure
     }));
     onItemCreate(newItems);
     setIsDrawerOpen(false);
