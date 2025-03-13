@@ -387,9 +387,9 @@ export const columns: ColumnDef<QuoteRecord>[] = [
       return (
         <div className="flex justify-center">
           {isPaid ? (
-            <CheckIcon className="h-5 w-5 text-[#bef264] border border-2 border-[#bef264] rounded-full" />
+            <CheckIcon className="h-5 w-5 text-[#bef264] border border-[#bef264] rounded-full" />
           ) : (
-            <Cross2Icon className="h-5 w-5 text-red-500 border border-2 border-red-500 rounded-full" />
+            <Cross2Icon className="h-5 w-5 text-red-500 border border-red-500 rounded-full" />
           )}
         </div>
       );

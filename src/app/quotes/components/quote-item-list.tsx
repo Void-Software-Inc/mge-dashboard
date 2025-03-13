@@ -155,6 +155,7 @@ export function QuoteItemList({
       product_id: product.productId,
       quantity: product.quantity,
       quote_id: quoteId,
+      product: { name: '', price: 0 } // Provide the required structure
     }));
     onItemCreate(newItems);
     setIsDrawerOpen(false);
@@ -351,7 +352,7 @@ export function QuoteItemList({
             </div>
             <span className='text-sm text-gray-500 text-center'>
               <span className="hidden sm:inline">Page </span>
-              {currentPage}<span className="hidden sm:inline"> sur </span>/<span className="sm:hidden"> </span>{totalPages}
+              {currentPage}<span className="hidden sm:inline"> </span> / <span className="sm:hidden"> </span>{totalPages}
             </span>
             <div className="flex space-x-2">
               <Button 
