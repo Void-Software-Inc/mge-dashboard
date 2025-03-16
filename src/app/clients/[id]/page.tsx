@@ -334,56 +334,7 @@ export default function ClientDetailPage({ params }: { params: { id: string } })
         <div className="flex justify-between items-center mb-4">
           <h2 className="text-2xl font-bold">Devis du client</h2>
           
-          {/* Add filter button */}
-          <Popover>
-            <PopoverTrigger asChild>
-              <Button 
-                variant={isFilterActive ? "default" : "outline"} 
-                size="sm"
-                className={isFilterActive ? "bg-blue-500 hover:bg-blue-600" : ""}
-              >
-                <MixerHorizontalIcon className="h-4 w-4 mr-2" />
-                Filtrer par statut
-              </Button>
-            </PopoverTrigger>
-            <PopoverContent className="w-80">
-              <div className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <h4 className="font-medium">Filtres par statut</h4>
-                  <Button 
-                    variant="ghost" 
-                    size="sm" 
-                    onClick={clearFilters}
-                    disabled={!isFilterActive}
-                  >
-                    <Cross2Icon className="h-4 w-4 mr-2" />
-                    Effacer
-                  </Button>
-                </div>
-                
-                <div>
-                  <div className="space-y-2 max-h-60 overflow-y-auto">
-                    {quoteStatus.map((status) => (
-                      <div key={status.value} className="flex items-center space-x-2">
-                        <Checkbox 
-                          id={`status-${status.value}`} 
-                          checked={selectedQuoteStatuses.includes(status.value)}
-                          onCheckedChange={() => handleQuoteStatusChange(status.value)}
-                        />
-                        <Label htmlFor={`status-${status.value}`} className="flex items-center">
-                          <div 
-                            className="w-3 h-3 rounded-full mr-2"
-                            style={{ backgroundColor: status.color }}
-                          />
-                          {status.name}
-                        </Label>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </div>
-            </PopoverContent>
-          </Popover>
+         
         </div>
         
         {/* Display active filters */}
