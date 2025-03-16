@@ -10,4 +10,5 @@ export interface Client {
   country: string;
   created_at: string;
   updated_at: string;
+  quote_count?: number;
 }
