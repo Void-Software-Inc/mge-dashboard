@@ -1,6 +1,6 @@
 'use client';
 import { useCallback, useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { Address, Quote, QuoteItem, quoteStatus } from "@/utils/types/quotes";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -13,6 +13,7 @@ import { ChevronLeftIcon, PlusIcon } from "@radix-ui/react-icons";
 import { DatePicker } from "../components/date-picker";
 import { QuoteItemList } from "../components/quote-item-list";
 import { createQuote } from "@/services/quotes";
+import { getClient } from "@/services/clients";
 import { useAppContext } from "@/app/context/AppContext";
 import { format } from 'date-fns';
 
@@ -44,6 +45,10 @@ interface TouchedFields {
   deposit_amount: boolean;
 }
 
+interface QuoteCreateFormProps {
+  clientId?: string;
+}
+
 const initialQuote: Partial<Quote> = {
   first_name: '',
   last_name: '',
@@ -69,14 +74,17 @@ const initialQuote: Partial<Quote> = {
   }
 };
 
-export default function QuoteCreateForm() {
+export default function QuoteCreateForm({ clientId }: QuoteCreateFormProps) {
   const router = useRouter();
   const { setQuotesShouldRefetch } = useAppContext();
+  const searchParams = useSearchParams();
+  const clientIdFromUrl = clientId || searchParams.get('client_id');
 
   const [formData, setFormData] = useState(initialQuote);
   const [createdItems, setCreatedItems] = useState<QuoteItem[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [totalCostFromItems, setTotalCostFromItems] = useState(0);
+  const [isLoadingClient, setIsLoadingClient] = useState(!!clientIdFromUrl);
 
   const [errors, setErrors] = useState<FormErrors>({});
   const [isFormValid, setIsFormValid] = useState(false);
@@ -94,7 +102,68 @@ export default function QuoteCreateForm() {
     deposit_amount: false,
   });
 
-  const handleGoBack = useCallback(() => router.push('/quotes'), [router]);
+  // Fetch client data if clientId is provided
+  useEffect(() => {
+    if (clientIdFromUrl) {
+      const fetchClientData = async () => {
+        setIsLoadingClient(true);
+        try {
+          const clientData = await getClient(clientIdFromUrl);
+          
+          // Parse client name into first and last name
+          const nameParts = clientData.name.split(' ');
+          const lastName = nameParts.pop() || '';
+          const firstName = nameParts.join(' ');
+          
+          // Create updated form data
+          const updatedFormData: Partial<Quote> = {
+            ...initialQuote,
+            first_name: firstName,
+            last_name: lastName,
+            phone_number: clientData.phone,
+            email: clientData.email || '',
+            address: {
+              voie: clientData.address || '',
+              compl: null,
+              cp: clientData.postal_code || '',
+              ville: clientData.city || '',
+              depart: '',
+              pays: 'France'
+            }
+          };
+          
+          // Update form data
+          setFormData(updatedFormData);
+          
+          // Mark these fields as touched since they're pre-filled
+          setTouched(prev => ({
+            ...prev,
+            first_name: true,
+            last_name: true,
+            phone_number: true,
+            email: !!clientData.email
+          }));
+          
+        } catch (error) {
+          console.error('Error fetching client data:', error);
+          toast.error('Erreur lors du chargement des données client');
+        } finally {
+          setIsLoadingClient(false);
+        }
+      };
+      
+      fetchClientData();
+    }
+  }, [clientIdFromUrl]);
+
+  const handleGoBack = useCallback(() => {
+    // If we came from a client page, go back there
+    if (clientIdFromUrl) {
+      router.push(`/clients/${clientIdFromUrl}`);
+    } else {
+      router.push('/quotes');
+    }
+  }, [router, clientIdFromUrl]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { id, value } = e.target;
@@ -311,273 +380,284 @@ export default function QuoteCreateForm() {
               }
             `}
             variant="secondary"
-            disabled={!isFormValid || isSubmitting}
+            disabled={!isFormValid || isSubmitting || isLoadingClient}
             onClick={handleSubmit}
           >
             <PlusIcon className="w-4 h-4 mr-2" />
-            {isSubmitting ? 'Création...' : 'Créer'}
+            {isSubmitting ? 'Création...' : isLoadingClient ? 'Chargement...' : clientIdFromUrl ? 'Créer un devis pour ce client' : 'Créer'}
           </Button>
         </div>
       </div>
       <form onSubmit={handleSubmit} className="flex flex-col items-center justify-center pt-20 px-4 md:px-0 mb-40">
-        <div className="w-full max-w-5xl">
-          <div className="mb-4">
-            <Label htmlFor="status" className="text-base">Statut du devis</Label>
-            <Select
-              onValueChange={(value) => handleSelectChange(value, 'status')}
-              value={formData.status}
-            >
-              <SelectTrigger className={`w-full ${errors.status ? 'border-red-500' : ''}`}>
-                <SelectValue placeholder="Sélectionner un statut" />
-              </SelectTrigger>
-              <SelectContent>
-                {filteredQuoteStatus.map((status) => (
-                  <SelectItem key={status.value} value={status.value}>
-                    <div className="flex items-center">
-                      <div 
-                        className={`w-4 h-4 rounded-full mr-2`}
-                        style={{ backgroundColor: status.color }}
-                      />
-                      {status.name}
-                    </div>
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            {errors.status && <p className="text-red-500 text-sm mt-1">{errors.status}</p>}
+        {isLoadingClient ? (
+          <div className="w-full max-w-5xl flex items-center justify-center py-20">
+            <p className="text-muted-foreground">Chargement des informations client...</p>
           </div>
-          <div className="mb-4">
-            <Label htmlFor="last_name" className="text-base">Nom du client</Label>
-            <Input 
-              id="last_name" 
-              value={formData.last_name} 
-              onChange={handleInputChange} 
-              className={`w-full text-base ${errors.last_name ? 'border-red-500' : ''}`} 
-            />
-            {errors.last_name && <p className="text-red-500 text-sm mt-1">{errors.last_name}</p>}
-          </div>
-          <div className="mb-4">
-            <Label htmlFor="first_name" className="text-base">Prénom du client</Label>
-            <Input 
-              id="first_name" 
-              value={formData.first_name} 
-              onChange={handleInputChange} 
-              className={`w-full text-base ${errors.first_name ? 'border-red-500' : ''}`} 
-            />
-            {errors.first_name && <p className="text-red-500 text-sm mt-1">{errors.first_name}</p>}
-          </div>
-          <div className="mb-4">
-            <Label htmlFor="phone_number" className="text-base">Numéro de téléphone du client</Label>
-            <Input 
-              id="phone_number" 
-              value={formData.phone_number} 
-              onChange={handleInputChange} 
-              className={`w-full text-base ${errors.phone_number ? 'border-red-500' : ''}`} 
-            />
-            {errors.phone_number && <p className="text-red-500 text-sm mt-1">{errors.phone_number}</p>}
-          </div>
-          <div className="mb-4">
-            <Label htmlFor="email" className="text-base">Email du client</Label>
-            <Input 
-              id="email" 
-              value={formData.email} 
-              onChange={handleInputChange} 
-              className={`w-full text-base ${errors.email ? 'border-red-500' : ''}`} 
-            />
-            {errors.email && <p className="text-red-500 text-sm mt-1">{errors.email}</p>}
-          </div>
-          <div className="mb-4">
-            <Label className="text-base">Adresse</Label>
-            <div className="grid grid-cols-2 gap-4">
-              <div className="col-span-2">
-                <Label htmlFor="voie" className="text-sm">Voie</Label>
-                <Input 
-                  id="voie" 
-                  value={formData.address?.voie ?? ''} 
-                  onChange={(e) => handleAddressChange('voie', e.target.value)} 
-                  className="w-full text-base" 
-                />
+        ) : (
+          <div className="w-full max-w-5xl">
+            {clientIdFromUrl && (
+              <div className="mb-6 p-4 bg-blue-50 rounded-md">
+                <p className="text-blue-700">Création d'un devis pour le client existant</p>
               </div>
-              <div className="col-span-2">
-                <Label htmlFor="compl" className="text-sm">Complément d'adresse</Label>
-                <Input 
-                  id="compl" 
-                  value={formData.address?.compl ?? ''} 
-                  onChange={(e) => handleAddressChange('compl', e.target.value)} 
-                  className="w-full text-base" 
-                />
+            )}
+            <div className="mb-4">
+              <Label htmlFor="status" className="text-base">Statut du devis</Label>
+              <Select
+                onValueChange={(value) => handleSelectChange(value, 'status')}
+                value={formData.status}
+              >
+                <SelectTrigger className={`w-full ${errors.status ? 'border-red-500' : ''}`}>
+                  <SelectValue placeholder="Sélectionner un statut" />
+                </SelectTrigger>
+                <SelectContent>
+                  {filteredQuoteStatus.map((status) => (
+                    <SelectItem key={status.value} value={status.value}>
+                      <div className="flex items-center">
+                        <div 
+                          className={`w-4 h-4 rounded-full mr-2`}
+                          style={{ backgroundColor: status.color }}
+                        />
+                        {status.name}
+                      </div>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {errors.status && <p className="text-red-500 text-sm mt-1">{errors.status}</p>}
+            </div>
+            <div className="mb-4">
+              <Label htmlFor="last_name" className="text-base">Nom du client</Label>
+              <Input 
+                id="last_name" 
+                value={formData.last_name} 
+                onChange={handleInputChange} 
+                className={`w-full text-base ${errors.last_name ? 'border-red-500' : ''}`} 
+              />
+              {errors.last_name && <p className="text-red-500 text-sm mt-1">{errors.last_name}</p>}
+            </div>
+            <div className="mb-4">
+              <Label htmlFor="first_name" className="text-base">Prénom du client</Label>
+              <Input 
+                id="first_name" 
+                value={formData.first_name} 
+                onChange={handleInputChange} 
+                className={`w-full text-base ${errors.first_name ? 'border-red-500' : ''}`} 
+              />
+              {errors.first_name && <p className="text-red-500 text-sm mt-1">{errors.first_name}</p>}
+            </div>
+            <div className="mb-4">
+              <Label htmlFor="phone_number" className="text-base">Numéro de téléphone du client</Label>
+              <Input 
+                id="phone_number" 
+                value={formData.phone_number} 
+                onChange={handleInputChange} 
+                className={`w-full text-base ${errors.phone_number ? 'border-red-500' : ''}`} 
+              />
+              {errors.phone_number && <p className="text-red-500 text-sm mt-1">{errors.phone_number}</p>}
+            </div>
+            <div className="mb-4">
+              <Label htmlFor="email" className="text-base">Email du client</Label>
+              <Input 
+                id="email" 
+                value={formData.email} 
+                onChange={handleInputChange} 
+                className={`w-full text-base ${errors.email ? 'border-red-500' : ''}`} 
+              />
+              {errors.email && <p className="text-red-500 text-sm mt-1">{errors.email}</p>}
+            </div>
+            <div className="mb-4">
+              <Label className="text-base">Adresse</Label>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="col-span-2">
+                  <Label htmlFor="voie" className="text-sm">Voie</Label>
+                  <Input 
+                    id="voie" 
+                    value={formData.address?.voie ?? ''} 
+                    onChange={(e) => handleAddressChange('voie', e.target.value)} 
+                    className="w-full text-base" 
+                  />
+                </div>
+                <div className="col-span-2">
+                  <Label htmlFor="compl" className="text-sm">Complément d'adresse</Label>
+                  <Input 
+                    id="compl" 
+                    value={formData.address?.compl ?? ''} 
+                    onChange={(e) => handleAddressChange('compl', e.target.value)} 
+                    className="w-full text-base" 
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="cp" className="text-sm">Code Postal</Label>
+                  <Input 
+                    id="cp" 
+                    value={formData.address?.cp ?? ''} 
+                    onChange={(e) => handleAddressChange('cp', e.target.value)} 
+                    className="w-full text-base" 
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="ville" className="text-sm">Ville</Label>
+                  <Input 
+                    id="ville" 
+                    value={formData.address?.ville ?? ''} 
+                    onChange={(e) => handleAddressChange('ville', e.target.value)} 
+                    className="w-full text-base" 
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="depart" className="text-sm">Département</Label>
+                  <Input 
+                    id="depart" 
+                    value={formData.address?.depart ?? ''} 
+                    onChange={(e) => handleAddressChange('depart', e.target.value)} 
+                    className="w-full text-base" 
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="pays" className="text-sm">Pays</Label>
+                  <Input 
+                    id="pays" 
+                    value={formData.address?.pays ?? 'France'} 
+                    onChange={(e) => handleAddressChange('pays', e.target.value)} 
+                    className="w-full text-base"
+                    disabled
+                  />
+                </div>
               </div>
-              <div>
-                <Label htmlFor="cp" className="text-sm">Code Postal</Label>
+            </div>
+            <div className="mb-4">
+              <Label className="text-base">Date de début de l'événement</Label>
+              <DatePicker
+                date={formData.event_start_date ? new Date(formData.event_start_date) : undefined}
+                onDateChange={handleStartDateChange}
+                label="Date de début de l'événement"
+              />
+              {errors.event_start_date && <p className="text-red-500 text-sm mt-1">{errors.event_start_date}</p>}
+            </div>
+            <div className="mb-4">
+              <Label className="text-base">Date de fin de l'événement</Label>
+              <DatePicker
+                date={formData.event_end_date ? new Date(formData.event_end_date) : undefined}
+                onDateChange={handleEndDateChange}
+                label="Date de fin de l'événement"
+              />
+              {errors.event_end_date && <p className="text-red-500 text-sm mt-1">{errors.event_end_date}</p>}
+            </div>
+            <div className="mb-4">
+              <Label htmlFor="description" className="text-base">Description</Label>
+              <Textarea 
+                id="description" 
+                value={formData.description} 
+                onChange={handleInputChange} 
+                className="w-full text-base" 
+              />
+            </div>
+            <div className="mb-4">
+              <Label className="text-base">Produits du devis</Label>
+              <QuoteItemList 
+                items={[]}
+                taintedItems={new Set()}
+                editedItems={new Map()}
+                createdItems={createdItems}
+                onItemTaint={() => {}}
+                onItemEdit={() => {}}
+                onItemCreate={handleItemCreate}
+                onItemRemove={handleItemRemove}
+                isLoading={false}
+                quoteId={0}
+                onTotalCostChange={handleTotalCostChange} // Pass the callback
+                disabled={!!formData?.is_deposit || !!formData?.is_paid}
+              />
+            </div>
+            <div className="mb-4 flex items-center space-x-2">
+              <Switch
+                id="is_traiteur"
+                checked={formData.is_traiteur}
+                onCheckedChange={() => handleSwitchChange('is_traiteur')}
+                disabled={!!formData?.is_deposit || !!formData?.is_paid}
+              />
+              <Label htmlFor="is_traiteur" className="text-base">Service traiteur</Label>
+            </div>
+            <div className="mb-4">
+              <Label htmlFor="traiteur_price" className="text-base">Prix traiteur</Label>
+              <Input 
+                id="traiteur_price" 
+                type="number"
+                value={formData.traiteur_price ?? ''} 
+                onChange={handleInputChange} 
+                className={`w-full text-base ${errors.traiteur_price ? 'border-red-500' : ''}`} 
+                disabled={!formData?.is_traiteur || formData?.is_paid || formData?.is_deposit}
+              />
+              {errors.traiteur_price && <p className="text-red-500 text-sm mt-1">{errors.traiteur_price}</p>}
+            </div>
+            <div className="mb-4">
+              <Label htmlFor="other_expenses" className="text-base">Autres charges</Label>
+              <Input 
+                id="other_expenses" 
+                type="number"
+                value={formData.other_expenses ?? ''} 
+                onChange={handleInputChange} 
+                className={`w-full text-base ${errors.other_expenses ? 'border-red-500' : ''}`}
+                disabled={formData?.is_paid || formData?.is_deposit}
+              />
+              {errors.other_expenses && <p className="text-red-500 text-sm mt-1">{errors.other_expenses}</p>}
+            </div>
+            <div className="mb-4">
+              <Label htmlFor="total_cost" className="text-base">Prix total</Label>
+              <Input 
+                id="total_cost" 
+                type="number"
+                value={formData.total_cost ?? ''} 
+                className="w-full text-base" 
+                disabled
+              />
+            </div>
+            <div className="mb-4 flex items-center space-x-2">
+              <Switch
+                id="is_deposit"
+                checked={formData?.is_deposit ?? false}
+                onCheckedChange={() => handleDepositChange('is_deposit')}
+              />
+              <Label htmlFor="is_deposit" className="text-base">Acompte versé (30%)</Label>
+            </div>
+            {formData?.is_deposit && (
+              <div className="mb-4">
+                <Label htmlFor="deposit_amount" className="text-base">Montant de l'acompte</Label>
                 <Input 
-                  id="cp" 
-                  value={formData.address?.cp ?? ''} 
-                  onChange={(e) => handleAddressChange('cp', e.target.value)} 
-                  className="w-full text-base" 
-                />
-              </div>
-              <div>
-                <Label htmlFor="ville" className="text-sm">Ville</Label>
-                <Input 
-                  id="ville" 
-                  value={formData.address?.ville ?? ''} 
-                  onChange={(e) => handleAddressChange('ville', e.target.value)} 
-                  className="w-full text-base" 
-                />
-              </div>
-              <div>
-                <Label htmlFor="depart" className="text-sm">Département</Label>
-                <Input 
-                  id="depart" 
-                  value={formData.address?.depart ?? ''} 
-                  onChange={(e) => handleAddressChange('depart', e.target.value)} 
-                  className="w-full text-base" 
-                />
-              </div>
-              <div>
-                <Label htmlFor="pays" className="text-sm">Pays</Label>
-                <Input 
-                  id="pays" 
-                  value={formData.address?.pays ?? 'France'} 
-                  onChange={(e) => handleAddressChange('pays', e.target.value)} 
+                  id="deposit_amount" 
+                  type="number"
+                  value={formData?.deposit_amount ?? ''} 
                   className="w-full text-base"
                   disabled
                 />
               </div>
-            </div>
-          </div>
-          <div className="mb-4">
-            <Label className="text-base">Date de début de l'événement</Label>
-            <DatePicker
-              date={formData.event_start_date ? new Date(formData.event_start_date) : undefined}
-              onDateChange={handleStartDateChange}
-              label="Date de début de l'événement"
-            />
-            {errors.event_start_date && <p className="text-red-500 text-sm mt-1">{errors.event_start_date}</p>}
-          </div>
-          <div className="mb-4">
-            <Label className="text-base">Date de fin de l'événement</Label>
-            <DatePicker
-              date={formData.event_end_date ? new Date(formData.event_end_date) : undefined}
-              onDateChange={handleEndDateChange}
-              label="Date de fin de l'événement"
-            />
-            {errors.event_end_date && <p className="text-red-500 text-sm mt-1">{errors.event_end_date}</p>}
-          </div>
-          <div className="mb-4">
-            <Label htmlFor="description" className="text-base">Description</Label>
-            <Textarea 
-              id="description" 
-              value={formData.description} 
-              onChange={handleInputChange} 
-              className="w-full text-base" 
-            />
-          </div>
-          <div className="mb-4">
-            <Label className="text-base">Produits du devis</Label>
-            <QuoteItemList 
-              items={[]}
-              taintedItems={new Set()}
-              editedItems={new Map()}
-              createdItems={createdItems}
-              onItemTaint={() => {}}
-              onItemEdit={() => {}}
-              onItemCreate={handleItemCreate}
-              onItemRemove={handleItemRemove}
-              isLoading={false}
-              quoteId={0}
-              onTotalCostChange={handleTotalCostChange} // Pass the callback
-              disabled={!!formData?.is_deposit || !!formData?.is_paid}
-            />
-          </div>
-          <div className="mb-4 flex items-center space-x-2">
-            <Switch
-              id="is_traiteur"
-              checked={formData.is_traiteur}
-              onCheckedChange={() => handleSwitchChange('is_traiteur')}
-              disabled={!!formData?.is_deposit || !!formData?.is_paid}
-            />
-            <Label htmlFor="is_traiteur" className="text-base">Service traiteur</Label>
-          </div>
-          <div className="mb-4">
-            <Label htmlFor="traiteur_price" className="text-base">Prix traiteur</Label>
-            <Input 
-              id="traiteur_price" 
-              type="number"
-              value={formData.traiteur_price ?? ''} 
-              onChange={handleInputChange} 
-              className={`w-full text-base ${errors.traiteur_price ? 'border-red-500' : ''}`} 
-              disabled={!formData?.is_traiteur || formData?.is_paid || formData?.is_deposit}
-            />
-            {errors.traiteur_price && <p className="text-red-500 text-sm mt-1">{errors.traiteur_price}</p>}
-          </div>
-          <div className="mb-4">
-            <Label htmlFor="other_expenses" className="text-base">Autres charges</Label>
-            <Input 
-              id="other_expenses" 
-              type="number"
-              value={formData.other_expenses ?? ''} 
-              onChange={handleInputChange} 
-              className={`w-full text-base ${errors.other_expenses ? 'border-red-500' : ''}`}
-              disabled={formData?.is_paid || formData?.is_deposit}
-            />
-            {errors.other_expenses && <p className="text-red-500 text-sm mt-1">{errors.other_expenses}</p>}
-          </div>
-          <div className="mb-4">
-            <Label htmlFor="total_cost" className="text-base">Prix total</Label>
-            <Input 
-              id="total_cost" 
-              type="number"
-              value={formData.total_cost ?? ''} 
-              className="w-full text-base" 
-              disabled
-            />
-          </div>
-          <div className="mb-4 flex items-center space-x-2">
-            <Switch
-              id="is_deposit"
-              checked={formData?.is_deposit ?? false}
-              onCheckedChange={() => handleDepositChange('is_deposit')}
-            />
-            <Label htmlFor="is_deposit" className="text-base">Acompte versé (30%)</Label>
-          </div>
-          {formData?.is_deposit && (
+            )}
             <div className="mb-4">
-              <Label htmlFor="deposit_amount" className="text-base">Montant de l'acompte</Label>
+              <Label className="text-base">Montant restant à payer</Label>
               <Input 
-                id="deposit_amount" 
                 type="number"
-                value={formData?.deposit_amount ?? ''} 
+                step="0.01"
+                value={formData ? (
+                  formData.is_paid 
+                    ? "0.00"
+                    : formData.is_deposit && formData.total_cost !== undefined && formData.deposit_amount !== undefined
+                      ? (formData.total_cost - formData.deposit_amount).toFixed(2)
+                      : formData.total_cost?.toFixed(2) ?? ''
+                ) : ''} 
                 className="w-full text-base"
                 disabled
               />
             </div>
-          )}
-          <div className="mb-4">
-            <Label className="text-base">Montant restant à payer</Label>
-            <Input 
-              type="number"
-              step="0.01"
-              value={formData ? (
-                formData.is_paid 
-                  ? "0.00"
-                  : formData.is_deposit && formData.total_cost !== undefined && formData.deposit_amount !== undefined
-                    ? (formData.total_cost - formData.deposit_amount).toFixed(2)
-                    : formData.total_cost?.toFixed(2) ?? ''
-              ) : ''} 
-              className="w-full text-base"
-              disabled
-            />
+            <div className="mb-4 flex items-center space-x-2">
+              <Switch
+                id="is_paid"
+                checked={formData.is_paid}
+                onCheckedChange={() => handleSwitchChange('is_paid')}
+              />
+              <Label htmlFor="is_paid" className="text-base">Payé</Label>
+            </div>
           </div>
-          <div className="mb-4 flex items-center space-x-2">
-            <Switch
-              id="is_paid"
-              checked={formData.is_paid}
-              onCheckedChange={() => handleSwitchChange('is_paid')}
-            />
-            <Label htmlFor="is_paid" className="text-base">Payé</Label>
-          </div>
-        </div>
+        )}
       </form>
       <Toaster />
     </>

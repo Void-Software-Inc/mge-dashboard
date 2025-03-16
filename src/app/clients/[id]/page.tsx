@@ -10,7 +10,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { FileTextIcon, ArrowLeftIcon, MixerHorizontalIcon, Cross2Icon } from "@radix-ui/react-icons"
+import { FileTextIcon, ArrowLeftIcon, MixerHorizontalIcon, Cross2Icon, PlusIcon } from "@radix-ui/react-icons"
 import { Skeleton } from "@/components/ui/skeleton"
 import { quoteStatus } from "@/utils/types/quotes"
 import { Checkbox } from "@/components/ui/checkbox"
@@ -258,6 +258,13 @@ export default function ClientDetailPage({ params }: { params: { id: string } })
           >
             <ArrowLeftIcon className="mr-2 h-4 w-4" />
             Retour
+          </Button>
+          <Button 
+            onClick={() => router.push(`/quotes/create?client_id=${params.id}`)}
+            className="bg-lime-300 hover:bg-lime-400 text-black"
+          >
+            <PlusIcon className="mr-2 h-4 w-4" />
+            Créer un devis
           </Button>
         </div>
       </div>
