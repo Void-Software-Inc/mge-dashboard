@@ -3,41 +3,48 @@
 import React, { createContext, useContext, useState, useEffect } from 'react'
 import { createClient } from '@/utils/supabase/client'
 
-const AppContext = createContext<{
+type AppContextType = {
   productsShouldRefetch: boolean;
-  setProductsShouldRefetch: React.Dispatch<React.SetStateAction<boolean>>;
+  setProductsShouldRefetch: (value: boolean) => void;
   quotesShouldRefetch: boolean;
-  setQuotesShouldRefetch: React.Dispatch<React.SetStateAction<boolean>>;
+  setQuotesShouldRefetch: (value: boolean) => void;
   productsRecordsShouldRefetch: boolean;
-  setProductsRecordsShouldRefetch: React.Dispatch<React.SetStateAction<boolean>>;
+  setProductsRecordsShouldRefetch: (value: boolean) => void;
   quotesRecordsShouldRefetch: boolean;
-  setQuotesRecordsShouldRefetch: React.Dispatch<React.SetStateAction<boolean>>;
+  setQuotesRecordsShouldRefetch: (value: boolean) => void;
   finishedQuotesShouldRefetch: boolean;
-  setFinishedQuotesShouldRefetch: React.Dispatch<React.SetStateAction<boolean>>;
+  setFinishedQuotesShouldRefetch: (value: boolean) => void;
   popularProductsShouldRefetch: boolean;
-  setPopularProductsShouldRefetch: React.Dispatch<React.SetStateAction<boolean>>;
-}>({
-  productsShouldRefetch: false,
+  setPopularProductsShouldRefetch: (value: boolean) => void;
+  clientsShouldRefetch: boolean;
+  setClientsShouldRefetch: (value: boolean) => void;
+};
+
+export const AppContext = createContext<AppContextType>({
+  productsShouldRefetch: true,
   setProductsShouldRefetch: () => {},
-  quotesShouldRefetch: false,
+  quotesShouldRefetch: true,
   setQuotesShouldRefetch: () => {},
-  productsRecordsShouldRefetch: false,
+  productsRecordsShouldRefetch: true,
   setProductsRecordsShouldRefetch: () => {},
-  quotesRecordsShouldRefetch: false,
+  quotesRecordsShouldRefetch: true,
   setQuotesRecordsShouldRefetch: () => {},
-  finishedQuotesShouldRefetch: false,
+  finishedQuotesShouldRefetch: true,
   setFinishedQuotesShouldRefetch: () => {},
-  popularProductsShouldRefetch: false,
+  popularProductsShouldRefetch: true,
   setPopularProductsShouldRefetch: () => {},
-})
+  clientsShouldRefetch: true,
+  setClientsShouldRefetch: () => {},
+});
 
 export const AppProvider = ({ children }: { children: React.ReactNode }) => {
-  const [productsShouldRefetch, setProductsShouldRefetch] = useState(false)
-  const [quotesShouldRefetch, setQuotesShouldRefetch] = useState(false)
-  const [productsRecordsShouldRefetch, setProductsRecordsShouldRefetch] = useState(false)
-  const [quotesRecordsShouldRefetch, setQuotesRecordsShouldRefetch] = useState(false)
-  const [finishedQuotesShouldRefetch, setFinishedQuotesShouldRefetch] = useState(false)
-  const [popularProductsShouldRefetch, setPopularProductsShouldRefetch] = useState(false)
+  const [productsShouldRefetch, setProductsShouldRefetch] = useState(true);
+  const [quotesShouldRefetch, setQuotesShouldRefetch] = useState(true);
+  const [productsRecordsShouldRefetch, setProductsRecordsShouldRefetch] = useState(true);
+  const [quotesRecordsShouldRefetch, setQuotesRecordsShouldRefetch] = useState(true);
+  const [finishedQuotesShouldRefetch, setFinishedQuotesShouldRefetch] = useState(true);
+  const [popularProductsShouldRefetch, setPopularProductsShouldRefetch] = useState(true);
+  const [clientsShouldRefetch, setClientsShouldRefetch] = useState(true);
 
   useEffect(() => {
     const supabase = createClient()
@@ -93,20 +100,24 @@ export const AppProvider = ({ children }: { children: React.ReactNode }) => {
   }, [])
 
   return (
-    <AppContext.Provider value={{ 
-      productsShouldRefetch, 
-      setProductsShouldRefetch, 
-      quotesShouldRefetch, 
-      setQuotesShouldRefetch, 
-      productsRecordsShouldRefetch, 
-      setProductsRecordsShouldRefetch,
-      quotesRecordsShouldRefetch,
-      setQuotesRecordsShouldRefetch,
-      finishedQuotesShouldRefetch,
-      setFinishedQuotesShouldRefetch,
-      popularProductsShouldRefetch,
-      setPopularProductsShouldRefetch
-    }}>
+    <AppContext.Provider
+      value={{
+        productsShouldRefetch,
+        setProductsShouldRefetch,
+        quotesShouldRefetch,
+        setQuotesShouldRefetch,
+        productsRecordsShouldRefetch,
+        setProductsRecordsShouldRefetch,
+        quotesRecordsShouldRefetch,
+        setQuotesRecordsShouldRefetch,
+        finishedQuotesShouldRefetch,
+        setFinishedQuotesShouldRefetch,
+        popularProductsShouldRefetch,
+        setPopularProductsShouldRefetch,
+        clientsShouldRefetch,
+        setClientsShouldRefetch,
+      }}
+    >
       {children}
     </AppContext.Provider>
   )

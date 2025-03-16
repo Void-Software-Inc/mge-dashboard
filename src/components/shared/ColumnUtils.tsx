@@ -2,16 +2,28 @@ import { productCategories, productColors, productTypes } from "@/utils/types/pr
 
 // Helper function for getting display column names
 export const getDisplayColumnName = (columnId: string): string => {
-  switch (columnId) {
-    case "name": return "Produit";
-    case "category": return "Catégorie";
-    case "type": return "Type";
-    case "color": return "Couleur";
-    case "stock": return "Stock";
-    case "price": return "Prix";
-    case "description": return "Description";
-    default: return columnId;
-  }
+  const columnNames: Record<string, string> = {
+    // Product columns
+    name: "Nom",
+    category: "Catégorie",
+    type: "Type",
+    color: "Couleur",
+    stock: "Stock",
+    price: "Prix",
+    description: "Description",
+    
+    // Client columns
+    email: "Email",
+    phone: "Téléphone",
+    company: "Entreprise",
+    address: "Adresse",
+    city: "Ville",
+    postal_code: "Code Postal",
+    country: "Pays",
+    created_at: "Date de création",
+  };
+  
+  return columnNames[columnId] || columnId;
 };
 
 // Helper function for getting display filter values
