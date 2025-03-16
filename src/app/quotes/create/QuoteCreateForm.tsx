@@ -388,172 +388,185 @@ export default function QuoteCreateForm({ clientId }: QuoteCreateFormProps) {
           </Button>
         </div>
       </div>
-      <form onSubmit={handleSubmit} className="flex flex-col items-center justify-center pt-20 px-4 md:px-0 mb-40">
-        {isLoadingClient ? (
-          <div className="w-full max-w-5xl flex items-center justify-center py-20">
-            <p className="text-muted-foreground">Chargement des informations client...</p>
+      <form onSubmit={handleSubmit} className="flex flex-col items-center justify-center pt-20 px-4 md:px-0">
+        <div className="w-full max-w-5xl">
+          {clientIdFromUrl && (
+            <div className="mb-6 p-4 bg-blue-50 rounded-md">
+              <p className="text-blue-700">Création d'un devis pour le client existant</p>
+            </div>
+          )}
+
+          {/* Enhanced Client Information Section */}
+          <div className="mb-8 border border-gray-200 rounded-lg p-6 bg-gray-50">
+            <h3 className="text-lg font-semibold mb-4">Informations Client</h3>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {/* Personal Information */}
+              <div className="p-4 border border-gray-200 rounded-lg bg-white">
+                <h4 className="text-base font-medium mb-3 text-gray-700">Coordonnées</h4>
+                <div className="space-y-4">
+                  <div>
+                    <Label htmlFor="last_name" className="text-sm text-gray-600">Nom</Label>
+                    <Input 
+                      id="last_name" 
+                      value={formData.last_name} 
+                      onChange={handleInputChange} 
+                      className={`w-full mt-1 ${errors.last_name ? 'border-red-500' : ''}`} 
+                    />
+                    {errors.last_name && <p className="text-red-500 text-sm mt-1">{errors.last_name}</p>}
+                  </div>
+                  
+                  <div>
+                    <Label htmlFor="first_name" className="text-sm text-gray-600">Prénom</Label>
+                    <Input 
+                      id="first_name" 
+                      value={formData.first_name} 
+                      onChange={handleInputChange} 
+                      className={`w-full mt-1 ${errors.first_name ? 'border-red-500' : ''}`} 
+                    />
+                    {errors.first_name && <p className="text-red-500 text-sm mt-1">{errors.first_name}</p>}
+                  </div>
+                  
+                  <div>
+                    <Label htmlFor="phone_number" className="text-sm text-gray-600">Téléphone</Label>
+                    <Input 
+                      id="phone_number" 
+                      value={formData.phone_number} 
+                      onChange={handleInputChange} 
+                      className={`w-full mt-1 ${errors.phone_number ? 'border-red-500' : ''}`} 
+                    />
+                    {errors.phone_number && <p className="text-red-500 text-sm mt-1">{errors.phone_number}</p>}
+                  </div>
+                  
+                  <div>
+                    <Label htmlFor="email" className="text-sm text-gray-600">Email</Label>
+                    <Input 
+                      id="email" 
+                      value={formData.email} 
+                      onChange={handleInputChange} 
+                      className={`w-full mt-1 ${errors.email ? 'border-red-500' : ''}`} 
+                    />
+                    {errors.email && <p className="text-red-500 text-sm mt-1">{errors.email}</p>}
+                  </div>
+                </div>
+              </div>
+              
+              {/* Address Information */}
+              <div className="p-4 border border-gray-200 rounded-lg bg-white">
+                <h4 className="text-base font-medium mb-3 text-gray-700">Adresse</h4>
+                <div className="space-y-4">
+                  <div>
+                    <Label htmlFor="voie" className="text-sm text-gray-600">Voie</Label>
+                    <Input 
+                      id="voie" 
+                      value={formData.address?.voie ?? ''} 
+                      onChange={(e) => handleAddressChange('voie', e.target.value)} 
+                      className="w-full mt-1" 
+                    />
+                  </div>
+                  
+                  <div>
+                    <Label htmlFor="compl" className="text-sm text-gray-600">Complément d'adresse</Label>
+                    <Input 
+                      id="compl" 
+                      value={formData.address?.compl ?? ''} 
+                      onChange={(e) => handleAddressChange('compl', e.target.value)} 
+                      className="w-full mt-1" 
+                    />
+                  </div>
+                  
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <Label htmlFor="cp" className="text-sm text-gray-600">Code Postal</Label>
+                      <Input 
+                        id="cp" 
+                        value={formData.address?.cp ?? ''} 
+                        onChange={(e) => handleAddressChange('cp', e.target.value)} 
+                        className="w-full mt-1" 
+                      />
+                    </div>
+                    
+                    <div>
+                      <Label htmlFor="ville" className="text-sm text-gray-600">Ville</Label>
+                      <Input 
+                        id="ville" 
+                        value={formData.address?.ville ?? ''} 
+                        onChange={(e) => handleAddressChange('ville', e.target.value)} 
+                        className="w-full mt-1" 
+                      />
+                    </div>
+                  </div>
+                  
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <Label htmlFor="depart" className="text-sm text-gray-600">Département</Label>
+                      <Input 
+                        id="depart" 
+                        value={formData.address?.depart ?? ''} 
+                        onChange={(e) => handleAddressChange('depart', e.target.value)} 
+                        className="w-full mt-1" 
+                      />
+                    </div>
+                    
+                    <div>
+                      <Label htmlFor="pays" className="text-sm text-gray-600">Pays</Label>
+                      <Input 
+                        id="pays" 
+                        value={formData.address?.pays ?? 'France'} 
+                        onChange={(e) => handleAddressChange('pays', e.target.value)} 
+                        className="w-full mt-1 bg-gray-50"
+                        disabled
+                      />
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
-        ) : (
-          <div className="w-full max-w-5xl">
-            {clientIdFromUrl && (
-              <div className="mb-6 p-4 bg-blue-50 rounded-md">
-                <p className="text-blue-700">Création d'un devis pour le client existant</p>
+
+          {/* Enhanced Event Information Section */}
+          <div className="mb-8 border border-gray-200 rounded-lg p-6 bg-gray-50">
+            <h3 className="text-lg font-semibold mb-4">Événement</h3>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+              <div className="p-4 border border-gray-200 rounded-lg bg-white">
+                <h4 className="text-base font-medium mb-3 text-gray-700">Date de début</h4>
+                <DatePicker
+                  date={formData.event_start_date ? new Date(formData.event_start_date) : undefined}
+                  onDateChange={handleStartDateChange}
+                  label="Choisir la date de début"
+                />
+                {errors.event_start_date && <p className="text-red-500 text-sm mt-1">{errors.event_start_date}</p>}
               </div>
-            )}
-            <div className="mb-4">
-              <Label htmlFor="status" className="text-base">Statut du devis</Label>
-              <Select
-                onValueChange={(value) => handleSelectChange(value, 'status')}
-                value={formData.status}
-              >
-                <SelectTrigger className={`w-full ${errors.status ? 'border-red-500' : ''}`}>
-                  <SelectValue placeholder="Sélectionner un statut" />
-                </SelectTrigger>
-                <SelectContent>
-                  {filteredQuoteStatus.map((status) => (
-                    <SelectItem key={status.value} value={status.value}>
-                      <div className="flex items-center">
-                        <div 
-                          className={`w-4 h-4 rounded-full mr-2`}
-                          style={{ backgroundColor: status.color }}
-                        />
-                        {status.name}
-                      </div>
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              {errors.status && <p className="text-red-500 text-sm mt-1">{errors.status}</p>}
-            </div>
-            <div className="mb-4">
-              <Label htmlFor="last_name" className="text-base">Nom du client</Label>
-              <Input 
-                id="last_name" 
-                value={formData.last_name} 
-                onChange={handleInputChange} 
-                className={`w-full text-base ${errors.last_name ? 'border-red-500' : ''}`} 
-              />
-              {errors.last_name && <p className="text-red-500 text-sm mt-1">{errors.last_name}</p>}
-            </div>
-            <div className="mb-4">
-              <Label htmlFor="first_name" className="text-base">Prénom du client</Label>
-              <Input 
-                id="first_name" 
-                value={formData.first_name} 
-                onChange={handleInputChange} 
-                className={`w-full text-base ${errors.first_name ? 'border-red-500' : ''}`} 
-              />
-              {errors.first_name && <p className="text-red-500 text-sm mt-1">{errors.first_name}</p>}
-            </div>
-            <div className="mb-4">
-              <Label htmlFor="phone_number" className="text-base">Numéro de téléphone du client</Label>
-              <Input 
-                id="phone_number" 
-                value={formData.phone_number} 
-                onChange={handleInputChange} 
-                className={`w-full text-base ${errors.phone_number ? 'border-red-500' : ''}`} 
-              />
-              {errors.phone_number && <p className="text-red-500 text-sm mt-1">{errors.phone_number}</p>}
-            </div>
-            <div className="mb-4">
-              <Label htmlFor="email" className="text-base">Email du client</Label>
-              <Input 
-                id="email" 
-                value={formData.email} 
-                onChange={handleInputChange} 
-                className={`w-full text-base ${errors.email ? 'border-red-500' : ''}`} 
-              />
-              {errors.email && <p className="text-red-500 text-sm mt-1">{errors.email}</p>}
-            </div>
-            <div className="mb-4">
-              <Label className="text-base">Adresse</Label>
-              <div className="grid grid-cols-2 gap-4">
-                <div className="col-span-2">
-                  <Label htmlFor="voie" className="text-sm">Voie</Label>
-                  <Input 
-                    id="voie" 
-                    value={formData.address?.voie ?? ''} 
-                    onChange={(e) => handleAddressChange('voie', e.target.value)} 
-                    className="w-full text-base" 
-                  />
-                </div>
-                <div className="col-span-2">
-                  <Label htmlFor="compl" className="text-sm">Complément d'adresse</Label>
-                  <Input 
-                    id="compl" 
-                    value={formData.address?.compl ?? ''} 
-                    onChange={(e) => handleAddressChange('compl', e.target.value)} 
-                    className="w-full text-base" 
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="cp" className="text-sm">Code Postal</Label>
-                  <Input 
-                    id="cp" 
-                    value={formData.address?.cp ?? ''} 
-                    onChange={(e) => handleAddressChange('cp', e.target.value)} 
-                    className="w-full text-base" 
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="ville" className="text-sm">Ville</Label>
-                  <Input 
-                    id="ville" 
-                    value={formData.address?.ville ?? ''} 
-                    onChange={(e) => handleAddressChange('ville', e.target.value)} 
-                    className="w-full text-base" 
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="depart" className="text-sm">Département</Label>
-                  <Input 
-                    id="depart" 
-                    value={formData.address?.depart ?? ''} 
-                    onChange={(e) => handleAddressChange('depart', e.target.value)} 
-                    className="w-full text-base" 
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="pays" className="text-sm">Pays</Label>
-                  <Input 
-                    id="pays" 
-                    value={formData.address?.pays ?? 'France'} 
-                    onChange={(e) => handleAddressChange('pays', e.target.value)} 
-                    className="w-full text-base"
-                    disabled
-                  />
-                </div>
+              
+              <div className="p-4 border border-gray-200 rounded-lg bg-white">
+                <h4 className="text-base font-medium mb-3 text-gray-700">Date de fin</h4>
+                <DatePicker
+                  date={formData.event_end_date ? new Date(formData.event_end_date) : undefined}
+                  onDateChange={handleEndDateChange}
+                  label="Choisir la date de fin"
+                />
+                {errors.event_end_date && <p className="text-red-500 text-sm mt-1">{errors.event_end_date}</p>}
               </div>
             </div>
-            <div className="mb-4">
-              <Label className="text-base">Date de début de l'événement</Label>
-              <DatePicker
-                date={formData.event_start_date ? new Date(formData.event_start_date) : undefined}
-                onDateChange={handleStartDateChange}
-                label="Date de début de l'événement"
-              />
-              {errors.event_start_date && <p className="text-red-500 text-sm mt-1">{errors.event_start_date}</p>}
-            </div>
-            <div className="mb-4">
-              <Label className="text-base">Date de fin de l'événement</Label>
-              <DatePicker
-                date={formData.event_end_date ? new Date(formData.event_end_date) : undefined}
-                onDateChange={handleEndDateChange}
-                label="Date de fin de l'événement"
-              />
-              {errors.event_end_date && <p className="text-red-500 text-sm mt-1">{errors.event_end_date}</p>}
-            </div>
-            <div className="mb-4">
-              <Label htmlFor="description" className="text-base">Description</Label>
+            
+            <div className="p-4 border border-gray-200 rounded-lg bg-white">
+              <h4 className="text-base font-medium mb-3 text-gray-700">Description</h4>
               <Textarea 
                 id="description" 
                 value={formData.description} 
                 onChange={handleInputChange} 
-                className="w-full text-base" 
+                className="w-full text-base min-h-[120px]" 
+                placeholder="Description détaillée de l'événement..."
               />
             </div>
-            <div className="mb-4">
-              <Label className="text-base">Produits du devis</Label>
+          </div>
+
+          {/* Enhanced Products Section */}
+          <div className="mb-8 border border-gray-200 rounded-lg p-6 bg-gray-50">
+            <h3 className="text-lg font-semibold mb-4">Produits du devis</h3>
+            
+            <div className="p-4 border border-gray-200 rounded-lg bg-white">
               <QuoteItemList 
                 items={[]}
                 taintedItems={new Set()}
@@ -565,99 +578,169 @@ export default function QuoteCreateForm({ clientId }: QuoteCreateFormProps) {
                 onItemRemove={handleItemRemove}
                 isLoading={false}
                 quoteId={0}
-                onTotalCostChange={handleTotalCostChange} // Pass the callback
+                onTotalCostChange={handleTotalCostChange}
                 disabled={!!formData?.is_deposit || !!formData?.is_paid}
               />
-            </div>
-            <div className="mb-4 flex items-center space-x-2">
-              <Switch
-                id="is_traiteur"
-                checked={formData.is_traiteur}
-                onCheckedChange={() => handleSwitchChange('is_traiteur')}
-                disabled={!!formData?.is_deposit || !!formData?.is_paid}
-              />
-              <Label htmlFor="is_traiteur" className="text-base">Service traiteur</Label>
-            </div>
-            <div className="mb-4">
-              <Label htmlFor="traiteur_price" className="text-base">Prix traiteur</Label>
-              <Input 
-                id="traiteur_price" 
-                type="number"
-                value={formData.traiteur_price ?? ''} 
-                onChange={handleInputChange} 
-                className={`w-full text-base ${errors.traiteur_price ? 'border-red-500' : ''}`} 
-                disabled={!formData?.is_traiteur || formData?.is_paid || formData?.is_deposit}
-              />
-              {errors.traiteur_price && <p className="text-red-500 text-sm mt-1">{errors.traiteur_price}</p>}
-            </div>
-            <div className="mb-4">
-              <Label htmlFor="other_expenses" className="text-base">Autres charges</Label>
-              <Input 
-                id="other_expenses" 
-                type="number"
-                value={formData.other_expenses ?? ''} 
-                onChange={handleInputChange} 
-                className={`w-full text-base ${errors.other_expenses ? 'border-red-500' : ''}`}
-                disabled={formData?.is_paid || formData?.is_deposit}
-              />
-              {errors.other_expenses && <p className="text-red-500 text-sm mt-1">{errors.other_expenses}</p>}
-            </div>
-            <div className="mb-4">
-              <Label htmlFor="total_cost" className="text-base">Prix total</Label>
-              <Input 
-                id="total_cost" 
-                type="number"
-                value={formData.total_cost ?? ''} 
-                className="w-full text-base" 
-                disabled
-              />
-            </div>
-            <div className="mb-4 flex items-center space-x-2">
-              <Switch
-                id="is_deposit"
-                checked={formData?.is_deposit ?? false}
-                onCheckedChange={() => handleDepositChange('is_deposit')}
-              />
-              <Label htmlFor="is_deposit" className="text-base">Acompte versé (30%)</Label>
-            </div>
-            {formData?.is_deposit && (
-              <div className="mb-4">
-                <Label htmlFor="deposit_amount" className="text-base">Montant de l'acompte</Label>
-                <Input 
-                  id="deposit_amount" 
-                  type="number"
-                  value={formData?.deposit_amount ?? ''} 
-                  className="w-full text-base"
-                  disabled
-                />
-              </div>
-            )}
-            <div className="mb-4">
-              <Label className="text-base">Montant restant à payer</Label>
-              <Input 
-                type="number"
-                step="0.01"
-                value={formData ? (
-                  formData.is_paid 
-                    ? "0.00"
-                    : formData.is_deposit && formData.total_cost !== undefined && formData.deposit_amount !== undefined
-                      ? (formData.total_cost - formData.deposit_amount).toFixed(2)
-                      : formData.total_cost?.toFixed(2) ?? ''
-                ) : ''} 
-                className="w-full text-base"
-                disabled
-              />
-            </div>
-            <div className="mb-4 flex items-center space-x-2">
-              <Switch
-                id="is_paid"
-                checked={formData.is_paid}
-                onCheckedChange={() => handleSwitchChange('is_paid')}
-              />
-              <Label htmlFor="is_paid" className="text-base">Payé</Label>
             </div>
           </div>
-        )}
+
+          {/* Enhanced Price and Payment Section */}
+          <div className="mb-8 border border-gray-200 rounded-lg p-6 bg-gray-50">
+            <h3 className="text-lg font-semibold mb-4">Prix et Paiement</h3>
+            
+            <div className="p-4 border border-gray-200 rounded-lg bg-white mb-4">
+              <h4 className="text-base font-medium mb-3">Options supplémentaires</h4>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="p-4 border border-gray-200 rounded-lg bg-white">
+                  <div className="flex items-center space-x-2 mb-4">
+                    <Switch
+                      id="is_traiteur"
+                      checked={formData.is_traiteur}
+                      onCheckedChange={() => handleSwitchChange('is_traiteur')}
+                      disabled={!!formData?.is_deposit || !!formData?.is_paid}
+                    />
+                    <Label htmlFor="is_traiteur" className="text-base">Service traiteur</Label>
+                  </div>
+                  
+                  <div>
+                    <Label htmlFor="traiteur_price" className="text-sm text-gray-600">Prix traiteur HT</Label>
+                    <Input 
+                      id="traiteur_price" 
+                      type="number"
+                      value={formData.traiteur_price ?? ''} 
+                      onChange={handleInputChange} 
+                      className={`w-full mt-1 ${errors.traiteur_price ? 'border-red-500' : ''}`} 
+                      disabled={!formData?.is_traiteur || formData?.is_paid || formData?.is_deposit}
+                    />
+                    {errors.traiteur_price && <p className="text-red-500 text-sm mt-1">{errors.traiteur_price}</p>}
+                  </div>
+                </div>
+                
+                <div className="p-4 border border-gray-200 rounded-lg bg-white">
+                  <div className="flex items-center space-x-2 mb-4">
+                    <Label htmlFor="other_expenses" className="text-base">Frais supplémentaires</Label>
+                  </div>
+                  
+                  <div>
+                    <Label htmlFor="other_expenses" className="text-sm text-gray-600">Montant HT</Label>
+                    <Input 
+                      id="other_expenses" 
+                      type="number"
+                      value={formData.other_expenses ?? ''} 
+                      onChange={handleInputChange} 
+                      className={`w-full mt-1 ${errors.other_expenses ? 'border-red-500' : ''}`}
+                      disabled={formData?.is_paid || formData?.is_deposit}
+                    />
+                    {errors.other_expenses && <p className="text-red-500 text-sm mt-1">{errors.other_expenses}</p>}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="p-4 border border-gray-200 rounded-lg bg-white mb-4">
+              <h4 className="text-base font-medium mb-3">Détail du prix</h4>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  <Label htmlFor="total_cost" className="text-sm text-gray-600">Prix total HT</Label>
+                  <Input 
+                    id="total_cost" 
+                    type="number"
+                    value={formData.total_cost ?? ''} 
+                    className="w-full text-base font-semibold bg-gray-100" 
+                    disabled
+                  />
+                </div>
+                
+                <div>
+                  <Label htmlFor="tva_amount" className="text-sm text-gray-600">TVA (20%)</Label>
+                  <Input 
+                    id="tva_amount" 
+                    type="number"
+                    value={formData.total_cost ? (formData.total_cost * 0.2).toFixed(2) : '0.00'} 
+                    className="w-full text-base font-semibold bg-gray-100" 
+                    disabled
+                  />
+                </div>
+                
+                <div className="md:col-span-2">
+                  <Label htmlFor="total_cost_ttc" className="text-sm text-gray-600">Prix total TTC</Label>
+                  <Input 
+                    id="total_cost_ttc" 
+                    type="number"
+                    value={formData.total_cost ? (formData.total_cost * 1.2).toFixed(2) : '0.00'} 
+                    className="w-full text-base font-semibold bg-gray-100" 
+                    disabled
+                  />
+                </div>
+              </div>
+            </div>
+
+            <div className="p-4 border border-gray-200 rounded-lg bg-white mb-4">
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center space-x-2">
+                  <Switch
+                    id="is_deposit"
+                    checked={formData?.is_deposit ?? false}
+                    onCheckedChange={() => handleDepositChange('is_deposit')}
+                    className="data-[state=checked]:bg-lime-500"
+                  />
+                  <Label htmlFor="is_deposit" className="text-base font-medium">Acompte versé</Label>
+                </div>
+                <div className="text-sm text-gray-500">
+                  {formData?.is_deposit ? "Acompte payé" : "Acompte non payé"}
+                </div>
+              </div>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  <Label htmlFor="deposit_amount" className="text-sm text-gray-600">Montant de l'acompte TTC</Label>
+                  <Input 
+                    id="deposit_amount" 
+                    type="number"
+                    value={formData?.is_deposit && formData.total_cost ? (formData.total_cost * 1.2 * 0.3).toFixed(2) : '0.00'} 
+                    className={`w-full text-base font-semibold ${formData?.is_deposit ? 'bg-lime-50 border-lime-200' : 'bg-gray-100'}`}
+                    disabled
+                  />
+                </div>
+                
+                <div>
+                  <Label className="text-sm text-gray-600">Montant restant à payer TTC</Label>
+                  <Input 
+                    type="number"
+                    value={formData.total_cost ? (
+                      formData.is_paid 
+                        ? "0.00"
+                        : formData.is_deposit
+                          ? (formData.total_cost * 1.2 * 0.7).toFixed(2)
+                          : (formData.total_cost * 1.2).toFixed(2)
+                    ) : '0.00'} 
+                    className="w-full text-base font-semibold bg-gray-100"
+                    disabled
+                  />
+                </div>
+              </div>
+            </div>
+
+            <div className="p-4 border border-gray-200 rounded-lg bg-white">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-2">
+                  <Switch
+                    id="is_paid"
+                    checked={formData.is_paid}
+                    onCheckedChange={() => handleSwitchChange('is_paid')}
+                    className="data-[state=checked]:bg-lime-500"
+                  />
+                  <Label htmlFor="is_paid" className="text-base font-medium">Payé intégralement</Label>
+                </div>
+                {formData.is_paid && (
+                  <div className="px-3 py-1 bg-lime-100 text-lime-800 text-sm font-medium rounded-full">
+                    Payé
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
       </form>
       <Toaster />
     </>
