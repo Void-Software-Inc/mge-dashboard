@@ -10,13 +10,26 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { FileTextIcon, ArrowLeftIcon } from "@radix-ui/react-icons"
+import { FileTextIcon, ArrowLeftIcon, MixerHorizontalIcon, Cross2Icon } from "@radix-ui/react-icons"
 import { Skeleton } from "@/components/ui/skeleton"
+import { quoteStatus } from "@/utils/types/quotes"
+import { Checkbox } from "@/components/ui/checkbox"
+import { Label } from "@/components/ui/label"
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover"
 
 export default function ClientDetailPage({ params }: { params: { id: string } }) {
   const router = useRouter()
   const [client, setClient] = useState<Client & { quotes?: any[] }>()
   const [isLoading, setIsLoading] = useState(true)
+  
+  // Add filter states
+  const [selectedQuoteStatuses, setSelectedQuoteStatuses] = useState<string[]>([])
+  const [isFilterActive, setIsFilterActive] = useState(false)
+  const [filteredQuotes, setFilteredQuotes] = useState<any[]>([])
 
   useEffect(() => {
     const fetchClient = async () => {
@@ -24,6 +37,8 @@ export default function ClientDetailPage({ params }: { params: { id: string } })
         const clientData = await getClient(params.id)
        
         setClient(clientData)
+        // Initialize filtered quotes with all quotes
+        setFilteredQuotes(clientData.quotes || [])
         // Update document title dynamically
         document.title = clientData.name ? `${clientData.name} - Détails du client` : "Détails du client"
       } catch (error) {
@@ -35,6 +50,25 @@ export default function ClientDetailPage({ params }: { params: { id: string } })
 
     fetchClient()
   }, [params.id])
+  
+  // Apply filters when selectedQuoteStatuses changes
+  useEffect(() => {
+    if (!client?.quotes) return
+    
+    if (selectedQuoteStatuses.length === 0) {
+      // If no status filters are selected, show all quotes
+      setFilteredQuotes(client.quotes)
+    } else {
+      // Filter quotes based on selected statuses
+      const filtered = client.quotes.filter(quote => 
+        selectedQuoteStatuses.includes(quote.status)
+      )
+      setFilteredQuotes(filtered)
+    }
+    
+    // Update filter active state
+    setIsFilterActive(selectedQuoteStatuses.length > 0)
+  }, [selectedQuoteStatuses, client])
 
   const formatDate = (dateString: string) => {
     if (!dateString) return "N/A"
@@ -51,10 +85,30 @@ export default function ClientDetailPage({ params }: { params: { id: string } })
     
     return { active, finished, deleted };
   };
+  
+  // Add filter handlers
+  const handleQuoteStatusChange = (status: string) => {
+    setSelectedQuoteStatuses(prev => {
+      if (prev.includes(status)) {
+        return prev.filter(s => s !== status)
+      } else {
+        return [...prev, status]
+      }
+    })
+  }
+  
+  const clearFilters = () => {
+    setSelectedQuoteStatuses([])
+  }
 
   // Helper function to render quotes
   const renderQuotes = (quotes: any[]) => {
-    if (quotes.length === 0) {
+    // Apply status filters if active
+    const quotesToRender = isFilterActive 
+      ? quotes.filter(quote => selectedQuoteStatuses.includes(quote.status))
+      : quotes;
+      
+    if (quotesToRender.length === 0) {
       return (
         <div className="text-center py-8 border rounded-md">
           <p className="text-muted-foreground">Aucun devis dans cette catégorie.</p>
@@ -62,8 +116,7 @@ export default function ClientDetailPage({ params }: { params: { id: string } })
       );
     }
     
-    return quotes.map((quote, index) => {
-      
+    return quotesToRender.map((quote, index) => {
       
       // Determine badge variant based on quote type
       let badgeVariant: "default" | "destructive" | "outline" | "secondary" = "outline";
@@ -96,10 +149,25 @@ export default function ClientDetailPage({ params }: { params: { id: string } })
                   {(quote as any).quote_type && <span> • Type: {(quote as any).quote_type}</span>}
                 </CardDescription>
               </div>
-              <Badge variant={badgeVariant}>
-                {(quote as any).is_deleted ? 'Supprimé' : 
-                 quote.status === 'completed' || (quote as any).quote_type === 'finished' ? 'Terminé' : 'En cours'}
-              </Badge>
+              <div className="flex items-center gap-2">
+                <Badge variant={badgeVariant}>
+                  {(quote as any).is_deleted ? 'Supprimé' : 
+                   quote.status === 'completed' || (quote as any).quote_type === 'finished' ? 'Terminé' : 'En cours'}
+                </Badge>
+                {quote.status && quote.status !== 'completed' && (
+                  <Badge 
+                    variant="outline" 
+                    className="flex items-center gap-1"
+                    style={{ borderColor: quoteStatus.find(s => s.value === quote.status)?.color }}
+                  >
+                    <div 
+                      className="w-2 h-2 rounded-full"
+                      style={{ backgroundColor: quoteStatus.find(s => s.value === quote.status)?.color }}
+                    />
+                    {quoteStatus.find(s => s.value === quote.status)?.name || quote.status}
+                  </Badge>
+                )}
+              </div>
             </div>
           </CardHeader>
           <CardContent className="pb-2">
@@ -171,9 +239,7 @@ export default function ClientDetailPage({ params }: { params: { id: string } })
   }
 
   // In the return statement, before rendering quotes, add:
-  if (client?.quotes) {
-    groupQuotesByType(client.quotes);
-  }
+  const groupedQuotes = client?.quotes ? groupQuotesByType(filteredQuotes) : { active: [], finished: [], deleted: [] };
 
   return (
     <div className="container mx-auto py-10">
@@ -265,38 +331,111 @@ export default function ClientDetailPage({ params }: { params: { id: string } })
       </div>
 
       <div className="mt-8">
-        <h2 className="text-2xl font-bold mb-4">Devis du client</h2>
+        <div className="flex justify-between items-center mb-4">
+          <h2 className="text-2xl font-bold">Devis du client</h2>
+          
+          {/* Add filter button */}
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button 
+                variant={isFilterActive ? "default" : "outline"} 
+                size="sm"
+                className={isFilterActive ? "bg-blue-500 hover:bg-blue-600" : ""}
+              >
+                <MixerHorizontalIcon className="h-4 w-4 mr-2" />
+                Filtrer par statut
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-80">
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <h4 className="font-medium">Filtres par statut</h4>
+                  <Button 
+                    variant="ghost" 
+                    size="sm" 
+                    onClick={clearFilters}
+                    disabled={!isFilterActive}
+                  >
+                    <Cross2Icon className="h-4 w-4 mr-2" />
+                    Effacer
+                  </Button>
+                </div>
+                
+                <div>
+                  <div className="space-y-2 max-h-60 overflow-y-auto">
+                    {quoteStatus.map((status) => (
+                      <div key={status.value} className="flex items-center space-x-2">
+                        <Checkbox 
+                          id={`status-${status.value}`} 
+                          checked={selectedQuoteStatuses.includes(status.value)}
+                          onCheckedChange={() => handleQuoteStatusChange(status.value)}
+                        />
+                        <Label htmlFor={`status-${status.value}`} className="flex items-center">
+                          <div 
+                            className="w-3 h-3 rounded-full mr-2"
+                            style={{ backgroundColor: status.color }}
+                          />
+                          {status.name}
+                        </Label>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </PopoverContent>
+          </Popover>
+        </div>
+        
+        {/* Display active filters */}
+        {isFilterActive && (
+          <div className="mb-4 flex flex-wrap gap-2">
+            {selectedQuoteStatuses.map(status => (
+              <Badge key={`status-${status}`} variant="secondary" className="flex items-center gap-1">
+                <div 
+                  className="w-2 h-2 rounded-full mr-1"
+                  style={{ backgroundColor: quoteStatus.find(s => s.value === status)?.color }}
+                />
+                {quoteStatus.find(s => s.value === status)?.name}
+                <Cross2Icon 
+                  className="h-3 w-3 cursor-pointer ml-1" 
+                  onClick={() => handleQuoteStatusChange(status)}
+                />
+              </Badge>
+            ))}
+          </div>
+        )}
+        
         {client?.quotes && client.quotes.length > 0 ? (
           <Tabs defaultValue="all" className="w-full">
             <TabsList className="mb-4">
               <TabsTrigger value="active">
-                Devis actifs ({client.quotes.filter(q => (q as any).quote_type === 'active').length})
+                Devis actifs ({groupedQuotes.active.length})
               </TabsTrigger>
               <TabsTrigger value="finished">
-                Devis terminés ({client.quotes.filter(q => (q as any).quote_type === 'finished' || q.status === 'completed').length})
+                Devis terminés ({groupedQuotes.finished.length})
               </TabsTrigger>
               <TabsTrigger value="deleted">
-                Devis supprimés ({client.quotes.filter(q => (q as any).quote_type === 'deleted' || (q as any).is_deleted).length})
+                Devis supprimés ({groupedQuotes.deleted.length})
               </TabsTrigger>
               <TabsTrigger value="all">
-                Tous les devis ({client.quotes.length})
+                Tous les devis ({filteredQuotes.length})
               </TabsTrigger>
             </TabsList>
             
             <TabsContent value="active" className="space-y-4">
-              {renderQuotes(client.quotes.filter(q => (q as any).quote_type === 'active'))}
+              {renderQuotes(groupedQuotes.active)}
             </TabsContent>
             
             <TabsContent value="finished" className="space-y-4">
-              {renderQuotes(client.quotes.filter(q => (q as any).quote_type === 'finished' || q.status === 'completed'))}
+              {renderQuotes(groupedQuotes.finished)}
             </TabsContent>
             
             <TabsContent value="deleted" className="space-y-4">
-              {renderQuotes(client.quotes.filter(q => (q as any).quote_type === 'deleted' || (q as any).is_deleted))}
+              {renderQuotes(groupedQuotes.deleted)}
             </TabsContent>
             
             <TabsContent value="all" className="space-y-4">
-              {renderQuotes(client.quotes)}
+              {renderQuotes(filteredQuotes)}
             </TabsContent>
           </Tabs>
         ) : (

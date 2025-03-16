@@ -15,8 +15,45 @@ import {
   PaginationNext, 
   PaginationPrevious 
 } from "@/components/ui/pagination"
-import { MagnifyingGlassIcon, PlusIcon } from "@radix-ui/react-icons"
+import { 
+  MagnifyingGlassIcon, 
+  PlusIcon, 
+  MixerHorizontalIcon, 
+  Cross2Icon 
+} from "@radix-ui/react-icons"
 import { Skeleton } from "@/components/ui/skeleton"
+import { 
+  Select, 
+  SelectContent, 
+  SelectItem, 
+  SelectTrigger, 
+  SelectValue 
+} from "@/components/ui/select"
+import { Badge } from "@/components/ui/badge"
+import { quoteStatus } from "@/utils/types/quotes"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuGroup,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover"
+import { Checkbox } from "@/components/ui/checkbox"
+import { Label } from "@/components/ui/label"
+
+// Define the quote type filter options
+const quoteTypeFilters = [
+  { value: "active", label: "Devis en cours" },
+  { value: "finished", label: "Devis terminés" },
+  { value: "deleted", label: "Devis supprimés" },
+]
 
 export default function ClientsPage() {
   const router = useRouter()
@@ -27,6 +64,11 @@ export default function ClientsPage() {
   const [searchQuery, setSearchQuery] = useState("")
   const [currentPage, setCurrentPage] = useState(1)
   const itemsPerPage = 10
+  
+  // Add filter states
+  const [selectedQuoteTypes, setSelectedQuoteTypes] = useState<string[]>([])
+  const [selectedQuoteStatuses, setSelectedQuoteStatuses] = useState<string[]>([])
+  const [isFilterActive, setIsFilterActive] = useState(false)
 
   useEffect(() => {
     const fetchClients = async () => {
@@ -45,21 +87,53 @@ export default function ClientsPage() {
   }, [])
 
   useEffect(() => {
-    if (searchQuery.trim() === "") {
-      setFilteredClients(clients)
-    } else {
+    // Apply all filters: search query, quote types, and quote statuses
+    let filtered = clients
+
+    // Apply search filter
+    if (searchQuery.trim() !== "") {
       const query = searchQuery.toLowerCase()
-      const filtered = clients.filter(
+      filtered = filtered.filter(
         client =>
           client.name.toLowerCase().includes(query) ||
           (client.company && client.company.toLowerCase().includes(query)) ||
           client.email.toLowerCase().includes(query) ||
           client.phone.includes(query)
       )
-      setFilteredClients(filtered)
     }
+
+    // Apply quote type filter
+    if (selectedQuoteTypes.length > 0) {
+      filtered = filtered.filter(client => {
+        // Check if client has any quotes that match the selected types
+        const clientWithQuotes = client as any
+        if (!clientWithQuotes.quotes) return false
+        
+        return clientWithQuotes.quotes.some((quote: any) => 
+          selectedQuoteTypes.includes(quote.quote_type)
+        )
+      })
+    }
+
+    // Apply quote status filter
+    if (selectedQuoteStatuses.length > 0) {
+      filtered = filtered.filter(client => {
+        // Check if client has any quotes that match the selected statuses
+        const clientWithQuotes = client as any
+        if (!clientWithQuotes.quotes) return false
+        
+        return clientWithQuotes.quotes.some((quote: any) => 
+          selectedQuoteStatuses.includes(quote.status)
+        )
+      })
+    }
+
+    setFilteredClients(filtered)
     setCurrentPage(1)
-  }, [searchQuery, clients])
+    
+    // Update filter active state
+    setIsFilterActive(selectedQuoteTypes.length > 0 || selectedQuoteStatuses.length > 0)
+  }, [searchQuery, clients, selectedQuoteTypes, selectedQuoteStatuses])
 
   const totalPages = Math.ceil(filteredClients.length / itemsPerPage)
   const startIndex = (currentPage - 1) * itemsPerPage
@@ -72,6 +146,31 @@ export default function ClientsPage() {
 
   const handleClientClick = (client: Client) => {
     router.push(`/clients/${client.id}`)
+  }
+  
+  const handleQuoteTypeChange = (type: string) => {
+    setSelectedQuoteTypes(prev => {
+      if (prev.includes(type)) {
+        return prev.filter(t => t !== type)
+      } else {
+        return [...prev, type]
+      }
+    })
+  }
+  
+  const handleQuoteStatusChange = (status: string) => {
+    setSelectedQuoteStatuses(prev => {
+      if (prev.includes(status)) {
+        return prev.filter(s => s !== status)
+      } else {
+        return [...prev, status]
+      }
+    })
+  }
+  
+  const clearFilters = () => {
+    setSelectedQuoteTypes([])
+    setSelectedQuoteStatuses([])
   }
 
   return (
@@ -94,8 +193,103 @@ export default function ClientsPage() {
               onChange={(e) => setSearchQuery(e.target.value)}
             />
           </div>
+          
+          {/* Add filter button */}
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button 
+                variant={isFilterActive ? "default" : "outline"} 
+                size="icon"
+                className={isFilterActive ? "bg-blue-500 hover:bg-blue-600" : ""}
+              >
+                <MixerHorizontalIcon className="h-4 w-4" />
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-80">
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <h4 className="font-medium">Filtres</h4>
+                  <Button 
+                    variant="ghost" 
+                    size="sm" 
+                    onClick={clearFilters}
+                    disabled={!isFilterActive}
+                  >
+                    <Cross2Icon className="h-4 w-4 mr-2" />
+                    Effacer
+                  </Button>
+                </div>
+                
+                <div>
+                  <h5 className="text-sm font-medium mb-2">Type de devis</h5>
+                  <div className="space-y-2">
+                    {quoteTypeFilters.map((type) => (
+                      <div key={type.value} className="flex items-center space-x-2">
+                        <Checkbox 
+                          id={`type-${type.value}`} 
+                          checked={selectedQuoteTypes.includes(type.value)}
+                          onCheckedChange={() => handleQuoteTypeChange(type.value)}
+                        />
+                        <Label htmlFor={`type-${type.value}`}>{type.label}</Label>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+                
+                <div>
+                  <h5 className="text-sm font-medium mb-2">Statut du devis</h5>
+                  <div className="space-y-2 max-h-40 overflow-y-auto">
+                    {quoteStatus.map((status) => (
+                      <div key={status.value} className="flex items-center space-x-2">
+                        <Checkbox 
+                          id={`status-${status.value}`} 
+                          checked={selectedQuoteStatuses.includes(status.value)}
+                          onCheckedChange={() => handleQuoteStatusChange(status.value)}
+                        />
+                        <Label htmlFor={`status-${status.value}`} className="flex items-center">
+                          <div 
+                            className="w-3 h-3 rounded-full mr-2"
+                            style={{ backgroundColor: status.color }}
+                          />
+                          {status.name}
+                        </Label>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </PopoverContent>
+          </Popover>
         </div>
       </div>
+      
+      {/* Display active filters */}
+      {isFilterActive && (
+        <div className="mb-4 flex flex-wrap gap-2">
+          {selectedQuoteTypes.map(type => (
+            <Badge key={`type-${type}`} variant="secondary" className="flex items-center gap-1">
+              {quoteTypeFilters.find(t => t.value === type)?.label}
+              <Cross2Icon 
+                className="h-3 w-3 cursor-pointer" 
+                onClick={() => handleQuoteTypeChange(type)}
+              />
+            </Badge>
+          ))}
+          {selectedQuoteStatuses.map(status => (
+            <Badge key={`status-${status}`} variant="secondary" className="flex items-center gap-1">
+              <div 
+                className="w-2 h-2 rounded-full mr-1"
+                style={{ backgroundColor: quoteStatus.find(s => s.value === status)?.color }}
+              />
+              {quoteStatus.find(s => s.value === status)?.name}
+              <Cross2Icon 
+                className="h-3 w-3 cursor-pointer" 
+                onClick={() => handleQuoteStatusChange(status)}
+              />
+            </Badge>
+          ))}
+        </div>
+      )}
 
       {isLoading ? (
         <div className="space-y-4">
