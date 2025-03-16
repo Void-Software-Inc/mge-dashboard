@@ -1,19 +1,19 @@
 "use client"
 
 import {
-    ArrowDownIcon,
-    ArrowUpIcon,
-    CaretSortIcon,
-    EyeNoneIcon,
-    MixerVerticalIcon,
-    Cross2Icon,
-    CheckIcon,
-    Pencil1Icon,
-    TrashIcon
-  } from "@radix-ui/react-icons"
+  ArrowDownIcon,
+  ArrowUpIcon,
+  CaretSortIcon,
+  EyeNoneIcon,
+  MixerVerticalIcon,
+  Pencil1Icon,
+  FileTextIcon,
+  Cross2Icon,
+} from "@radix-ui/react-icons"
 import { ColumnDef } from "@tanstack/react-table"
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
+import { Badge } from "@/components/ui/badge"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import {
   DropdownMenu,
@@ -34,50 +34,20 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
+import { cn } from "@/lib/utils"
 import { useRouter } from 'next/navigation'
-import { Quote, quoteStatus } from "@/utils/types/quotes"
+import { Client } from "@/utils/types/clients"
 import { useState } from "react"
 import { useAppContext } from "@/app/context/AppContext"
 import { toast } from "sonner"
+import { deleteClient } from "@/services/clients"
 
-import { deleteQuote } from "@/services/quotes"
-import { cn } from "@/lib/utils"
-import { format } from 'date-fns';
-import { fr } from 'date-fns/locale';
-
-const formatPhoneNumber = (phoneNumber: string) => {
-    return phoneNumber.replace(/(\d{2})(?=\d)/g, '$1 ').trim();
-};
-
-const formatDate = (dateString: string | null) => {
-  if (!dateString) return '-';
-  try {
-      const date = new Date(dateString);
-      if (isNaN(date.getTime())) return '-'; // Check if date is invalid
-      return format(date, 'dd/MM/yyyy', { locale: fr });
-  } catch (error) {
-      return '-';
-  }
-};
-
-export const onRowClick = (row: Quote, router: ReturnType<typeof useRouter>) => {
-  router.push(`/quotes/${row.id}`)
-}
-
-const calculateTTC = (ht: number): number => {
-  // Add 20% VAT to the HT (tax-excluded) price
-  return ht * 1.20;
-};
-
-export const columns: ColumnDef<Quote>[] = [
-  /*Implementation later{
+export const columns: ColumnDef<Client>[] = [
+  {
     id: "select",
     header: ({ table }) => (
       <Checkbox
-        checked={
-          table.getIsAllPageRowsSelected() ||
-          (table.getIsSomePageRowsSelected() && "indeterminate")
-        }
+        checked={table.getIsAllPageRowsSelected()}
         onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
         aria-label="Select all"
       />
@@ -91,31 +61,24 @@ export const columns: ColumnDef<Quote>[] = [
     ),
     enableSorting: false,
     enableHiding: false,
-  },*/
+  },
   {
     id: "actions",
-    header: () => {
-      return (
-        <div className={cn("text-center whitespace-nowrap overflow-hidden overflow-ellipsis")}>
-          <span>Actions</span>
-        </div>
-      );
-    },
+    header: "Actions",
     cell: ({ row }) => {
-      const quote = row.original
+      const client = row.original
       const router = useRouter()
       const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
-      const { setQuotesShouldRefetch, setQuotesRecordsShouldRefetch } = useAppContext()
+      const { setClientsShouldRefetch } = useAppContext()
 
-      const handleDeleteQuote = async () => {
+      const handleDeleteClient = async () => {
         try {
-          await deleteQuote([quote.id]);
-          setQuotesShouldRefetch(true);
-          setQuotesRecordsShouldRefetch(true);
-          toast.success('Quote deleted successfully');
+          await deleteClient(client.id);
+          setClientsShouldRefetch(true);
+          toast.success('Client supprimé avec succès');
         } catch (error) {
-          console.error('Error deleting quote:', error);
-          toast.error('Failed to delete quote');
+          console.error('Error deleting client:', error);
+          toast.error('Échec de la suppression du client');
         } finally {
           setIsDeleteDialogOpen(false);
         }
@@ -125,11 +88,21 @@ export const columns: ColumnDef<Quote>[] = [
         <div className="flex justify-center">
           <Button
             variant="ghost"
-            onClick={() => router.push(`/quotes/${quote.id}`)}
+            onClick={() => router.push(`/clients/${client.phone}`)}
             size="icon"
             className="text-blue-500 hover:text-blue-700 hover:bg-gray-50"
+            title="Voir les détails du client"
           >
             <Pencil1Icon className="h-4 w-4" />
+          </Button>
+          <Button
+            variant="ghost"
+            onClick={() => router.push(`/quotes?client=${client.phone}`)}
+            size="icon"
+            className="text-green-500 hover:text-green-700 hover:bg-gray-50"
+            title="Voir les devis du client"
+          >
+            <FileTextIcon className="h-4 w-4" />
           </Button>
           <Button
             variant="ghost"
@@ -137,20 +110,20 @@ export const columns: ColumnDef<Quote>[] = [
             size="icon"
             className="text-black hover:text-red-500 hover:bg-gray-50"
           >
-            <TrashIcon className="h-4 w-4" />
+            <Cross2Icon className="h-4 w-4" />
           </Button>
 
           <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
             <AlertDialogContent>
               <AlertDialogHeader>
-                <AlertDialogTitle>Êtes vous sûr de vouloir supprimer ce devis ?</AlertDialogTitle>
+                <AlertDialogTitle>Êtes vous sûr de vouloir supprimer ce client ?</AlertDialogTitle>
                 <AlertDialogDescription>
-                  Cela supprimera le devis "{quote.id}" et le déplacera dans les archives.
+                  Cela supprimera le client "{client.name}" et toutes ses informations associées.
                 </AlertDialogDescription>
               </AlertDialogHeader>
               <AlertDialogFooter>
                 <AlertDialogCancel>Annuler</AlertDialogCancel>
-                <AlertDialogAction onClick={handleDeleteQuote}>
+                <AlertDialogAction onClick={handleDeleteClient}>
                   Supprimer
                 </AlertDialogAction>
               </AlertDialogFooter>
@@ -163,21 +136,7 @@ export const columns: ColumnDef<Quote>[] = [
     enableHiding: false,
   },
   {
-    accessorKey: "id",
-    header: () => {
-      return (
-        <div className={cn("whitespace-nowrap overflow-hidden overflow-ellipsis")}>
-          <span>N° Devis</span>
-        </div>
-      );
-    },
-    cell: ({ row }) => {
-      const id = row.getValue("id") as string;
-      return <div className="text-center whitespace-nowrap overflow-hidden overflow-ellipsis">{id}</div>;
-    },
-  },
-  {
-    accessorKey: "status",
+    accessorKey: "name",
     header: ({ column }) => {
       return (
         <div className={cn("flex items-center space-x-2")}>
@@ -188,76 +147,41 @@ export const columns: ColumnDef<Quote>[] = [
                 size="sm"
                 className="-ml-3 h-8 data-[state=open]:bg-accent"
               >
-                <span>Statut</span>
-                <MixerVerticalIcon className="ml-2 h-4 w-4" />
+                <span>Nom</span>
+                {column.getIsSorted() === "desc" ? (
+                  <ArrowDownIcon className="ml-2 h-4 w-4" />
+                ) : column.getIsSorted() === "asc" ? (
+                  <ArrowUpIcon className="ml-2 h-4 w-4" />
+                ) : (
+                  <CaretSortIcon className="ml-2 h-4 w-4" />
+                )}
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="start" className="w-[200px]">
-              <ScrollArea className="h-[300px] w-full rounded-md">
-                {quoteStatus.map((status) => (
-                  <DropdownMenuCheckboxItem
-                    key={status.value}
-                    className="capitalize"
-                    checked={column.getFilterValue() === status.value}
-                    onCheckedChange={(value) => {
-                      if (value) {
-                        column.setFilterValue(status.value);
-                      } else {
-                        column.setFilterValue(null);
-                      }
-                    }}
-                  >
-                    <div className="flex items-center space-x-2">
-                      <div
-                        className="w-4 h-4 rounded-full flex-shrink-0"
-                        style={{ backgroundColor: status.color }}
-                      />
-                      <span className="flex-grow">{status.name}</span>
-                    </div>
-                  </DropdownMenuCheckboxItem>
-                ))}
-              </ScrollArea>
+            <DropdownMenuContent align="start">
+              <DropdownMenuItem onClick={() => column.toggleSorting(false)}>
+                <ArrowUpIcon className="mr-2 h-3.5 w-3.5 text-muted-foreground/70" />
+                Asc
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => column.toggleSorting(true)}>
+                <ArrowDownIcon className="mr-2 h-3.5 w-3.5 text-muted-foreground/70" />
+                Desc
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={() => column.toggleVisibility(false)}>
+                <EyeNoneIcon className="mr-2 h-3.5 w-3.5 text-muted-foreground/70" />
+                Masquer
+              </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
         </div>
-      );
+      )
     },
     cell: ({ row }) => {
-      const statusValue = row.getValue("status");
-      const status = quoteStatus.find(s => s.value === statusValue);
-      return status ? (
-        <div className="flex items-center space-x-2">
-          <div
-            className="w-3 h-3 rounded-full flex-shrink-0"
-            style={{ backgroundColor: status.color }}
-          />
-          <span className="whitespace-nowrap overflow-hidden overflow-ellipsis">{status.name}</span>
-        </div>
-      ) : null;
-    },
-  },
-  {
-    accessorKey: "last_name",
-    header: "Nom",
-  },
-  {
-    accessorKey: "first_name",
-    header: "Prénom",
-  },
-  {
-    accessorKey: "phone_number",
-    header: "Téléphone",
-    cell: ({ row }) => {
-      const phoneNumber = row.getValue("phone_number") as string;
-      return <div className="whitespace-nowrap overflow-hidden overflow-ellipsis">{formatPhoneNumber(phoneNumber)}</div>;
+      return <div className="font-medium">{row.getValue("name")}</div>
     },
   },
   {
     accessorKey: "email",
-    header: "Email",
-  },
-  {
-    accessorKey: "event_start_date",
     header: ({ column }) => {
       return (
         <div className={cn("flex items-center space-x-2")}>
@@ -268,7 +192,49 @@ export const columns: ColumnDef<Quote>[] = [
                 size="sm"
                 className="-ml-3 h-8 data-[state=open]:bg-accent"
               >
-                <span>Date de début</span>
+                <span>Email</span>
+                {column.getIsSorted() === "desc" ? (
+                  <ArrowDownIcon className="ml-2 h-4 w-4" />
+                ) : column.getIsSorted() === "asc" ? (
+                  <ArrowUpIcon className="ml-2 h-4 w-4" />
+                ) : (
+                  <CaretSortIcon className="ml-2 h-4 w-4" />
+                )}
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="start">
+              <DropdownMenuItem onClick={() => column.toggleSorting(false)}>
+                <ArrowUpIcon className="mr-2 h-3.5 w-3.5 text-muted-foreground/70" />
+                Asc
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => column.toggleSorting(true)}>
+                <ArrowDownIcon className="mr-2 h-3.5 w-3.5 text-muted-foreground/70" />
+                Desc
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={() => column.toggleVisibility(false)}>
+                <EyeNoneIcon className="mr-2 h-3.5 w-3.5 text-muted-foreground/70" />
+                Masquer
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
+      )
+    },
+  },
+  {
+    accessorKey: "phone",
+    header: ({ column }) => {
+      return (
+        <div className={cn("flex items-center space-x-2")}>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="-ml-3 h-8 data-[state=open]:bg-accent"
+              >
+                <span>Téléphone</span>
                 {column.getIsSorted() === "desc" ? (
                   <ArrowDownIcon className="ml-2 h-4 w-4" />
                 ) : column.getIsSorted() === "asc" ? (
@@ -298,12 +264,11 @@ export const columns: ColumnDef<Quote>[] = [
       )
     },
     cell: ({ row }) => {
-      const dateString = row.getValue("event_start_date") as string;
-      return <div>{formatDate(dateString)}</div>;
+      return <div className="font-medium">{row.getValue("phone")}</div>
     },
   },
   {
-    accessorKey: "event_end_date",
+    accessorKey: "company",
     header: ({ column }) => {
       return (
         <div className={cn("flex items-center space-x-2")}>
@@ -314,7 +279,49 @@ export const columns: ColumnDef<Quote>[] = [
                 size="sm"
                 className="-ml-3 h-8 data-[state=open]:bg-accent"
               >
-                <span>Date de fin</span>
+                <span>Entreprise</span>
+                {column.getIsSorted() === "desc" ? (
+                  <ArrowDownIcon className="ml-2 h-4 w-4" />
+                ) : column.getIsSorted() === "asc" ? (
+                  <ArrowUpIcon className="ml-2 h-4 w-4" />
+                ) : (
+                  <CaretSortIcon className="ml-2 h-4 w-4" />
+                )}
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="start">
+              <DropdownMenuItem onClick={() => column.toggleSorting(false)}>
+                <ArrowUpIcon className="mr-2 h-3.5 w-3.5 text-muted-foreground/70" />
+                Asc
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => column.toggleSorting(true)}>
+                <ArrowDownIcon className="mr-2 h-3.5 w-3.5 text-muted-foreground/70" />
+                Desc
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={() => column.toggleVisibility(false)}>
+                <EyeNoneIcon className="mr-2 h-3.5 w-3.5 text-muted-foreground/70" />
+                Masquer
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
+      )
+    },
+  },
+  {
+    accessorKey: "quote_count",
+    header: ({ column }) => {
+      return (
+        <div className={cn("flex items-center space-x-2")}>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="-ml-3 h-8 data-[state=open]:bg-accent"
+              >
+                <span>Nombre de devis</span>
                 {column.getIsSorted() === "desc" ? (
                   <ArrowDownIcon className="ml-2 h-4 w-4" />
                 ) : column.getIsSorted() === "asc" ? (
@@ -344,153 +351,46 @@ export const columns: ColumnDef<Quote>[] = [
       )
     },
     cell: ({ row }) => {
-      const dateString = row.getValue("event_end_date") as string;
-      return <div>{formatDate(dateString)}</div>;
-    },
-  },
-  {
-    accessorKey: "total_cost",
-    header: () => <div className="text-right font-extrabold whitespace-nowrap overflow-hidden overflow-ellipsis">Prix total TTC</div>,
-    cell: ({ row }) => {
-      // Assuming total_cost in the database is HT (without tax)
-      const priceTTC = parseFloat(row.getValue("total_cost"))
-      const formatted = new Intl.NumberFormat("en-US", {
-        style: "currency",
-        currency: "EUR",
-      }).format(priceTTC)
-      return <div className="text-right font-extrabold">{formatted}</div>
-    },
-  },
-  {
-    accessorKey: "is_deposit",
-    header: () => <div className="whitespace-nowrap overflow-hidden overflow-ellipsis">Acompte versé</div>,
-    cell: ({ row }) => {
-      const isDeposit = row.getValue("is_deposit") as boolean;
+      const count = row.getValue("quote_count") as number;
       return (
-        <div className="flex justify-center">
-          {isDeposit ? (
-            <CheckIcon className="h-5 w-5 text-[#bef264] border border-[#bef264] rounded-full" />
-          ) : (
-            <Cross2Icon className="h-5 w-5 text-red-500 border border-red-500 rounded-full" />
-          )}
-        </div>
+        <Badge variant="secondary" className="font-medium">
+          {count || 0}
+        </Badge>
       );
     },
   },
   {
-    accessorKey: "is_paid",
-    header: () => <div className="whitespace-nowrap overflow-hidden overflow-ellipsis">Payé</div>,
+    accessorKey: "address",
+    header: "Adresse",
     cell: ({ row }) => {
-      const isPaid = row.getValue("is_paid") as boolean;
-      return (
-        <div className="flex justify-center">
-          {isPaid ? (
-            <CheckIcon className="h-5 w-5 text-[#bef264] border border-[#bef264] rounded-full" />
-          ) : (
-            <Cross2Icon className="h-5 w-5 text-red-500 border border-red-500 rounded-full" />
-          )}
-        </div>
-      );
+      return <div className="whitespace-nowrap overflow-hidden overflow-ellipsis">{row.getValue("address")}</div>
     },
   },
   {
-    accessorKey: "description",
-    header: "Description",
-    cell: ({ row }) => {
-      return <div className="max-w-[200px] truncate">{row.getValue("description")}</div>
+    accessorKey: "city",
+    header: "Ville",
+  },
+  {
+    accessorKey: "postal_code",
+    header: "Code Postal",
+  },
+  {
+    accessorKey: "country",
+    header: "Pays",
+    cell: () => {
+      return (
+        <Badge variant="outline" className="whitespace-nowrap overflow-hidden overflow-ellipsis">
+          France
+        </Badge>
+      );
     },
   },
   {
     accessorKey: "created_at",
-    header: ({ column }) => {
-      return (
-        <div className={cn("flex items-center space-x-2")}>
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button
-                variant="ghost"
-                size="sm"
-                className="-ml-3 h-8 data-[state=open]:bg-accent"
-              >
-                <span>Date de création</span>
-                {column.getIsSorted() === "desc" ? (
-                  <ArrowDownIcon className="ml-2 h-4 w-4" />
-                ) : column.getIsSorted() === "asc" ? (
-                  <ArrowUpIcon className="ml-2 h-4 w-4" />
-                ) : (
-                  <CaretSortIcon className="ml-2 h-4 w-4" />
-                )}
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="start">
-              <DropdownMenuItem onClick={() => column.toggleSorting(false)}>
-                <ArrowUpIcon className="mr-2 h-3.5 w-3.5 text-muted-foreground/70" />
-                Asc
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => column.toggleSorting(true)}>
-                <ArrowDownIcon className="mr-2 h-3.5 w-3.5 text-muted-foreground/70" />
-                Desc
-              </DropdownMenuItem>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={() => column.toggleVisibility(false)}>
-                <EyeNoneIcon className="mr-2 h-3.5 w-3.5 text-muted-foreground/70" />
-                Masquer
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-        </div>
-      )
-    },
+    header: "Premier devis",
     cell: ({ row }) => {
-      const dateString = row.getValue("created_at") as string | null;
-      return <div>{formatDate(dateString)}</div>;
+      const date = new Date(row.getValue("created_at"));
+      return <div>{date.toLocaleDateString()}</div>;
     },
   },
-  {
-    accessorKey: "last_update",
-    header: ({ column }) => {
-      return (
-        <div className={cn("flex items-center space-x-2")}>
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button
-                variant="ghost"
-                size="sm"
-                className="-ml-3 h-8 data-[state=open]:bg-accent"
-              >
-                <span>Dernière modification</span>
-                {column.getIsSorted() === "desc" ? (
-                  <ArrowDownIcon className="ml-2 h-4 w-4" />
-                ) : column.getIsSorted() === "asc" ? (
-                  <ArrowUpIcon className="ml-2 h-4 w-4" />
-                ) : (
-                  <CaretSortIcon className="ml-2 h-4 w-4" />
-                )}
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="start">
-              <DropdownMenuItem onClick={() => column.toggleSorting(false)}>
-                <ArrowUpIcon className="mr-2 h-3.5 w-3.5 text-muted-foreground/70" />
-                Asc
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => column.toggleSorting(true)}>
-                <ArrowDownIcon className="mr-2 h-3.5 w-3.5 text-muted-foreground/70" />
-                Desc
-              </DropdownMenuItem>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={() => column.toggleVisibility(false)}>
-                <EyeNoneIcon className="mr-2 h-3.5 w-3.5 text-muted-foreground/70" />
-                Masquer
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-        </div>
-      )
-    },
-    cell: ({ row }) => {
-      const dateString = row.getValue("last_update") as string | null;
-      return <div>{formatDate(dateString)}</div>;
-    },
-  },
-]
-
+] 
