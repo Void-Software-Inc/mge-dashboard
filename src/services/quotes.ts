@@ -59,7 +59,10 @@ export async function getQuote(id: number): Promise<Quote> {
 export async function createQuote(quoteData: Partial<Quote>, quoteItems?: QuoteItem[]): Promise<{ quote: Quote; quoteItems?: QuoteItem[] }> {
   try {
     const url = `${API_URL}/quotes/create`;
-    const cleanedQuoteItems = quoteItems?.map(({ id, ...item }) => item);
+    
+    // Clean quote items by removing unnecessary fields
+    const cleanedQuoteItems = quoteItems?.map(({ id, product, ...item }) => item);
+    
     const response = await fetch(url, {
       method: 'POST',
       headers: {
@@ -69,6 +72,8 @@ export async function createQuote(quoteData: Partial<Quote>, quoteItems?: QuoteI
     });
 
     if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      console.error('Server error:', errorData);
       throw new Error('Failed to create quote');
     }
 

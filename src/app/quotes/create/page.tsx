@@ -2,7 +2,7 @@ import { createClient } from "@/utils/supabase/server"
 import { redirect } from "next/navigation"
 import QuoteCreateForm from "./QuoteCreateForm"
 
-export default async function CreateQuotePage() {
+export default async function CreateQuotePage({ searchParams }: { searchParams: { client_id?: string } }) {
   const supabase = createClient()
 
   const { data, error } = await supabase.auth.getUser()
@@ -12,7 +12,7 @@ export default async function CreateQuotePage() {
 
   return (
     <>
-      <QuoteCreateForm />
+      <QuoteCreateForm clientId={searchParams.client_id} />
     </>
   )
 }

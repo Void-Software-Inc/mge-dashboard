@@ -32,15 +32,19 @@ export async function POST(request: NextRequest) {
 
     // If there are quote items, create them
     if (quoteItems && quoteItems.length > 0) {
-        const quoteItemsWithQuoteId = quoteItems.map((item: QuoteItem) => ({
-            ...item,
-            quote_id: createdQuote.id,
-            last_update: parisDate
-        }));
+        // Remove the 'product' field from each quote item as it doesn't exist in the database
+        const cleanedQuoteItems = quoteItems.map((item: QuoteItem) => {
+            const { product, ...cleanedItem } = item;
+            return {
+                ...cleanedItem,
+                quote_id: createdQuote.id,
+                last_update: parisDate
+            };
+        });
 
         const { data: createdItems, error: itemsError } = await supabase
             .from('quoteItems')
-            .insert(quoteItemsWithQuoteId)
+            .insert(cleanedQuoteItems)
             .select();
 
         if (itemsError) {
