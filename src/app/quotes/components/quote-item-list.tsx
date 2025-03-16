@@ -150,15 +150,44 @@ export function QuoteItemList({
   };
 
   const handleProductsSelected = (selectedProducts: { productId: number; quantity: number }[]) => {
-    const newItems = selectedProducts.map(product => ({
-      id: Math.random(), // Temporary ID for new items
-      product_id: product.productId,
-      quantity: product.quantity,
-      quote_id: quoteId,
-      product: { name: '', price: 0 } // Provide the required structure
-    }));
-    onItemCreate(newItems);
-    setIsDrawerOpen(false);
+    // Fetch product details for the selected products
+    const productPromises = selectedProducts.map(async (product) => {
+      try {
+        // If we already have the product details, use them
+        if (productDetails[product.productId]) {
+          return productDetails[product.productId];
+        }
+        // Otherwise fetch the product details
+        const productData = await getProduct(product.productId);
+        return productData;
+      } catch (error) {
+        console.error(`Error fetching product ${product.productId}:`, error);
+        return null;
+      }
+    });
+
+    Promise.all(productPromises).then((products) => {
+      const newItems = selectedProducts.map((selectedProduct, index) => {
+        const product = products[index];
+        if (!product) return null;
+
+        return {
+          id: Math.random(), // Temporary ID for new items
+          product_id: selectedProduct.productId,
+          quantity: selectedProduct.quantity,
+          quote_id: quoteId,
+          product: {
+            name: product.name,
+            price: product.price
+          }
+        };
+      }).filter(Boolean) as QuoteItem[];
+
+      if (newItems.length > 0) {
+        onItemCreate(newItems);
+      }
+      setIsDrawerOpen(false);
+    });
   };
 
   const handleEditEnd = () => {
