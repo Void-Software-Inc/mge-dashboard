@@ -27,7 +27,7 @@ async function getQuotesRecords(): Promise<QuoteRecord[]> {
 }
 
 // Get all clients from quotes
-export async function getClients(): Promise<Client[]> {
+export async function getClients(): Promise<(Client & { quotes: any[] })[]> {
   try {
     // Fetch quotes from all sources
     const [activeQuotes, finishedQuotes, deletedQuotes] = await Promise.all([
@@ -44,7 +44,7 @@ export async function getClients(): Promise<Client[]> {
     ];
     
     // Create a map to store unique clients by phone number
-    const clientMap = new Map<string, Client & { quoteCount: number }>();
+    const clientMap = new Map<string, Client & { quoteCount: number, quotes: any[] }>();
     
     // Extract client information from quotes
     allQuotes.forEach((quote) => {
@@ -68,12 +68,14 @@ export async function getClients(): Promise<Client[]> {
           country: 'fr',
           created_at: dates.createdAt,
           updated_at: dates.updatedAt,
-          quoteCount: 1
+          quoteCount: 1,
+          quotes: [quote] // Initialize quotes array with this quote
         });
       } else {
         // Update existing client
         const client = clientMap.get(phoneNumber)!;
         client.quoteCount += 1;
+        client.quotes.push(quote); // Add this quote to the client's quotes array
         
         // Update client info if this quote is newer
         const dates = getQuoteDates(quote);
