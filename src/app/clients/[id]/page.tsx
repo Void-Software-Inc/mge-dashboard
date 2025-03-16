@@ -174,7 +174,7 @@ export default function ClientDetailPage({ params }: { params: { id: string } })
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div>
                 <p className="text-sm font-medium text-muted-foreground">Événement</p>
-                <p>{quote.description || "Non spécifié"}</p>
+                <p className="line-clamp-3">{quote.description || "Non spécifié"}</p>
               </div>
               <div>
                 <p className="text-sm font-medium text-muted-foreground">Date</p>

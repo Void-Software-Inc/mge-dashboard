@@ -397,7 +397,7 @@ export const columns: ColumnDef<Quote>[] = [
     accessorKey: "description",
     header: "Description",
     cell: ({ row }) => {
-      return <div className="whitespace-nowrap overflow-hidden overflow-ellipsis">{row.getValue("description")}</div>
+      return <div className="max-w-[200px] truncate">{row.getValue("description")}</div>
     },
   },
   {
