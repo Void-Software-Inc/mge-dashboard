@@ -226,7 +226,7 @@ export const generateDocumentPDF = (
         doc.setTextColor(89, 89, 89);
         doc.text("Entreprise", 15, footerY + 7);
         doc.setFont('helvetica', 'normal');
-        doc.text("MG Événements EI\nChemin des droits de l'homme\net du citoyen, 31450 Ayguevives\nSIREN : 918 638 008\nCode APE : 5320Z\nNuméro de TVA : FR88918638008", 15, footerY + 10);
+        doc.text("MG Événements EI\nChemin des droits de l'homme\net du citoyen, 31450 Ayguevives\nSIREN : 918 638 008\nNuméro de TVA : FR88918638008", 15, footerY + 10);
 
         // Contact section
         const contactX = pageWidth / 3 + 10;
