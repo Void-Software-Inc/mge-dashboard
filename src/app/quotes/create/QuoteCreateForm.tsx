@@ -1,7 +1,7 @@
 'use client';
 import { useCallback, useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { Address, Quote, QuoteItem, quoteStatus } from "@/utils/types/quotes";
+import { Address, Quote, QuoteItem, quoteStatus, FEE_TYPES } from "@/utils/types/quotes";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
@@ -345,7 +345,30 @@ export default function QuoteCreateForm({ clientId }: QuoteCreateFormProps) {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!validateForm()) return;
+    if (!isFormValid || !formData) return;
+
+    const formDataToSend = new FormData();
+    
+    // Initialize fees array
+    const initialFees = FEE_TYPES.map(feeType => ({
+      name: feeType.name,
+      price: 0,
+      enabled: false,
+      description: feeType.description
+    }));
+
+    // Append all form fields
+    Object.entries(formData).forEach(([key, value]) => {
+      if (key === 'address' && value) {
+        Object.entries(value).forEach(([addressKey, addressValue]) => {
+          formDataToSend.append(`address.${addressKey}`, addressValue?.toString() ?? '');
+        });
+      } else if (key === 'fees') {
+        formDataToSend.append('fees', JSON.stringify(initialFees));
+      } else if (value !== null && value !== undefined) {
+        formDataToSend.append(key, value.toString());
+      }
+    });
 
     setIsSubmitting(true);
     try {
