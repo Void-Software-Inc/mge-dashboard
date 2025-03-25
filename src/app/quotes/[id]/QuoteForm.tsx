@@ -80,6 +80,8 @@ export default function QuoteForm({ quoteId }: { quoteId: string }) {
   const [products, setProducts] = useState<Product[]>([]);
   const [isProductsLoading, setIsProductsLoading] = useState(true);
 
+  const [feesSubtotal, setFeesSubtotal] = useState(0);
+
   useEffect(() => {
     const fetchProducts = async () => {
       setIsProductsLoading(true);
@@ -502,13 +504,20 @@ export default function QuoteForm({ quoteId }: { quoteId: string }) {
 
   useEffect(() => {
     // Only update total_cost if it's different from the current value
-    if (formData && (formData.total_cost !== (totalCostFromItems + (formData.traiteur_price ?? 0) + (formData.other_expenses ?? 0)))) {
-      setFormData(prev => prev ? ({
-        ...prev,
-        total_cost: totalCostFromItems + (prev.traiteur_price ?? 0) + (prev.other_expenses ?? 0)
-      }) : null);
+    if (formData) {
+      const newTotalCost = totalCostFromItems + 
+        (formData.traiteur_price ?? 0) + 
+        (formData.other_expenses ?? 0) + 
+        feesSubtotal;  // Add fees subtotal
+      
+      if (formData.total_cost !== newTotalCost) {
+        setFormData(prev => prev ? ({
+          ...prev,
+          total_cost: newTotalCost
+        }) : null);
+      }
     }
-  }, [totalCostFromItems, formData?.traiteur_price, formData?.other_expenses]);
+  }, [totalCostFromItems, formData?.traiteur_price, formData?.other_expenses, feesSubtotal]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -1404,6 +1413,7 @@ export default function QuoteForm({ quoteId }: { quoteId: string }) {
               disabled={formData?.status === 'termine' || formData?.is_paid || formData?.is_deposit}
               fees={formData?.fees || []}
               onFeesChange={handleFeesChange}
+              onFeesSubtotalChange={setFeesSubtotal}
             />
           </div>
           
