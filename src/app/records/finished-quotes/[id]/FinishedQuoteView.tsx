@@ -22,6 +22,7 @@ import { fr } from 'date-fns/locale';
 import { getProducts } from "@/services/products"
 import { Product } from "@/utils/types/products"
 import { generateQuotePDF, generateInvoicePDF } from "@/utils/pdf/generateDocumentPDF"
+import { QuoteFees } from "@/app/quotes/components/QuoteFees"
 import {
   Table,
   TableBody,
@@ -357,6 +358,16 @@ export default function FinishedQuoteView({ quoteId }: { quoteId: string }) {
                 disabled
               />
             </div>
+          </div>
+          
+          {/* Add QuoteFees section */}
+          <div className="mb-8 border border-gray-200 rounded-lg p-6 bg-gray-50">
+            <QuoteFees
+              quoteId={parseInt(quoteId)}
+              disabled={true}
+              fees={quote.fees || []}
+              onFeesChange={() => {}}
+            />
           </div>
           
           {/* Products Section */}
