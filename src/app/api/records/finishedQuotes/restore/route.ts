@@ -51,7 +51,8 @@ export async function POST(request: NextRequest) {
                     address: finishedQuote.address,
                     payments: finishedQuote.payments || [],
                     created_at: new Date().toISOString(),
-                    last_update: new Date().toISOString()
+                    last_update: new Date().toISOString(),
+                    fees: finishedQuote.fees || [],
                 })
                 .select()
                 .single();

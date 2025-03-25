@@ -72,7 +72,7 @@ export type QuoteRecord = {
   is_deposit: boolean;
   deposit_amount: number;
   deposit_percentage: number;
-  fees?: QuoteFee[];
+  fees: Fee[];
 };
 
 export type FinishedQuote = {
@@ -98,7 +98,7 @@ export type FinishedQuote = {
   description: string;
   address: Address | null;
   payments?: QuotePayment[];
-  fees?: QuoteFee[];
+  fees: Fee[];
 };
 
 export type QuoteItem = {
@@ -144,16 +144,3 @@ export const paymentModes: PaymentMode[] = [
   { value: "cb", name: "Carte bancaire" },
   { value: "paypal", name: "PayPal" }
 ];
-
-export type QuoteFee = {
-  id: number;
-  quote_id?: number;
-  finished_quote_id?: number;
-  quote_record_id?: number;
-  fee_type_id: number;
-  is_selected: boolean;
-  amount: number;
-  created_at: string;
-  last_update: string;
-  fee_type?: FeeType;
-};
