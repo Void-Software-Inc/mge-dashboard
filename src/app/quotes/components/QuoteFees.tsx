@@ -98,18 +98,18 @@ export function QuoteFees({ quoteId, disabled = false, fees, onFeesChange }: Quo
   };
 
   return (
-    <div className="space-y-6">
-      <h3 className="text-lg font-semibold">Frais additionnels</h3>
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+    <div className="space-y-4">
+      <h3 className="text-base font-medium">Frais additionnels</h3>
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         {localFees.map((fee) => {
           const feeType = FEE_TYPES.find(ft => ft.name === fee.name);
           if (!feeType) return null;
 
           return (
-            <Card key={fee.name} className={`${fee.enabled ? 'border-lime-200 bg-lime-50' : 'border-gray-200'}`}>
+            <Card key={fee.name} className="border-gray-200">
               <CardHeader className="pb-2">
                 <div className="flex items-center justify-between">
-                  <CardTitle className="text-base font-medium">
+                  <CardTitle className="text-sm font-medium">
                     {feeType.displayName}
                   </CardTitle>
                   <Switch
@@ -120,26 +120,26 @@ export function QuoteFees({ quoteId, disabled = false, fees, onFeesChange }: Quo
                   />
                 </div>
               </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="space-y-2">
-                  <Label className="text-sm text-gray-600">Prix HT</Label>
+              <CardContent className="space-y-3">
+                <div className="space-y-1">
+                  <Label className="text-xs text-gray-600">Prix HT</Label>
                   <Input
                     type="number"
-                    value={fee.price}
+                    value={fee.price || ''}
                     onChange={(e) => handlePriceChange(fee.name, e.target.value)}
                     disabled={!fee.enabled || disabled}
-                    className={`${fee.enabled ? 'border-lime-200' : 'border-gray-200'}`}
+                    className="border-gray-200 h-8 text-sm"
                     min="0"
                     step="0.01"
                   />
                 </div>
-                <div className="space-y-2">
-                  <Label className="text-sm text-gray-600">Description</Label>
+                <div className="space-y-1">
+                  <Label className="text-xs text-gray-600">Description</Label>
                   <Textarea
-                    value={fee.description}
+                    value={fee.description || ''}
                     onChange={(e) => handleDescriptionChange(fee.name, e.target.value)}
                     disabled={!fee.enabled || disabled}
-                    className={`${fee.enabled ? 'border-lime-200' : 'border-gray-200'}`}
+                    className="border-gray-200 text-sm min-h-[60px]"
                     placeholder="Description des frais..."
                   />
                 </div>
