@@ -26,6 +26,7 @@ import { format, parseISO } from 'date-fns';
 import { Product } from "@/utils/types/products"
 import { getProducts } from "@/services/products"
 import { generateQuotePDF } from "@/utils/pdf/generateDocumentPDF"
+import { QuoteFees } from "../components/QuoteFees"
 
 interface FormErrors {
   first_name?: string;
@@ -778,6 +779,14 @@ export default function QuoteForm({ quoteId }: { quoteId: string }) {
     return includeTax ? (total * 1.2).toFixed(2) : total.toFixed(2);
   };
 
+  const handleFeesChange = (updatedFees: any[]) => {
+    setFormData(prev => prev ? {
+      ...prev,
+      fees: updatedFees
+    } : null);
+    setIsChanged(true);
+  };
+
   if (isLoading) {
     return (
       <div className="flex flex-col items-center justify-center pt-20 px-4 md:px-0">
@@ -1387,6 +1396,15 @@ export default function QuoteForm({ quoteId }: { quoteId: string }) {
                 )}
               </div>
             </div>
+          </div>
+          
+          <div className="mb-8 border border-gray-200 rounded-lg p-6 bg-gray-50">
+            <QuoteFees
+              quoteId={parseInt(quoteId)}
+              disabled={formData?.status === 'termine' || formData?.is_paid || formData?.is_deposit}
+              fees={formData?.fees || []}
+              onFeesChange={handleFeesChange}
+            />
           </div>
           
           <div className="mb-4">
