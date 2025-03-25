@@ -26,6 +26,7 @@ import { format, parseISO } from 'date-fns';
 import { Product } from "@/utils/types/products"
 import { getProducts } from "@/services/products"
 import { generateQuotePDF } from "@/utils/pdf/generateDocumentPDF"
+import { QuoteFees } from "../components/QuoteFees"
 
 interface FormErrors {
   first_name?: string;
@@ -78,6 +79,8 @@ export default function QuoteForm({ quoteId }: { quoteId: string }) {
 
   const [products, setProducts] = useState<Product[]>([]);
   const [isProductsLoading, setIsProductsLoading] = useState(true);
+
+  const [feesSubtotal, setFeesSubtotal] = useState(0);
 
   useEffect(() => {
     const fetchProducts = async () => {
@@ -501,13 +504,20 @@ export default function QuoteForm({ quoteId }: { quoteId: string }) {
 
   useEffect(() => {
     // Only update total_cost if it's different from the current value
-    if (formData && (formData.total_cost !== (totalCostFromItems + (formData.traiteur_price ?? 0) + (formData.other_expenses ?? 0)))) {
-      setFormData(prev => prev ? ({
-        ...prev,
-        total_cost: totalCostFromItems + (prev.traiteur_price ?? 0) + (prev.other_expenses ?? 0)
-      }) : null);
+    if (formData) {
+      const newTotalCost = totalCostFromItems + 
+        (formData.traiteur_price ?? 0) + 
+        (formData.other_expenses ?? 0) + 
+        feesSubtotal;  // Add fees subtotal
+      
+      if (formData.total_cost !== newTotalCost) {
+        setFormData(prev => prev ? ({
+          ...prev,
+          total_cost: newTotalCost
+        }) : null);
+      }
     }
-  }, [totalCostFromItems, formData?.traiteur_price, formData?.other_expenses]);
+  }, [totalCostFromItems, formData?.traiteur_price, formData?.other_expenses, feesSubtotal]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -776,6 +786,14 @@ export default function QuoteForm({ quoteId }: { quoteId: string }) {
     }, 0);
     
     return includeTax ? (total * 1.2).toFixed(2) : total.toFixed(2);
+  };
+
+  const handleFeesChange = (updatedFees: any[]) => {
+    setFormData(prev => prev ? {
+      ...prev,
+      fees: updatedFees
+    } : null);
+    setIsChanged(true);
   };
 
   if (isLoading) {
@@ -1387,6 +1405,16 @@ export default function QuoteForm({ quoteId }: { quoteId: string }) {
                 )}
               </div>
             </div>
+          </div>
+          
+          <div className="mb-8 border border-gray-200 rounded-lg p-6 bg-gray-50">
+            <QuoteFees
+              quoteId={parseInt(quoteId)}
+              disabled={formData?.status === 'termine' || formData?.is_paid || formData?.is_deposit}
+              fees={formData?.fees || []}
+              onFeesChange={handleFeesChange}
+              onFeesSubtotalChange={setFeesSubtotal}
+            />
           </div>
           
           <div className="mb-4">

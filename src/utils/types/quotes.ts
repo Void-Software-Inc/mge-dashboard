@@ -7,6 +7,25 @@ export interface Address {
   pays: string;
 }
 
+export type Fee = {
+  name: string;
+  price: number;
+  enabled: boolean;
+  description: string | null;
+};
+
+export const FEE_TYPES = [
+  { name: 'delivery', displayName: 'Livraison', description: 'Frais de livraison' },
+  { name: 'pickup', displayName: 'Récupération', description: 'Frais de récupération' },
+  { name: 'table_service', displayName: 'Service en salle', description: 'Frais de service en salle' },
+  { name: 'retrieval', displayName: 'Récupération', description: 'Frais de récupération' },
+  { name: 'marquee_setup', displayName: 'Montage chapiteau', description: 'Frais de montage du chapiteau' },
+  { name: 'marquee_dismantling', displayName: 'Frais de déconstruction', description: 'Frais de déconstruction du chapiteau' },
+  { name: 'decoration', displayName: 'Décoration', description: 'Frais de décoration' }
+] as const;
+
+export type FeeType = typeof FEE_TYPES[number];
+
 export type Quote = {
   id: number;
   first_name: string;
@@ -29,6 +48,7 @@ export type Quote = {
   deposit_percentage: number;
   address: Address | null;
   payments?: QuotePayment[];
+  fees: Fee[];
 };
 
 export type QuoteRecord = {
@@ -52,6 +72,7 @@ export type QuoteRecord = {
   is_deposit: boolean;
   deposit_amount: number;
   deposit_percentage: number;
+  fees: Fee[];
 };
 
 export type FinishedQuote = {
@@ -77,6 +98,7 @@ export type FinishedQuote = {
   description: string;
   address: Address | null;
   payments?: QuotePayment[];
+  fees: Fee[];
 };
 
 export type QuoteItem = {
