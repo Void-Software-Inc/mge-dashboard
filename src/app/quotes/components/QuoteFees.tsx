@@ -16,9 +16,10 @@ interface QuoteFeesProps {
   disabled?: boolean;
   fees: any[];
   onFeesChange: (fees: any[]) => void;
+  onFeesSubtotalChange?: (subtotal: number) => void;
 }
 
-export function QuoteFees({ quoteId, disabled = false, fees, onFeesChange }: QuoteFeesProps) {
+export function QuoteFees({ quoteId, disabled = false, fees, onFeesChange, onFeesSubtotalChange }: QuoteFeesProps) {
   const [localFees, setLocalFees] = useState<any[]>([]);
 
   useEffect(() => {
@@ -35,6 +36,14 @@ export function QuoteFees({ quoteId, disabled = false, fees, onFeesChange }: Quo
       setLocalFees(fees);
     }
   }, [fees, onFeesChange]);
+
+  // Calculate subtotal whenever fees change
+  useEffect(() => {
+    const subtotal = localFees.reduce((sum, fee) => {
+      return sum + (fee.enabled ? (fee.price || 0) : 0);
+    }, 0);
+    onFeesSubtotalChange?.(subtotal);
+  }, [localFees, onFeesSubtotalChange]);
 
   const handleToggleFee = async (feeName: string) => {
     if (disabled) return;
@@ -99,7 +108,12 @@ export function QuoteFees({ quoteId, disabled = false, fees, onFeesChange }: Quo
 
   return (
     <div className="space-y-4">
-      <h3 className="text-base font-medium">Frais additionnels</h3>
+      <div className="flex justify-between items-center">
+        <h3 className="text-base font-medium">Frais additionnels</h3>
+        <div className="text-sm font-medium">
+          Sous-total HT: {localFees.reduce((sum, fee) => sum + (fee.enabled ? (fee.price || 0) : 0), 0).toFixed(2)} €
+        </div>
+      </div>
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         {localFees.map((fee) => {
           const feeType = FEE_TYPES.find(ft => ft.name === fee.name);
