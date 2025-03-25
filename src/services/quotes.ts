@@ -33,6 +33,7 @@ export async function getQuotes(): Promise<Quote[]> {
       deposit_amount: quote.deposit_amount,
       address: quote.address,
       payments: quote.payments || [],
+      fees: quotes.fees  || [],
     }))
     return cleanQuotes;
   } catch (error) {
@@ -268,6 +269,7 @@ export async function getQuotesRecords(): Promise<QuoteRecord[]> {
       description: quotes.description,
       deleted_at: quotes.deleted_at,
       deposit_percentage: quotes.deposit_percentage,
+      fees: quotes.fees  || [],
     }))
     return cleanQuotesRecords;
   } catch (error) {
@@ -349,6 +351,7 @@ export async function getFinishedQuotes(): Promise<FinishedQuote[]> {
       finished_at: quotes.finished_at,
       payments: quotes.payments || [],
       address: quotes.address,
+      fees: quotes.fees  || [],
     }))
     return cleanFinishedQuotes;
   } catch (error) {
