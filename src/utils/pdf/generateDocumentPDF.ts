@@ -219,24 +219,32 @@ export const generateDocumentPDF = (
         doc.line(15, footerY, pageWidth - 15, footerY);
 
         // Add the three sections below the line
-        doc.setFontSize(8);
+        doc.setFontSize(7);
         
-        // Company section
+        // MG Événements section
         doc.setFont('helvetica', 'bold');
         doc.setTextColor(89, 89, 89);
-        doc.text("Entreprise", 15, footerY + 7);
+        doc.text("MG Événements", 15, footerY + 7);
         doc.setFont('helvetica', 'normal');
-        doc.text("MG Événements EI\nChemin des droits de l'homme\net du citoyen, 31450 Ayguevives\nSIREN : 918 638 008\nNuméro de TVA : FR88918638008\nCode APE : 82.30Z", 15, footerY + 10);
+        doc.text("Entreprise Individuelle\nChemin des droits de l'homme\net du citoyen, 31450 Ayguevives\nSIREN : 918 638 008\nNuméro de TVA : FR88918638008\nCode APE : 82.30Z", 15, footerY + 10);
+
+        // MG Traiteur section
+        const traiteurX = (pageWidth / 4) + 10;
+        doc.setFont('helvetica', 'bold');
+        doc.setTextColor(89, 89, 89);
+        doc.text("MG Traiteur", traiteurX, footerY + 7);
+        doc.setFont('helvetica', 'normal');
+        doc.text("Entreprise Individuelle\nSIREN : 911 582 468\nNuméro de TVA : FR88918638008\nCode APE : 5621Z", traiteurX, footerY + 10);
 
         // Contact section
-        const contactX = pageWidth / 3 + 10;
+        const contactX = (2 * pageWidth) / 4;
         doc.setFont('helvetica', 'bold');
         doc.text("Coordonnées", contactX, footerY + 7);
         doc.setFont('helvetica', 'normal');
         doc.text("Mani Grimaudo\n07 68 10 96 17\nmgevenementiel31@gmail.com\nwww.mgevenements.fr", contactX, footerY + 10);
 
         // Bank details section
-        const bankX = (2 * pageWidth) / 3;
+        const bankX = ((3 * pageWidth) / 4) - 10;
         doc.setFont('helvetica', 'bold');
         doc.text("Coordonnées bancaires", bankX, footerY + 7);
         doc.setFont('helvetica', 'normal');
