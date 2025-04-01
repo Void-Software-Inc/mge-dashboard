@@ -129,7 +129,7 @@ export default function QuoteForm({ quoteId }: { quoteId: string }) {
           ...JSON.parse(JSON.stringify(fetchedQuote)),
           total_cost: Number(fetchedQuote.total_cost),
           traiteur_price: Number(fetchedQuote.traiteur_price || 0),
-          other_expenses: Number(fetchedQuote.other_expenses || 0),
+          other_expenses: fetchedQuote.other_expenses === null || fetchedQuote.other_expenses === undefined ? null : Number(fetchedQuote.other_expenses),
           deposit_amount: Number(fetchedQuote.deposit_amount || 0),
           deposit_percentage: Number(fetchedQuote.deposit_percentage || 0),
           is_paid: !!fetchedQuote.is_paid,  // Keep original is_paid value
