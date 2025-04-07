@@ -15,13 +15,13 @@ export type Fee = {
 };
 
 export const FEE_TYPES = [
-  { name: 'delivery', displayName: 'Livraison', description: 'Frais de livraison' },
-  { name: 'pickup', displayName: 'Récupération', description: 'Frais de récupération' },
-  { name: 'table_service', displayName: 'Service en salle', description: 'Frais de service en salle' },
-  { name: 'retrieval', displayName: 'Récupération', description: 'Frais de récupération' },
-  { name: 'marquee_setup', displayName: 'Montage chapiteau', description: 'Frais de montage du chapiteau' },
-  { name: 'marquee_dismantling', displayName: 'Frais de déconstruction', description: 'Frais de déconstruction du chapiteau' },
-  { name: 'decoration', displayName: 'Décoration', description: 'Frais de décoration' }
+  { name: 'delivery', displayName: 'Livraison', description: '' },
+  { name: 'pickup', displayName: 'Récupération', description: '' },
+  { name: 'table_service', displayName: 'Service en salle', description: '' },
+  { name: 'retrieval', displayName: 'Récupération', description: '' },
+  { name: 'marquee_setup', displayName: 'Montage chapiteau', description: '' },
+  { name: 'marquee_dismantling', displayName: 'Frais de déconstruction', description: '' },
+  { name: 'decoration', displayName: 'Décoration', description: '' }
 ] as const;
 
 export type FeeType = typeof FEE_TYPES[number];

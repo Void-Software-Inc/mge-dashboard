@@ -12,6 +12,7 @@ import { Toaster, toast } from 'sonner';
 import { ChevronLeftIcon, PlusIcon } from "@radix-ui/react-icons";
 import { DatePicker } from "../components/date-picker";
 import { QuoteItemList } from "../components/quote-item-list";
+import { QuoteFees } from "../components/QuoteFees";
 import { createQuote } from "@/services/quotes";
 import { getClient } from "@/services/clients";
 import { useAppContext } from "@/app/context/AppContext";
@@ -85,6 +86,7 @@ export default function QuoteCreateForm({ clientId }: QuoteCreateFormProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [totalCostFromItems, setTotalCostFromItems] = useState(0);
   const [isLoadingClient, setIsLoadingClient] = useState(!!clientIdFromUrl);
+  const [feesSubtotal, setFeesSubtotal] = useState(0);
 
   const [errors, setErrors] = useState<FormErrors>({});
   const [isFormValid, setIsFormValid] = useState(false);
@@ -283,9 +285,9 @@ export default function QuoteCreateForm({ clientId }: QuoteCreateFormProps) {
   useEffect(() => {
     setFormData(prev => ({
       ...prev,
-      total_cost: totalCostFromItems + (prev.traiteur_price ?? 0) + (prev.other_expenses ?? 0)
+      total_cost: totalCostFromItems + (prev.traiteur_price ?? 0) + (prev.other_expenses ?? 0) + feesSubtotal
     }));
-  }, [totalCostFromItems, formData.traiteur_price, formData.other_expenses]);
+  }, [totalCostFromItems, formData.traiteur_price, formData.other_expenses, feesSubtotal]);
 
   const validateForm = useCallback(() => {
     const newErrors: FormErrors = {};
@@ -762,6 +764,21 @@ export default function QuoteCreateForm({ clientId }: QuoteCreateFormProps) {
                 )}
               </div>
             </div>
+          </div>
+          
+          <div className="mb-8 border border-gray-200 rounded-lg p-6 bg-gray-50">
+            <QuoteFees
+              quoteId={0}
+              disabled={formData?.is_paid || formData?.is_deposit}
+              fees={formData?.fees || []}
+              onFeesChange={(updatedFees) => {
+                setFormData(prev => ({
+                  ...prev,
+                  fees: updatedFees
+                }));
+              }}
+              onFeesSubtotalChange={setFeesSubtotal}
+            />
           </div>
         </div>
       </form>
