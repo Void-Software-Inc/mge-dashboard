@@ -50,7 +50,8 @@ export async function POST(request: NextRequest) {
                     deposit_percentage: quote.deposit_percentage,
                     address: quote.address,
                     payments: quote.payments || [],
-                    deleted_at: new Date().toISOString()
+                    deleted_at: new Date().toISOString(),
+                    fees: quote.fees || []
                 })
                 .select()
                 .single();
