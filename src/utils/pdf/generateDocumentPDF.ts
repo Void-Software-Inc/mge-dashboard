@@ -542,7 +542,10 @@ export const generateDocumentPDF = (
           totalTTC,
           rightMargin,
           lineSpacing,
-          documentType
+          documentType,
+          pageHeight,
+          currentPage,
+          totalPages
         );
       } else {
         addTotalsAndSignature(
@@ -554,7 +557,10 @@ export const generateDocumentPDF = (
           totalTTC,
           rightMargin,
           lineSpacing,
-          documentType
+          documentType,
+          pageHeight,
+          currentPage,
+          totalPages
         );
       }
       
@@ -586,7 +592,10 @@ const addTotalsAndSignature = (
   totalTTC: number,
   rightMargin: number,
   lineSpacing: number,
-  documentType: DocumentType
+  documentType: DocumentType,
+  pageHeight: number,
+  currentPage: number,
+  totalPages: number
 ) => {
   // Add totals section
   doc.setFontSize(10);
@@ -619,30 +628,158 @@ const addTotalsAndSignature = (
   const totalTTCText = `${totalTTC.toFixed(2)}€`;
   const totalTTCWidth = doc.getTextWidth(totalTTCText);
   doc.text(totalTTCText, pageWidth - rightMargin - totalTTCWidth, startY + (lineSpacing * 3));
-  
-  // Add signature box only for quotes or terms and conditions for invoices
-  if (documentType === DocumentType.QUOTE) {
-    // Place signature box at the same level as the totals box
-    doc.setFontSize(9);
-    doc.setFont('helvetica', 'bold');
-    doc.text("Signature du client", 15, startY);
-    doc.setFont('helvetica', 'normal');
-    doc.text("(précédée de la mention « Bon pour accord »)", 15, startY + 5);
-    
-    // Draw signature box
-    doc.setDrawColor(200, 200, 200);
-    doc.setLineWidth(0.5);
-    doc.rect(15, startY + 10, 85, lineSpacing * 4);
-  } else {
-    // Add terms and conditions for invoices after the totals
-    const termsY = startY + (lineSpacing * 5);
-    doc.setFontSize(8);
-    doc.setFont('helvetica', 'bold');
-    doc.text("Termes et conditions", 15, termsY);
-    doc.setFont('helvetica', 'normal');
-    doc.text("Date d'échéance : Paiement sous 30 jours à compter de la facture, sauf accord contraire.\nPénalités de retard : Intérêts de retard au taux légal en vigueur en cas de retard.\nIndemnité de recouvrement : 40 € dus uniquement pour les professionnels (art. L441-10 C. com.).\nDates de réalisation de la prestation : Dates de l'événement.", 15, termsY + 5);
 
-  }
+  // Add a new page for conditions générales de location
+  doc.addPage();
+  const conditionsY = 20;
+  
+  // Title
+  doc.setFontSize(14);
+  doc.setFont('helvetica', 'bold');
+  doc.text("CONDITIONS GÉNÉRALES DE LOCATION", pageWidth / 2, conditionsY, { align: 'center' });
+  
+  // Content
+  doc.setFontSize(8);
+  doc.setFont('helvetica', 'normal');
+  
+  // Calculate the width of the text block (page width - 40 for margins)
+  const textBlockX = 20;
+  const textBlockWidth = pageWidth - 40;
+  let currentY = conditionsY + 15;
+  
+  // Helper function to add text with wrapping
+  const addWrappedText = (text: string, y: number, indent: number = 0) => {
+    const lines = doc.splitTextToSize(text, textBlockWidth - indent);
+    doc.text(lines, textBlockX + indent, y);
+    return lines.length * 5; // Return the height used (5 units per line)
+  };
+  
+  // Section 1
+  doc.setFont('helvetica', 'bold');
+  doc.text("1. Lieu de mise à disposition du matériel", textBlockX, currentY);
+  currentY += 8;
+  doc.setFont('helvetica', 'normal');
+  currentY += addWrappedText("Plusieurs options s'offrent à vous :", currentY);
+  currentY += addWrappedText("- Retrait en boutique", currentY);
+  currentY += addWrappedText("- Livraison à domicile", currentY);
+  currentY += addWrappedText("Le retrait et le retour du matériel peuvent être effectués au chemin des droits de l'homme et du citoyen, 31450 Ayguesvives.", currentY);
+  currentY += addWrappedText("Ou nous pouvons assurer la livraison et le retour à votre adresse.", currentY);
+  currentY += addWrappedText("Pour une location en semaine, la durée de la location est de 48 heures environ avec un retrait du matériel la veille de l'événement et un retour le lendemain de l'événement.", currentY);
+  currentY += addWrappedText("Pour une location le week-end, la durée de la location est de 96 heures environ avec un retrait du matériel le jeudi matin au plus tôt et un retour le lundi après-midi au plus tard.", currentY);
+  currentY += 5;
+  
+  // Section 2
+  doc.setFont('helvetica', 'bold');
+  doc.text("2. Modalités de réservation et de paiement", textBlockX, currentY);
+  currentY += 8;
+  doc.setFont('helvetica', 'normal');
+  currentY += addWrappedText("• Toute réservation de matériel doit faire l'objet d'un devis préalable établi par le Loueur.", currentY);
+  currentY += addWrappedText("• La réservation est effective à réception du devis signé par le Locataire, accompagné d'un acompte de 30% du montant total de la location.", currentY);
+  currentY += addWrappedText("• Le solde de la location est payable au plus tard le jour de l'événement", currentY);
+  currentY += 5;
+  
+  // Section 3
+  doc.setFont('helvetica', 'bold');
+  doc.text("3. Résiliation", textBlockX, currentY);
+  currentY += 8;
+  doc.setFont('helvetica', 'normal');
+  currentY += addWrappedText("• En cas de manquement grave de l'une des parties à ses obligations, le contrat pourra être résilié de plein droit.", currentY);
+  currentY += addWrappedText("• En cas d'annulation de l'événement, les conditions de résiliation seront les suivantes :", currentY);
+  currentY += addWrappedText("- Annulation J-90 : l'acompte de 30% n'est pas remboursé.", currentY + 2, 5);
+  currentY += addWrappedText("- Annulation après J-15 : le loueur s'engage à régler 50% du montant total de la prestation.", currentY + 2, 5);
+  currentY += addWrappedText("- Cas de force majeure : Être constitutif d'un « cas de force majeure » un événement qui est imprévisible et en dehors de la volonté des deux parties, et d'origines diverses : climatique, bactériologique, politique, militaire. En cas d'annulation suite à un cas de force majeure, MG EVENEMENTS s'engage à proposer au client un avoir d'une valeur égale aux sommes déjà versées, valable 12 mois, utilisable pour toute prestation de location.", currentY + 2, 5);
+  currentY += 5;
+  
+  // Section 4
+  doc.setFont('helvetica', 'bold');
+  doc.text("4. Acceptation des CGL", textBlockX, currentY);
+  currentY += 8;
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(8);
+  
+  // Calculate text baseline position
+  const checkboxSize = 3;
+  const textY = currentY;
+  const checkboxY = textY - 2; // Move checkbox up to align with text baseline
+  
+  // Draw checkbox box (smaller size and aligned with text)
+  doc.setDrawColor(0, 0, 0);
+  doc.setLineWidth(0.3);
+  doc.rect(textBlockX, checkboxY, checkboxSize, checkboxSize);
+  
+  // Add acceptance text with proper spacing after checkbox
+  const acceptanceText = "En cochant cette case, je déclare avoir pris connaissance des conditions générales de location.";
+  const lines = doc.splitTextToSize(acceptanceText, textBlockWidth - (checkboxSize + 5));
+  doc.text(lines, textBlockX + checkboxSize + 3, textY);
+  currentY += lines.length * 5;
+  currentY += 10;
+  
+  // Add signature boxes
+  doc.setFontSize(9);
+  doc.setFont('helvetica', 'bold');
+  
+  // Client signature
+  doc.text("Signature du client", textBlockX, currentY);
+  doc.setFont('helvetica', 'normal');
+  doc.text("(précédée de la mention « Bon pour accord »)", textBlockX, currentY + 5);
+  
+  // Prestataire signature
+  doc.setFont('helvetica', 'bold');
+  const prestataireText = "Signature du prestataire";
+  const prestataireWidth = doc.getTextWidth(prestataireText);
+  doc.text(prestataireText, pageWidth - textBlockX - prestataireWidth, currentY);
+  doc.setFont('helvetica', 'normal');
+  
+  
+  // Add footer with company info and page number
+  const footerY = pageHeight - 35;
+  
+  // Add horizontal line
+  doc.setDrawColor(168, 168, 168);
+  doc.setLineWidth(0.5);
+  doc.line(15, footerY, pageWidth - 15, footerY);
+  
+  // Add the three sections below the line
+  doc.setFontSize(7);
+  
+  // MG Événements section
+  doc.setFont('helvetica', 'bold');
+  doc.setTextColor(89, 89, 89);
+  doc.text("MG Événements", 15, footerY + 7);
+  doc.setFont('helvetica', 'normal');
+  doc.text("Entreprise Individuelle\nChemin des droits de l'homme\net du citoyen, 31450 Ayguevives\nSIREN : 918 638 008\nNuméro de TVA : FR88918638008\nCode APE : 82.30Z", 15, footerY + 10);
+  
+  // MG Traiteur section
+  const traiteurX = (pageWidth / 4) + 10;
+  doc.setFont('helvetica', 'bold');
+  doc.setTextColor(89, 89, 89);
+  doc.text("MG Traiteur", traiteurX, footerY + 7);
+  doc.setFont('helvetica', 'normal');
+  doc.text("Entreprise Individuelle\nSIREN : 911 582 468\nNuméro de TVA : FR88918638008\nCode APE : 5621Z", traiteurX, footerY + 10);
+  
+  // Contact section
+  const contactX = (2 * pageWidth) / 4;
+  doc.setFont('helvetica', 'bold');
+  doc.text("Coordonnées", contactX, footerY + 7);
+  doc.setFont('helvetica', 'normal');
+  doc.text("Mani Grimaudo\n07 68 10 96 17\nmgevenementiel31@gmail.com\nwww.mgevenements.fr", contactX, footerY + 10);
+  
+  // Bank details section
+  const bankX = ((3 * pageWidth) / 4) - 10;
+  doc.setFont('helvetica', 'bold');
+  doc.text("Coordonnées bancaires", bankX, footerY + 7);
+  doc.setFont('helvetica', 'normal');
+  doc.text("IBAN FR76 2823 3000 0113 2935 6527 041\nCode BIC / SWIFT REVOFRP2\nPaypal: mani.grimaudo@icloud.com", bankX, footerY + 10);
+  
+  // Add page numbers
+  doc.setFontSize(8);
+  const text = `Page ${currentPage} sur ${totalPages}`;
+  const textWidth = doc.getTextWidth(text);
+  doc.text(
+    text,
+    doc.internal.pageSize.getWidth() - 15 - textWidth,
+    pageHeight - 5
+  );
 };
 
 // Export the original function for backward compatibility
