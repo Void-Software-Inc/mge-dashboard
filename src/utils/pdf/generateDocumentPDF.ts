@@ -531,8 +531,7 @@ export const generateDocumentPDF = (
       if (finalY + requiredSpace > pageHeight) {
         doc.addPage();
         currentPage++;
-        totalPages++; // Increment total pages when adding a page
-        addFooter(doc, pageHeight, currentPage, totalPages);
+        totalPages = currentPage + 1; // Add one more for conditions page
         addTotalsAndSignature(
           doc,
           20,
@@ -548,6 +547,7 @@ export const generateDocumentPDF = (
           totalPages
         );
       } else {
+        totalPages = currentPage + 1; // Add one more for conditions page
         addTotalsAndSignature(
           doc,
           finalY,
