@@ -124,34 +124,54 @@ export default function QuoteForm({ quoteId }: { quoteId: string }) {
           getQuote(parseInt(quoteId))
         ])
         
-        // Create a deep copy and ensure all numeric values are properly set
-        const formDataCopy = {
-          ...JSON.parse(JSON.stringify(fetchedQuote)),
-          total_cost: Number(fetchedQuote.total_cost),
-          traiteur_price: Number(fetchedQuote.traiteur_price || 0),
-          other_expenses: fetchedQuote.other_expenses === null || fetchedQuote.other_expenses === undefined ? null : Number(fetchedQuote.other_expenses),
-          deposit_amount: Number(fetchedQuote.deposit_amount || 0),
-          deposit_percentage: Number(fetchedQuote.deposit_percentage || 0),
-          is_paid: !!fetchedQuote.is_paid,  // Keep original is_paid value
+        // Fix the total_cost rounding issue by ensuring both copies have exactly the same values
+        // Round all numeric values to 2 decimal places for consistency
+        const normalizedQuote = {
+          ...fetchedQuote,
+          total_cost: Number(parseFloat(fetchedQuote.total_cost?.toString() || '0').toFixed(2)),
+          traiteur_price: Number(parseFloat(fetchedQuote.traiteur_price?.toString() || '0').toFixed(2)),
+          other_expenses: Number(parseFloat(fetchedQuote.other_expenses?.toString() || '0').toFixed(2)),
+          deposit_amount: Number(parseFloat(fetchedQuote.deposit_amount?.toString() || '0').toFixed(2)),
+          deposit_percentage: Number(parseFloat(fetchedQuote.deposit_percentage?.toString() || '0').toFixed(2)),
+          is_paid: !!fetchedQuote.is_paid,
           is_deposit: !!fetchedQuote.is_deposit,
           is_traiteur: !!fetchedQuote.is_traiteur,
-          payments: fetchedQuote.payments || []  // Ensure payments array exists
+          payments: (fetchedQuote.payments || []).map(payment => ({
+            mode: payment.mode || '',
+            amount: payment.amount !== null && payment.amount !== undefined 
+              ? Number(parseFloat(payment.amount.toString()).toFixed(2)) 
+              : null
+          }))
         };
 
-        setQuote(fetchedQuote)
-        setFormData(formDataCopy)
-        setIsChanged(false)
-        await fetchQuoteItems()
+        // Set both state variables to separate but identical objects
+        const quoteObj = JSON.parse(JSON.stringify(normalizedQuote));
+        const formDataObj = JSON.parse(JSON.stringify(normalizedQuote));
+        
+        setQuote(quoteObj);
+        setFormData(formDataObj);
+        
+        // Force isChanged to false since we've normalized everything
+        setIsChanged(false);
+        
+        // Calculate the total cost from items based on normalized values
+        const traiteurPrice = Number(parseFloat(fetchedQuote.traiteur_price?.toString() || '0').toFixed(2));
+        const otherExpenses = Number(parseFloat(fetchedQuote.other_expenses?.toString() || '0').toFixed(2));
+        const totalCost = Number(parseFloat(fetchedQuote.total_cost?.toString() || '0').toFixed(2));
+        
+        setTotalCostFromItems(totalCost - traiteurPrice - otherExpenses);
+        
+        await fetchQuoteItems();
       } catch (error) {
-        console.error('Error fetching quote:', error)
-        toast.error('Failed to load quote')
+        console.error('Error fetching quote:', error);
+        toast.error('Failed to load quote');
       } finally {
-        setIsLoading(false)
+        setIsLoading(false);
       }
     }
 
-    fetchQuote()
-  }, [quoteId, fetchQuoteItems])
+    fetchQuote();
+  }, [quoteId, fetchQuoteItems]);
 
   const validateForm = useCallback(() => {
     const newErrors: FormErrors = {}
@@ -239,70 +259,71 @@ export default function QuoteForm({ quoteId }: { quoteId: string }) {
   }, [formData])
 
   useEffect(() => {
-    const compareObjects = (obj1: any, obj2: any) => {
-      // Helper function to clean objects for comparison
-      const cleanObject = (obj: any) => {
-        if (!obj) return obj;
-        const cleaned = { ...obj };
-        
-        // Remove properties that shouldn't affect the comparison
-        delete cleaned.last_update;
-        delete cleaned.created_at;
-        delete cleaned.id; // Add this to ignore ID differences
-        
-        // Clean up numbers to ensure consistent decimal places
-        if (cleaned.total_cost !== undefined) {
-          cleaned.total_cost = Number(cleaned.total_cost.toFixed(2));
-        }
-        if (cleaned.traiteur_price !== undefined) {
-          cleaned.traiteur_price = Number((cleaned.traiteur_price || 0).toFixed(2));
-        }
-        if (cleaned.other_expenses !== undefined) {
-          cleaned.other_expenses = Number((cleaned.other_expenses || 0).toFixed(2));
-        }
-        if (cleaned.deposit_amount !== undefined) {
-          cleaned.deposit_amount = Number((cleaned.deposit_amount || 0).toFixed(2));
-        }
-        if (cleaned.deposit_percentage !== undefined) {
-          cleaned.deposit_percentage = Number((cleaned.deposit_percentage || 0).toFixed(2));
-        }
-        
-        // Ensure consistent boolean values
-        cleaned.is_paid = !!cleaned.is_paid;
-        cleaned.is_deposit = !!cleaned.is_deposit;
-        cleaned.is_traiteur = !!cleaned.is_traiteur;
-
-        // Ensure payments array is consistent
-        if (cleaned.payments) {
-          cleaned.payments = cleaned.payments.map((payment: any) => ({
-            mode: payment.mode || '',
-            amount: payment.amount ? Number(payment.amount.toFixed(2)) : null
-          }));
-        }
-        
-        return cleaned;
+    const cleanObject = (obj: any) => {
+      if (!obj) return obj;
+      const cleaned = { ...obj };
+      
+      // Remove properties that shouldn't affect the comparison
+      delete cleaned.last_update;
+      delete cleaned.created_at;
+      
+      // Handle numeric values properly - treat null, undefined, and 0 consistently
+      // and ensure consistent decimal places
+      const handleNumeric = (value: any): number => {
+        if (value === null || value === undefined) return 0;
+        return Number(Number(value).toFixed(2));
       };
       
+      cleaned.total_cost = handleNumeric(cleaned.total_cost);
+      cleaned.traiteur_price = handleNumeric(cleaned.traiteur_price);
+      cleaned.other_expenses = handleNumeric(cleaned.other_expenses);
+      cleaned.deposit_amount = handleNumeric(cleaned.deposit_amount);
+      cleaned.deposit_percentage = handleNumeric(cleaned.deposit_percentage);
+      
+      // Ensure consistent boolean values
+      cleaned.is_paid = !!cleaned.is_paid;
+      cleaned.is_deposit = !!cleaned.is_deposit;
+      cleaned.is_traiteur = !!cleaned.is_traiteur;
+
+      // Ensure payments array is consistent
+      if (cleaned.payments) {
+        cleaned.payments = cleaned.payments.map((payment: { mode?: string; amount?: number | null }) => ({
+          mode: payment.mode || '',
+          amount: payment.amount !== null && payment.amount !== undefined ? Number(Number(payment.amount).toFixed(2)) : 0
+        }));
+      } else {
+        cleaned.payments = [];
+      }
+      
+      return cleaned;
+    };
+
+    const compareObjects = (obj1: any, obj2: any) => {
       const cleanedObj1 = cleanObject(obj1);
       const cleanedObj2 = cleanObject(obj2);
       
-      // Rename this variable to avoid the naming conflict
-      const objectsAreEqual = lodashEqual(cleanedObj1, cleanedObj2);
-      
-      return objectsAreEqual;
+      // Simple comparison without logging
+      return lodashEqual(cleanedObj1, cleanedObj2);
     };
 
+    // Always start with assuming no changes unless proven otherwise
     let hasChanges = false;
-    if (formData && quote) {
+    
+    // Only compare if both objects exist and are fully loaded
+    if (formData && quote && Object.keys(formData).length > 0 && Object.keys(quote).length > 0) {
       hasChanges = !compareObjects(formData, quote);
     }
 
-    // Add check for quote item changes
+    // Add check for quote item changes only if we haven't already detected changes
     if (!hasChanges) {
       hasChanges = taintedItems.size > 0 || editedItems.size > 0 || createdItems.length > 0;
     }
 
-    setIsChanged(hasChanges);
+    // Only update the state if the value has changed
+    if (isChanged !== hasChanges) {
+      setIsChanged(hasChanges);
+    }
+    
     validateForm();
   }, [formData, quote, validateForm, taintedItems, editedItems, createdItems]);
 
@@ -502,22 +523,29 @@ export default function QuoteForm({ quoteId }: { quoteId: string }) {
     quote?.other_expenses
   ]);
 
+  // Calculate total cost when component values change
   useEffect(() => {
-    // Only update total_cost if it's different from the current value
-    if (formData) {
-      const newTotalCost = totalCostFromItems + 
-        (formData.traiteur_price ?? 0) + 
-        (formData.other_expenses ?? 0) + 
-        feesSubtotal;  // Add fees subtotal
+    if (!formData) return;
+    
+    const newTotalCost = Number((totalCostFromItems + 
+      Number(formData.traiteur_price || 0) + 
+      Number(formData.other_expenses || 0)).toFixed(2));
       
-      if (formData.total_cost !== newTotalCost) {
-        setFormData(prev => prev ? ({
+    // Only update total_cost if it's actually different from the current value
+    // AND if we're not in the initial loading state (where quote and formData should match)
+    if (
+      formData.total_cost !== newTotalCost && 
+      (quote?.total_cost !== formData.total_cost || isChanged)
+    ) {
+      setFormData(prev => {
+        if (!prev) return prev;
+        return {
           ...prev,
           total_cost: newTotalCost
-        }) : null);
-      }
+        };
+      });
     }
-  }, [totalCostFromItems, formData?.traiteur_price, formData?.other_expenses, feesSubtotal]);
+  }, [formData, formData?.traiteur_price, formData?.other_expenses, totalCostFromItems, quote?.total_cost, isChanged]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
