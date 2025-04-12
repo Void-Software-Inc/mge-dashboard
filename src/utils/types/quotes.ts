@@ -18,7 +18,6 @@ export const FEE_TYPES = [
   { name: 'delivery', displayName: 'Livraison', description: '' },
   { name: 'pickup', displayName: 'Récupération', description: '' },
   { name: 'table_service', displayName: 'Service en salle', description: '' },
-  { name: 'retrieval', displayName: 'Récupération', description: '' },
   { name: 'marquee_setup', displayName: 'Montage chapiteau', description: '' },
   { name: 'marquee_dismantling', displayName: 'Frais de déconstruction', description: '' },
   { name: 'decoration', displayName: 'Décoration', description: '' }
