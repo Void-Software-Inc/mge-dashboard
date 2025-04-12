@@ -8,7 +8,6 @@ SET fees = jsonb_build_array(
   jsonb_build_object('name', 'delivery', 'price', 0, 'enabled', false, 'description', ''),
   jsonb_build_object('name', 'pickup', 'price', 0, 'enabled', false, 'description', ''),
   jsonb_build_object('name', 'table_service', 'price', 0, 'enabled', false, 'description', ''),
-  jsonb_build_object('name', 'retrieval', 'price', 0, 'enabled', false, 'description', ''),
   jsonb_build_object('name', 'marquee_setup', 'price', 0, 'enabled', false, 'description', ''),
   jsonb_build_object('name', 'marquee_dismantling', 'price', 0, 'enabled', false, 'description', ''),
   jsonb_build_object('name', 'decoration', 'price', 0, 'enabled', false, 'description', '')
