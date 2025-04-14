@@ -4,7 +4,13 @@ import { Quote, FinishedQuote, QuoteItem } from "@/utils/types/quotes";
 import { Product } from "@/utils/types/products";
 
 // Type to handle both Quote and FinishedQuote
-type AnyQuote = Quote | FinishedQuote;
+type AnyQuote = Quote | FinishedQuote & {
+  options?: Array<{
+    name: string;
+    price: number;
+    quantity: number;
+  }>;
+};
 
 // Document type enum
 export enum DocumentType {
@@ -515,11 +521,155 @@ export const generateDocumentPDF = (
         finalY = currentY + rowHeight + 10;
       }
 
+      // Add options table (always shown, even if empty)
+      // Check if we need to add a new page before starting the options section
+      // We need space for: title (17px) + spacing (10px) + table header (8px) + at least one row (8px)
+      const requiredSpaceForOptions = 17 + 10 + 8 + 8;
+      if (finalY + requiredSpaceForOptions > pageHeight - 60) {
+        doc.addPage();
+        currentPage++;
+        totalPages++; // Increment total pages when adding a page
+        addFooter(doc, pageHeight, currentPage, totalPages);
+        finalY = 20;
+      }
+
+      // Add a title for the options table
+      doc.setFontSize(11);
+      doc.setTextColor(0, 0, 0);
+      doc.setFont('helvetica', 'bold');
+      doc.text("Options", 15, finalY + 7);
+      finalY += 10;
+      
+      // Create table with styling to match autoTable
+      doc.setTextColor(255, 255, 255);
+      const tableStartY = finalY;
+      const tableWidth = pageWidth - 30; // 15px margin on each side
+      const colWidths = [tableWidth - 110, 30, 40, 40]; // Match the columnStyles from autoTable
+      const rowHeight = 8; // Reduced row height
+
+      // Mapping for option names
+      const optionNameMapping: { [key: string]: string } = {
+        'marquee_setup': 'Montage et installation pour barnum',
+        'delivery': 'Livraison',
+        'marquee_dismantling': 'Démontage du barnum',
+        'pickup': 'Récupération du matériel',
+        'decoration': 'Décoration',
+        'table_service': 'Service à table',
+      };
+      
+      // Draw table header (match headStyles from autoTable)
+      doc.setFillColor(50, 50, 50);
+      doc.rect(15, finalY, tableWidth, rowHeight, 'F');
+      doc.setFontSize(8); // Smaller font size
+      doc.setFont('helvetica', 'bold');
+      
+      // Header text alignment to match autoTable
+      doc.text("Option", 17, finalY + 6); // Adjusted for smaller row height
+      doc.text("Quantité", 15 + colWidths[0] + 5, finalY + 6);
+      doc.text("Prix unitaire HT", 15 + colWidths[0] + colWidths[1] + 5, finalY + 6);
+      doc.text("Sous-Total HT", 15 + colWidths[0] + colWidths[1] + colWidths[2] + 5, finalY + 6);
+      
+      // Draw table rows
+      doc.setTextColor(0, 0, 0);
+      doc.setFont('helvetica', 'normal');
+      let currentY = finalY + rowHeight;
+      
+      // Add options if they exist
+      if (quote.fees && quote.fees.length > 0) {
+        quote.fees.forEach((fee: any, index: number) => {
+          if (!fee.enabled) return; // Skip disabled fees
+          
+          // Check if we need to add a new page
+          if (currentY + rowHeight > pageHeight - 60) {
+            doc.addPage();
+            currentPage++;
+            totalPages++; // Increment total pages when adding a page
+            addFooter(doc, pageHeight, currentPage, totalPages);
+            currentY = 20;
+            
+            // Redraw header on new page
+            doc.setFillColor(50, 50, 50);
+            doc.rect(15, currentY, tableWidth, rowHeight, 'F');
+            doc.setTextColor(255, 255, 255);
+            doc.setFontSize(8);
+            doc.setFont('helvetica', 'bold');
+            doc.text("Option", 17, currentY + 6);
+            doc.text("Quantité", 15 + colWidths[0] + 5, currentY + 6);
+            doc.text("Prix unitaire HT", 15 + colWidths[0] + colWidths[1] + 5, currentY + 6);
+            doc.text("Sous-Total HT", 15 + colWidths[0] + colWidths[1] + colWidths[2] + 5, currentY + 6);
+            doc.setTextColor(0, 0, 0);
+            doc.setFont('helvetica', 'normal');
+            currentY += rowHeight;
+          }
+          
+          // Draw row background (alternating colors like autoTable)
+          doc.setFillColor(index % 2 === 0 ? 255 : 245, index % 2 === 0 ? 255 : 245, index % 2 === 0 ? 255 : 245);
+          doc.rect(15, currentY, tableWidth, rowHeight, 'F');
+          
+          // Draw cell content with proper alignment
+          doc.setFontSize(8);
+          
+          // Option name (left aligned with ellipsis if too long)
+          const displayName = optionNameMapping[fee.name] || fee.name;
+          const name = displayName.length > 40 ? displayName.substring(0, 37) + "..." : displayName;
+          doc.text(name, 17, currentY + 6);
+          
+          // Quantity (center aligned)
+          const qtyText = "1";
+          const qtyWidth = doc.getTextWidth(qtyText);
+          doc.text(qtyText, 15 + colWidths[0] + (colWidths[1] / 2) - (qtyWidth / 2), currentY + 6);
+          
+          // Unit price (right aligned)
+          const unitPrice = `${fee.price.toFixed(2)}€`;
+          const unitPriceWidth = doc.getTextWidth(unitPrice);
+          doc.text(unitPrice, 15 + colWidths[0] + colWidths[1] + colWidths[2] - 5 - unitPriceWidth, currentY + 6);
+          
+          // Total price (right aligned)
+          const totalPrice = `${fee.price.toFixed(2)}€`;
+          const totalPriceWidth = doc.getTextWidth(totalPrice);
+          doc.text(totalPrice, 15 + tableWidth - 5 - totalPriceWidth, currentY + 6);
+          
+          currentY += rowHeight;
+        });
+        
+        // Add options subtotal row
+        const optionsTotal = quote.fees.reduce(
+          (sum: number, fee: any) => sum + (fee.enabled ? fee.price : 0), 
+          0
+        ).toFixed(2);
+        
+        // Check if we need to add a new page
+        if (currentY + rowHeight > pageHeight - 60) {
+          doc.addPage();
+          currentPage++;
+          totalPages++; // Increment total pages when adding a page
+          addFooter(doc, pageHeight, currentPage, totalPages);
+          currentY = 20;
+        }
+        
+        // Draw subtotal row with styling to match autoTable
+        doc.setFillColor(240, 240, 240);
+        doc.rect(15, currentY, tableWidth, rowHeight, 'F');
+        doc.setFont('helvetica', 'bold');
+        
+        // Subtotal text (right aligned in the third column)
+        const subtotalText = "Sous-total Options:";
+        const subtotalTextWidth = doc.getTextWidth(subtotalText);
+        doc.text(subtotalText, 15 + colWidths[0] + colWidths[1] + colWidths[2] - 5 - subtotalTextWidth, currentY + 6);
+        
+        // Subtotal amount (right aligned in the fourth column)
+        const subtotalAmount = `${optionsTotal}€`;
+        const subtotalAmountWidth = doc.getTextWidth(subtotalAmount);
+        doc.text(subtotalAmount, 15 + tableWidth - 5 - subtotalAmountWidth, currentY + 6);
+      }
+      
+      finalY = currentY + rowHeight + 10;
+
       // Calculate total from items
       const totalHT = [...decorationProducts, ...traiteurProducts].reduce(
         (sum, item) => sum + Number(item.totalPrice), 
         0
-      );
+      ) + (quote.fees?.reduce((sum, fee) => sum + (fee.enabled ? fee.price : 0), 0) || 0);
       
       const tva = totalHT * 0.2;
       const totalTTC = totalHT * 1.2;
@@ -685,9 +835,9 @@ const addTotalsAndSignature = (
   doc.setFont('helvetica', 'normal');
   currentY += addWrappedText("• En cas de manquement grave de l'une des parties à ses obligations, le contrat pourra être résilié de plein droit.", currentY);
   currentY += addWrappedText("• En cas d'annulation de l'événement, les conditions de résiliation seront les suivantes :", currentY);
-  currentY += addWrappedText("- Annulation J-90 : l'acompte de 30% n'est pas remboursé.", currentY + 2, 5);
-  currentY += addWrappedText("- Annulation après J-15 : le loueur s'engage à régler 50% du montant total de la prestation.", currentY + 2, 5);
-  currentY += addWrappedText("- Cas de force majeure : Être constitutif d'un « cas de force majeure » un événement qui est imprévisible et en dehors de la volonté des deux parties, et d'origines diverses : climatique, bactériologique, politique, militaire. En cas d'annulation suite à un cas de force majeure, MG EVENEMENTS s'engage à proposer au client un avoir d'une valeur égale aux sommes déjà versées, valable 12 mois, utilisable pour toute prestation de location.", currentY + 2, 5);
+  currentY += addWrappedText("- Annulation J-90 : l'acompte de 30% n'est pas remboursé.", currentY, 5);
+  currentY += addWrappedText("- Annulation après J-15 : le loueur s'engage à régler 50% du montant total de la prestation.", currentY, 5);
+  currentY += addWrappedText("- Cas de force majeure : Être constitutif d'un « cas de force majeure » un événement qui est imprévisible et en dehors de la volonté des deux parties, et d'origines diverses : climatique, bactériologique, politique, militaire. En cas d'annulation suite à un cas de force majeure, MG EVENEMENTS s'engage à proposer au client un avoir d'une valeur égale aux sommes déjà versées, valable 12 mois, utilisable pour toute prestation de location.", currentY, 5);
   currentY += 5;
   
   // Section 4

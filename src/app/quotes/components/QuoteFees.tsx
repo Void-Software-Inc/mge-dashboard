@@ -21,10 +21,13 @@ interface QuoteFeesProps {
 
 export function QuoteFees({ quoteId, disabled = false, fees, onFeesChange, onFeesSubtotalChange }: QuoteFeesProps) {
   const [localFees, setLocalFees] = useState<any[]>([]);
+  const [newCustomFeeName, setNewCustomFeeName] = useState('');
+  const [newCustomFeePrice, setNewCustomFeePrice] = useState('');
+  const [newCustomFeeDescription, setNewCustomFeeDescription] = useState('');
 
   useEffect(() => {
     if (!fees || fees.length === 0) {
-      const initialFees = FEE_TYPES.map(feeType => ({
+      const initialFees = FEE_TYPES.filter(feeType => !feeType.isCustom).map(feeType => ({
         name: feeType.name,
         price: 0,
         enabled: false,
@@ -106,32 +109,130 @@ export function QuoteFees({ quoteId, disabled = false, fees, onFeesChange, onFee
     }
   };
 
+  const handleAddCustomFee = () => {
+    if (!newCustomFeeName.trim() || !newCustomFeePrice.trim()) return;
+
+    const newFee = {
+      name: newCustomFeeName.trim(),
+      price: parseFloat(newCustomFeePrice) || 0,
+      enabled: true,
+      description: newCustomFeeDescription.trim(),
+      isCustom: true
+    };
+
+    const updatedFees = [...localFees, newFee];
+    setLocalFees(updatedFees);
+    onFeesChange(updatedFees);
+
+    // Reset form
+    setNewCustomFeeName('');
+    setNewCustomFeePrice('');
+    setNewCustomFeeDescription('');
+
+    // Save to database
+    updateQuoteFee(quoteId, updatedFees).catch(error => {
+      console.error('Error adding custom fee:', error);
+    });
+  };
+
+  const handleDeleteCustomFee = (feeName: string) => {
+    const updatedFees = localFees.filter(fee => fee.name !== feeName);
+    setLocalFees(updatedFees);
+    onFeesChange(updatedFees);
+
+    // Save to database
+    updateQuoteFee(quoteId, updatedFees).catch(error => {
+      console.error('Error deleting custom fee:', error);
+    });
+  };
+
   return (
     <div className="space-y-4">
       <div className="flex justify-between items-center">
         <h3 className="text-base font-medium">Frais additionnels</h3>
-        <div className="text-sm font-medium">
-          Sous-total HT: {localFees.reduce((sum, fee) => sum + (fee.enabled ? (fee.price || 0) : 0), 0).toFixed(2)} €
+      </div>
+
+      {/* Custom Fee Form */}
+      <div className="border border-gray-200 rounded-lg p-4 mb-4">
+        <h4 className="text-sm font-medium mb-3">Ajouter un frais personnalisé</h4>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="space-y-1">
+            <Label className="text-xs text-gray-600">Nom</Label>
+            <Input
+              value={newCustomFeeName}
+              onChange={(e) => setNewCustomFeeName(e.target.value)}
+              disabled={disabled}
+              className="border-gray-200 h-8 text-sm"
+              placeholder="Nom du frais..."
+            />
+          </div>
+          <div className="space-y-1">
+            <Label className="text-xs text-gray-600">Prix HT</Label>
+            <Input
+              type="number"
+              value={newCustomFeePrice}
+              onChange={(e) => setNewCustomFeePrice(e.target.value)}
+              disabled={disabled}
+              className="border-gray-200 h-8 text-sm"
+              placeholder="0.00"
+              min="0"
+              step="0.01"
+            />
+          </div>
+          <div className="space-y-1">
+            <Label className="text-xs text-gray-600">Description</Label>
+            <Input
+              value={newCustomFeeDescription}
+              onChange={(e) => setNewCustomFeeDescription(e.target.value)}
+              disabled={disabled}
+              className="border-gray-200 h-8 text-sm"
+              placeholder="Description..."
+            />
+          </div>
+        </div>
+        <div className="mt-3">
+          <Button
+            onClick={handleAddCustomFee}
+            disabled={disabled || !newCustomFeeName.trim() || !newCustomFeePrice.trim()}
+            className="h-8 text-sm"
+          >
+            <PlusIcon className="mr-2 h-4 w-4" />
+            Ajouter
+          </Button>
         </div>
       </div>
+
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         {localFees.map((fee) => {
           const feeType = FEE_TYPES.find(ft => ft.name === fee.name);
-          if (!feeType) return null;
+          if (!feeType && !fee.isCustom) return null;
 
           return (
             <Card key={fee.name} className="border-gray-200">
               <CardHeader className="pb-2">
                 <div className="flex items-center justify-between">
                   <CardTitle className="text-sm font-medium">
-                    {feeType.displayName}
+                    {fee.isCustom ? fee.name : feeType?.displayName}
                   </CardTitle>
-                  <Switch
-                    checked={fee.enabled}
-                    onCheckedChange={() => handleToggleFee(fee.name)}
-                    disabled={disabled}
-                    className="data-[state=checked]:bg-lime-500"
-                  />
+                  <div className="flex items-center space-x-2">
+                    {fee.isCustom && (
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-6 w-6"
+                        onClick={() => handleDeleteCustomFee(fee.name)}
+                        disabled={disabled}
+                      >
+                        <TrashIcon className="h-4 w-4 text-red-500" />
+                      </Button>
+                    )}
+                    <Switch
+                      checked={fee.enabled}
+                      onCheckedChange={() => handleToggleFee(fee.name)}
+                      disabled={disabled}
+                      className="data-[state=checked]:bg-lime-500"
+                    />
+                  </div>
                 </div>
               </CardHeader>
               <CardContent className="space-y-3">
