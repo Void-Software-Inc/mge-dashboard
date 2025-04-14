@@ -259,6 +259,7 @@ export default function QuoteForm({ quoteId }: { quoteId: string }) {
   }, [formData])
 
   useEffect(() => {
+
     const cleanObject = (obj: any) => {
       if (!obj) return obj;
       const cleaned = { ...obj };
@@ -302,8 +303,9 @@ export default function QuoteForm({ quoteId }: { quoteId: string }) {
       const cleanedObj1 = cleanObject(obj1);
       const cleanedObj2 = cleanObject(obj2);
       
-      // Simple comparison without logging
-      return lodashEqual(cleanedObj1, cleanedObj2);
+      const areEqual = lodashEqual(cleanedObj1, cleanedObj2);
+      
+      return areEqual;
     };
 
     // Always start with assuming no changes unless proven otherwise
@@ -523,20 +525,42 @@ export default function QuoteForm({ quoteId }: { quoteId: string }) {
     quote?.other_expenses
   ]);
 
-  // Calculate total cost when component values change
+  const calculateSubtotal = (category: string, includeTax: boolean = false) => {
+    if (!quoteItems || !products) return '0.00';
+    
+    // Get all product IDs for the given category
+    const categoryProductIds = products
+      .filter(product => product.category === category)
+      .map(product => product.id);
+    
+    // Filter quote items by product_id
+    const filteredItems = quoteItems.filter(item => 
+      categoryProductIds.includes(item.product_id)
+    );
+    
+    if (filteredItems.length === 0) return '0.00';
+    
+    // Calculate total using product price from products array
+    const total = filteredItems.reduce((sum, item) => {
+      const product = products.find(p => p.id === item.product_id);
+      return sum + ((product?.price || 0) * item.quantity);
+    }, 0);
+    
+    return includeTax ? (total * 1.2).toFixed(2) : total.toFixed(2);
+  };
+
+  // Update the total cost calculation to include fees
   useEffect(() => {
     if (!formData) return;
     
-    const newTotalCost = Number((totalCostFromItems + 
-      Number(formData.traiteur_price || 0) + 
-      Number(formData.other_expenses || 0)).toFixed(2));
-      
-    // Only update total_cost if it's actually different from the current value
-    // AND if we're not in the initial loading state (where quote and formData should match)
-    if (
-      formData.total_cost !== newTotalCost && 
-      (quote?.total_cost !== formData.total_cost || isChanged)
-    ) {
+    const decorationTotal = parseFloat(calculateSubtotal('decoration'));
+    const traiteurTotal = parseFloat(calculateSubtotal('traiteur'));
+    const feesTotal = formData.fees?.reduce((sum, fee) => sum + (fee.enabled ? (fee.price || 0) : 0), 0) || 0;
+    
+    const newTotalCost = Number((decorationTotal + traiteurTotal + feesTotal).toFixed(2));
+
+    
+    if (formData.total_cost !== newTotalCost) {
       setFormData(prev => {
         if (!prev) return prev;
         return {
@@ -544,8 +568,19 @@ export default function QuoteForm({ quoteId }: { quoteId: string }) {
           total_cost: newTotalCost
         };
       });
+      
+      // Also update the quote to keep them in sync
+      setQuote(prev => {
+        if (!prev) return prev;
+        return {
+          ...prev,
+          total_cost: newTotalCost
+        };
+      });
+      
+      setIsChanged(true);
     }
-  }, [formData, formData?.traiteur_price, formData?.other_expenses, totalCostFromItems, quote?.total_cost, isChanged]);
+  }, [formData, formData?.fees, calculateSubtotal]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -791,37 +826,33 @@ export default function QuoteForm({ quoteId }: { quoteId: string }) {
     });
   };
 
-  // Add this helper function at the top of your component
-  const calculateSubtotal = (category: string, includeTax: boolean = false) => {
-    if (!quoteItems || !products) return '0.00';
-    
-    // Get all product IDs for the given category
-    const categoryProductIds = products
-      .filter(product => product.category === category)
-      .map(product => product.id);
-    
-    // Filter quote items by product_id
-    const filteredItems = quoteItems.filter(item => 
-      categoryProductIds.includes(item.product_id)
-    );
-    
-    if (filteredItems.length === 0) return '0.00';
-    
-    // Calculate total using product price from products array
-    const total = filteredItems.reduce((sum, item) => {
-      const product = products.find(p => p.id === item.product_id);
-      return sum + ((product?.price || 0) * item.quantity);
-    }, 0);
-    
-    return includeTax ? (total * 1.2).toFixed(2) : total.toFixed(2);
+  const calculateFeesTotal = () => {
+    if (!formData?.fees) return 0;
+    return formData.fees.reduce((sum, fee) => sum + (fee.enabled ? (fee.price || 0) : 0), 0);
   };
 
   const handleFeesChange = (updatedFees: any[]) => {
-    setFormData(prev => prev ? {
-      ...prev,
-      fees: updatedFees
-    } : null);
-    setIsChanged(true);
+
+    const feesTotal = updatedFees.reduce((sum, fee) => sum + (fee.enabled ? (fee.price || 0) : 0), 0);
+    const decorationTotal = parseFloat(calculateSubtotal('decoration'));
+    const traiteurTotal = parseFloat(calculateSubtotal('traiteur'));
+    const newTotalCost = Number((decorationTotal + traiteurTotal + feesTotal).toFixed(2));
+    
+    
+    setFormData(prev => {
+      if (!prev) return null;
+      const updated = {
+        ...prev,
+        fees: updatedFees,
+        total_cost: newTotalCost
+      };
+      return updated;
+    });
+
+    // Only set isChanged if the fees are actually different
+    if (!lodashEqual(updatedFees, formData?.fees)) {
+      setIsChanged(true);
+    }
   };
 
   if (isLoading) {
@@ -1145,6 +1176,28 @@ export default function QuoteForm({ quoteId }: { quoteId: string }) {
                     id="traiteur_subtotal_ttc" 
                     type="number"
                     value={calculateSubtotal('traiteur', true)}
+                    className="w-full text-base font-semibold bg-gray-100" 
+                    disabled
+                  />
+                </div>
+
+                <div>
+                  <Label htmlFor="fees_subtotal_ht" className="text-sm text-gray-600">Frais supplémentaires Montant HT</Label>
+                  <Input 
+                    id="fees_subtotal_ht" 
+                    type="number"
+                    value={formData?.fees?.reduce((sum, fee) => sum + (fee.enabled ? (fee.price || 0) : 0), 0).toFixed(2) || '0.00'}
+                    className="w-full text-base font-semibold bg-gray-100" 
+                    disabled
+                  />
+                </div>
+
+                <div>
+                  <Label htmlFor="fees_subtotal_ttc" className="text-sm text-gray-600">Frais supplémentaires Montant TTC</Label>
+                  <Input 
+                    id="fees_subtotal_ttc" 
+                    type="number"
+                    value={((formData?.fees?.reduce((sum, fee) => sum + (fee.enabled ? (fee.price || 0) : 0), 0) ?? 0) * 1.2).toFixed(2)}
                     className="w-full text-base font-semibold bg-gray-100" 
                     disabled
                   />
