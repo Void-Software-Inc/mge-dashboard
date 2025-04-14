@@ -150,9 +150,6 @@ export function QuoteFees({ quoteId, disabled = false, fees, onFeesChange, onFee
     <div className="space-y-4">
       <div className="flex justify-between items-center">
         <h3 className="text-base font-medium">Frais additionnels</h3>
-        <div className="text-sm font-medium">
-          Sous-total HT: {localFees.reduce((sum, fee) => sum + (fee.enabled ? (fee.price || 0) : 0), 0).toFixed(2)} €
-        </div>
       </div>
 
       {/* Custom Fee Form */}
