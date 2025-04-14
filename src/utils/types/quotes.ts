@@ -12,19 +12,25 @@ export type Fee = {
   price: number;
   enabled: boolean;
   description: string | null;
+  isCustom?: boolean;
 };
 
-export const FEE_TYPES = [
+export type FeeType = {
+  name: string;
+  displayName: string;
+  description: string;
+  isCustom?: boolean;
+};
+
+export const FEE_TYPES: FeeType[] = [
   { name: 'delivery', displayName: 'Livraison', description: '' },
   { name: 'pickup', displayName: 'Récupération', description: '' },
   { name: 'table_service', displayName: 'Service en salle', description: '' },
-  { name: 'retrieval', displayName: 'Récupération', description: '' },
   { name: 'marquee_setup', displayName: 'Montage chapiteau', description: '' },
   { name: 'marquee_dismantling', displayName: 'Frais de déconstruction', description: '' },
-  { name: 'decoration', displayName: 'Décoration', description: '' }
-] as const;
-
-export type FeeType = typeof FEE_TYPES[number];
+  { name: 'decoration', displayName: 'Décoration', description: '' },
+  { name: 'custom', displayName: 'Personnalisé', description: '', isCustom: true }
+];
 
 export type Quote = {
   id: number;
