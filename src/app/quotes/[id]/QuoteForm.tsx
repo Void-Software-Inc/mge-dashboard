@@ -69,6 +69,7 @@ export default function QuoteForm({ quoteId }: { quoteId: string }) {
   const [taintedItems, setTaintedItems] = useState<Set<number>>(new Set());
   const [editedItems, setEditedItems] = useState<Map<number, number>>(new Map());
   const [createdItems, setCreatedItems] = useState<QuoteItem[]>([]);
+  const [feesToDelete, setFeesToDelete] = useState<Set<string>>(new Set());
 
   const [isChanged, setIsChanged] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -584,6 +585,7 @@ export default function QuoteForm({ quoteId }: { quoteId: string }) {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
     if (!isFormValid || !isChanged || !formData) return;
 
     if (formData.status === 'termine') {
@@ -591,39 +593,69 @@ export default function QuoteForm({ quoteId }: { quoteId: string }) {
       return;
     }
 
-    const formDataToSend = new FormData();
-    // Append all form fields
-    if (formData) {
-      Object.entries(formData).forEach(([key, value]) => {
-        if (key === 'address' && value) {
-          // Handle address object separately
-          Object.entries(value).forEach(([addressKey, addressValue]) => {
-            formDataToSend.append(`address.${addressKey}`, addressValue?.toString() ?? '');
-          });
-        } else if (value !== null && value !== undefined) {
-          formDataToSend.append(key, value.toString());
-        }
-      });
-    }
-
-    // Add payments to the form data right before the updateQuote call
-    if (formData?.payments && Array.isArray(formData.payments)) {
-      formData.payments.forEach((payment) => {
-        if (payment.mode && (payment.amount !== undefined && payment.amount !== null)) {
-          formDataToSend.append('payment_modes[]', payment.mode.toString());
-          formDataToSend.append('payment_amounts[]', payment.amount.toString());
-        }
-      });
-    }
-
-    await updateQuoteAndItems(formDataToSend);
+    // Let updateQuoteAndItems handle all form preparation
+    await updateQuoteAndItems(new FormData());
   };
 
   const updateQuoteAndItems = async (formDataToSend: FormData) => {
     setIsSubmitting(true);
     try {
+      // Filter out fees marked for deletion before updating the quote
+      if (formData?.fees) {
+        // Log before deletion for debugging
+        console.log('Before deletion - feesToDelete set contents:', Array.from(feesToDelete));
+        console.log('Before deletion - formData.fees:', formData.fees);
+        
+        // Create a filtered copy of the fees array
+        const filteredFees = formData.fees.filter(fee => {
+          const shouldKeep = !feesToDelete.has(fee.name);
+          console.log(`Fee ${fee.name} - keep: ${shouldKeep}`);
+          return shouldKeep;
+        });
+        
+        console.log('After filtering - filteredFees:', filteredFees);
+        
+        // Make a local copy of formData with the updated fees
+        const updatedFormData = {
+          ...formData,
+          fees: filteredFees
+        };
+        
+        // Build a fresh FormData object
+        const freshFormData = new FormData();
+        
+        // Add all fields to the form data
+        Object.entries(updatedFormData).forEach(([key, value]) => {
+          if (key === 'address' && value) {
+            // Handle address object separately
+            Object.entries(value).forEach(([addressKey, addressValue]) => {
+              freshFormData.append(`address.${addressKey}`, addressValue?.toString() ?? '');
+            });
+          } else if (key === 'fees') {
+            // Explicitly stringify the fees array
+            freshFormData.append('fees', JSON.stringify(filteredFees));
+          } else if (value !== null && value !== undefined) {
+            freshFormData.append(key, value.toString());
+          }
+        });
+        
+        // Add payments to the form data
+        if (updatedFormData.payments && Array.isArray(updatedFormData.payments)) {
+          updatedFormData.payments.forEach((payment) => {
+            if (payment.mode && (payment.amount !== undefined && payment.amount !== null)) {
+              freshFormData.append('payment_modes[]', payment.mode.toString());
+              freshFormData.append('payment_amounts[]', payment.amount.toString());
+            }
+          });
+        }
+        
+        // Use the fresh form data instead
+        formDataToSend = freshFormData;
+      }
+
       // Update the quote
       const response = await updateQuote(formDataToSend);
+      console.log('Response from server:', response);
 
       const updatePromises = [];
       
@@ -645,11 +677,13 @@ export default function QuoteForm({ quoteId }: { quoteId: string }) {
       setTaintedItems(new Set());
       setEditedItems(new Map());
       setCreatedItems([]);
+      setFeesToDelete(new Set()); // Reset fees to delete
 
       if (shouldReloadItems) {
         await fetchQuoteItems();
       }
       
+      // Make sure we update with the response that should have the filtered fees
       setQuote(response);
       setFormData(response);
       setIsChanged(false);
@@ -832,12 +866,14 @@ export default function QuoteForm({ quoteId }: { quoteId: string }) {
   };
 
   const handleFeesChange = (updatedFees: any[]) => {
-
-    const feesTotal = updatedFees.reduce((sum, fee) => sum + (fee.enabled ? (fee.price || 0) : 0), 0);
+    // Process fees - calculate total for all fees not marked for deletion
+    const feesTotal = updatedFees
+      .filter(fee => !feesToDelete.has(fee.name))
+      .reduce((sum, fee) => sum + (fee.enabled ? (fee.price || 0) : 0), 0);
+    
     const decorationTotal = parseFloat(calculateSubtotal('decoration'));
     const traiteurTotal = parseFloat(calculateSubtotal('traiteur'));
     const newTotalCost = Number((decorationTotal + traiteurTotal + feesTotal).toFixed(2));
-    
     
     setFormData(prev => {
       if (!prev) return null;
@@ -849,10 +885,22 @@ export default function QuoteForm({ quoteId }: { quoteId: string }) {
       return updated;
     });
 
-    // Only set isChanged if the fees are actually different
-    if (!lodashEqual(updatedFees, formData?.fees)) {
-      setIsChanged(true);
-    }
+    // Always mark the form as changed when fees are updated
+    setIsChanged(true);
+  };
+
+  const handleFeesToDeleteChange = (feesToDeleteSet: Set<string>) => {
+    console.log('feesToDelete update received:', Array.from(feesToDeleteSet));
+    
+    // Create a new Set with the values to ensure state is updated properly
+    const newSet = new Set<string>();
+    feesToDeleteSet.forEach(name => newSet.add(name));
+    
+    // Update the fees to delete state
+    setFeesToDelete(newSet);
+    
+    // Mark form as changed
+    setIsChanged(true);
   };
 
   if (isLoading) {
@@ -883,7 +931,7 @@ export default function QuoteForm({ quoteId }: { quoteId: string }) {
     <>
       <div className="w-[100vw] h-14 fixed bg-white flex items-center z-10">
         <div className="p-4 flex justify-start w-full">
-          <Button variant="secondary" size="icon" onClick={handleGoBack}>
+          <Button variant="secondary" size="icon" onClick={handleGoBack} type="button">
             <ChevronLeftIcon className="w-4 h-4" />
           </Button>
         </div>
@@ -898,13 +946,14 @@ export default function QuoteForm({ quoteId }: { quoteId: string }) {
             variant="secondary"
             disabled={!isFormValid || !isChanged || isSubmitting}
             onClick={handleSubmit}
+            type="button"
           >
             <DownloadIcon className="w-4 h-4 mr-2" />
             {isSubmitting ? 'Mise à jour...' : 'Valider'}
           </Button>
         </div>
       </div>
-      <form onSubmit={handleSubmit} className="flex flex-col items-center justify-center pt-20 px-4 md:px-0">
+      <form onSubmit={(e) => e.preventDefault()} className="flex flex-col items-center justify-center pt-20 px-4 md:px-0">
         <div className="w-full max-w-5xl">
           <div className="mb-4">
             <Label className="text-base">Numéro du devis</Label>
@@ -1494,6 +1543,7 @@ export default function QuoteForm({ quoteId }: { quoteId: string }) {
               disabled={formData?.status === 'termine' || formData?.is_paid || formData?.is_deposit}
               fees={formData?.fees || []}
               onFeesChange={handleFeesChange}
+              onFeesToDeleteChange={handleFeesToDeleteChange}
               onFeesSubtotalChange={setFeesSubtotal}
             />
           </div>
