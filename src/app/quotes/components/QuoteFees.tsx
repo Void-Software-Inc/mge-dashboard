@@ -26,6 +26,7 @@ export function QuoteFees({ quoteId, disabled = false, fees, onFeesChange, onFee
   const [newCustomFeePrice, setNewCustomFeePrice] = useState('');
   const [newCustomFeeDescription, setNewCustomFeeDescription] = useState('');
   const [feesToDelete, setFeesToDelete] = useState<Set<string>>(new Set());
+  const [nameError, setNameError] = useState<string>('');
 
   // Initialize local fees from props
   useEffect(() => {
@@ -128,6 +129,17 @@ export function QuoteFees({ quoteId, disabled = false, fees, onFeesChange, onFee
     
     if (!newCustomFeeName.trim() || !newCustomFeePrice.trim()) return;
 
+    // Check for duplicate fee names (case-insensitive)
+    const normalizedNewName = newCustomFeeName.trim().toLowerCase();
+    const isDuplicate = localFees.some(fee => 
+      fee.name.toLowerCase() === normalizedNewName
+    );
+
+    if (isDuplicate) {
+      setNameError('Un frais avec ce nom existe déjà');
+      return;
+    }
+
     const newFee = {
       name: newCustomFeeName.trim(),
       price: parseFloat(newCustomFeePrice) || 0,
@@ -144,6 +156,7 @@ export function QuoteFees({ quoteId, disabled = false, fees, onFeesChange, onFee
     setNewCustomFeeName('');
     setNewCustomFeePrice('');
     setNewCustomFeeDescription('');
+    setNameError('');
   };
 
   const handleMarkForDeletion = (feeName: string, e?: React.MouseEvent) => {
@@ -193,11 +206,17 @@ export function QuoteFees({ quoteId, disabled = false, fees, onFeesChange, onFee
             <Label className="text-xs text-gray-600">Nom</Label>
             <Input
               value={newCustomFeeName}
-              onChange={(e) => setNewCustomFeeName(e.target.value)}
+              onChange={(e) => {
+                setNewCustomFeeName(e.target.value);
+                setNameError(''); // Clear error when user types
+              }}
               disabled={disabled}
-              className="border-gray-200 h-8 text-sm"
+              className={`border-gray-200 h-8 text-sm ${nameError ? 'border-red-500' : ''}`}
               placeholder="Nom du frais..."
             />
+            {nameError && (
+              <p className="text-xs text-red-500 mt-1">{nameError}</p>
+            )}
           </div>
           <div className="space-y-1">
             <Label className="text-xs text-gray-600">Prix HT</Label>
