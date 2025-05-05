@@ -411,7 +411,7 @@ export function QuoteItemList({
           <DrawerTrigger asChild>
             <Button 
               variant='outline' 
-              className="text-lime-500 hover:text-lime-700 w-full"
+              className="text-lime-500 w-full border-lime-500 hover:bg-lime-50"
               onClick={handleDrawerOpen}
               disabled={disabled}
             >

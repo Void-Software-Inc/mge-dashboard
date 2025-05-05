@@ -29,7 +29,38 @@ export async function PUT(request: NextRequest) {
     }
   }
 
-  const quoteData = {
+  // Create a TypeScript interface for QuoteData to include fees
+  interface QuoteData {
+    first_name: FormDataEntryValue | null;
+    last_name: FormDataEntryValue | null;
+    phone_number: FormDataEntryValue | null;
+    email: FormDataEntryValue | null;
+    event_start_date: FormDataEntryValue | null;
+    event_end_date: FormDataEntryValue | null;
+    status: FormDataEntryValue | null;
+    total_cost: FormDataEntryValue | null;
+    is_paid: boolean;
+    is_traiteur: boolean;
+    traiteur_price: FormDataEntryValue | null;
+    other_expenses: FormDataEntryValue | null;
+    description: FormDataEntryValue | null;
+    payments: Array<{ mode: string; amount: number | null }>;
+    last_update: string;
+    is_deposit: boolean;
+    deposit_amount: FormDataEntryValue | null;
+    deposit_percentage: FormDataEntryValue | null;
+    address: {
+      voie: FormDataEntryValue | null;
+      compl: FormDataEntryValue | null;
+      cp: FormDataEntryValue | null;
+      ville: FormDataEntryValue | null;
+      depart: FormDataEntryValue | null;
+      pays: FormDataEntryValue | null;
+    };
+    fees?: any[]; // Add this to allow the fees property
+  }
+
+  const quoteData: QuoteData = {
     first_name: formData.get('first_name'),
     last_name: formData.get('last_name'),
     phone_number: formData.get('phone_number'),
@@ -49,14 +80,25 @@ export async function PUT(request: NextRequest) {
     deposit_amount: formData.get('deposit_amount'),
     deposit_percentage: formData.get('deposit_percentage'),
     address: {
-      voie: formData.get('address.voie') || '',
+      voie: formData.get('address.voie'),
       compl: formData.get('address.compl'),
-      cp: formData.get('address.cp') || '',
-      ville: formData.get('address.ville') || '',
-      depart: formData.get('address.depart') || '',
-      pays: formData.get('address.pays') || ''
+      cp: formData.get('address.cp'),
+      ville: formData.get('address.ville'),
+      depart: formData.get('address.depart'),
+      pays: formData.get('address.pays')
     }
   };
+  
+  // Handle fees specifically
+  const feesStr = formData.get('fees');
+  if (feesStr) {
+    try {
+      quoteData.fees = JSON.parse(feesStr as string);
+    } catch (error) {
+      console.error('Error parsing fees JSON:', error);
+      return NextResponse.json({ error: 'Invalid fees format' }, { status: 400 });
+    }
+  }
 
   const { data, error } = await supabase
     .from("quotes")
