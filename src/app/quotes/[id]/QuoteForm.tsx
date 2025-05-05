@@ -1190,7 +1190,7 @@ export default function QuoteForm({ quoteId }: { quoteId: string }) {
                     id="decoration_subtotal_ht" 
                     type="number"
                     value={calculateSubtotal('decoration')}
-                    className="w-full text-base font-semibold bg-gray-100" 
+                    className="w-full text-base font-semibold disabled:opacity-100 disabled:text-gray-600" 
                     disabled
                   />
                 </div>
@@ -1201,7 +1201,7 @@ export default function QuoteForm({ quoteId }: { quoteId: string }) {
                     id="traiteur_subtotal_ht" 
                     type="number"
                     value={calculateSubtotal('traiteur')}
-                    className="w-full text-base font-semibold bg-gray-100" 
+                    className="w-full text-base font-semibold disabled:opacity-100 disabled:text-gray-600" 
                     disabled
                   />
                 </div>
@@ -1212,7 +1212,7 @@ export default function QuoteForm({ quoteId }: { quoteId: string }) {
                     id="decoration_subtotal_ttc" 
                     type="number"
                     value={calculateSubtotal('decoration', true)}
-                    className="w-full text-base font-semibold bg-gray-100" 
+                    className="w-full text-base font-semibold disabled:text-gray-600 disabled:opacity-100" 
                     disabled
                   />
                 </div>
@@ -1223,7 +1223,7 @@ export default function QuoteForm({ quoteId }: { quoteId: string }) {
                     id="traiteur_subtotal_ttc" 
                     type="number"
                     value={calculateSubtotal('traiteur', true)}
-                    className="w-full text-base font-semibold bg-gray-100" 
+                    className="w-full text-base font-semibold disabled:text-gray-600 disabled:opacity-100" 
                     disabled
                   />
                 </div>
@@ -1234,7 +1234,7 @@ export default function QuoteForm({ quoteId }: { quoteId: string }) {
                     id="fees_subtotal_ht" 
                     type="number"
                     value={formData?.fees?.reduce((sum, fee) => sum + (fee.enabled ? (fee.price || 0) : 0), 0).toFixed(2) || '0.00'}
-                    className="w-full text-base font-semibold bg-gray-100" 
+                    className="w-full text-base font-semibold disabled:text-gray-600 disabled:opacity-100" 
                     disabled
                   />
                 </div>
@@ -1245,7 +1245,7 @@ export default function QuoteForm({ quoteId }: { quoteId: string }) {
                     id="fees_subtotal_ttc" 
                     type="number"
                     value={((formData?.fees?.reduce((sum, fee) => sum + (fee.enabled ? (fee.price || 0) : 0), 0) ?? 0) * 1.2).toFixed(2)}
-                    className="w-full text-base font-semibold bg-gray-100" 
+                    className="w-full text-base font-semibold disabled:text-gray-600 disabled:opacity-100" 
                     disabled
                   />
                 </div>
@@ -1259,7 +1259,7 @@ export default function QuoteForm({ quoteId }: { quoteId: string }) {
                     min="0"
                     value={formData?.total_cost.toFixed(2) ?? ''} 
                     onChange={handleInputChange} 
-                    className={`w-full text-base font-semibold ${errors.total_cost ? 'border-red-500' : 'border-gray-300'}`} 
+                    className={`w-full text-base font-semibold disabled:text-gray-600 disabled:opacity-100 ${errors.total_cost ? 'border-red-500' : 'border-gray-300'}`} 
                     disabled
                   />
                   {errors.total_cost && <p className="text-red-500 text-sm mt-1">{errors.total_cost}</p>}
@@ -1271,18 +1271,18 @@ export default function QuoteForm({ quoteId }: { quoteId: string }) {
                     id="tva_amount" 
                     type="number"
                     value={formData?.total_cost ? (formData.total_cost * 0.2).toFixed(2) : '0.00'} 
-                    className="w-full text-base font-semibold bg-gray-100" 
+                    className="w-full text-base font-semibold disabled:opacity-100 disabled:text-gray-600" 
                     disabled
                   />
                 </div>
                 
                 <div className="md:col-span-2">
-                  <Label htmlFor="total_cost_ttc" className="text-sm text-gray-600">Prix total TTC</Label>
+                  <Label htmlFor="total_cost_ttc" className="text-sm text-gray-800 font-bold">Prix total TTC</Label>
                   <Input 
                     id="total_cost_ttc" 
                     type="number"
                     value={formData?.total_cost ? calculateTTC(formData.total_cost).toFixed(2) : ''} 
-                    className="w-full text-base font-semibold bg-gray-100 border-gray-300" 
+                    className="w-full text-base font-semibold bg-white border-lime-400 disabled:text-gray-800 disabled:opacity-100" 
                     disabled
                   />
                 </div>
@@ -1424,7 +1424,7 @@ export default function QuoteForm({ quoteId }: { quoteId: string }) {
                   size="sm"
                   onClick={handleAddPayment}
                   className={`
-                    border-lime-500 text-lime-700 hover:bg-lime-50
+                    border-lime-500 text-lime-500 hover:bg-lime-50
                     ${formData?.is_paid ? 'opacity-50 cursor-not-allowed' : ''}
                   `}
                   disabled={formData?.is_paid}

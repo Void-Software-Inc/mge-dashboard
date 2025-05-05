@@ -241,7 +241,7 @@ export function QuoteFees({ quoteId, disabled = false, fees, onFeesChange, onFee
           <Button
             onClick={(e) => handleAddCustomFee(e)}
             disabled={disabled || !newCustomFeeName.trim() || !newCustomFeePrice.trim()}
-            className="h-8 text-sm"
+            className="bg-white h-8 text-sm border border-lime-500 text-lime-500 hover:bg-lime-50 disabled:bg-gray-50"
             type="button"
           >
             <PlusIcon className="mr-2 h-4 w-4" />
