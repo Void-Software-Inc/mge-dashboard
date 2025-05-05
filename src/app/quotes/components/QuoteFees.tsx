@@ -173,21 +173,16 @@ export function QuoteFees({ quoteId, disabled = false, fees, onFeesChange, onFee
     
     // Toggle fee in the Set
     if (newFeesToDelete.has(feeName)) {
-      console.log(`Removing fee from delete set: ${feeName}`);
-      newFeesToDelete.delete(feeName);
+-      newFeesToDelete.delete(feeName);
     } else {
-      console.log(`Adding fee to delete set: ${feeName}`);
       newFeesToDelete.add(feeName);
     }
-    
-    console.log('Updated feesToDelete:', Array.from(newFeesToDelete));
-    
+        
     // Update local state
     setFeesToDelete(newFeesToDelete);
     
     // Notify parent component
     if (onFeesToDeleteChange) {
-      console.log('Notifying parent with feesToDelete:', Array.from(newFeesToDelete));
       onFeesToDeleteChange(newFeesToDelete);
     }
   };

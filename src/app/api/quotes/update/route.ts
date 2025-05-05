@@ -94,7 +94,6 @@ export async function PUT(request: NextRequest) {
   if (feesStr) {
     try {
       quoteData.fees = JSON.parse(feesStr as string);
-      console.log('Parsed fees:', quoteData.fees);
     } catch (error) {
       console.error('Error parsing fees JSON:', error);
       return NextResponse.json({ error: 'Invalid fees format' }, { status: 400 });
