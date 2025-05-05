@@ -39,6 +39,11 @@ export function QuoteFees({ quoteId, disabled = false, fees, onFeesChange, onFee
       setLocalFees(initialFees);
       onFeesChange(initialFees);
     } else {
+      // Only reset feesToDelete if the number of fees has changed
+      // This indicates an actual deletion has occurred
+      if (fees.length !== localFees.length) {
+        setFeesToDelete(new Set());
+      }
       setLocalFees(fees);
     }
   }, [fees, onFeesChange]);
@@ -178,11 +183,6 @@ export function QuoteFees({ quoteId, disabled = false, fees, onFeesChange, onFee
     <div className="space-y-4">
       <div className="flex justify-between items-center">
         <h3 className="text-base font-medium">Frais additionnels</h3>
-        {feesToDelete.size > 0 && (
-          <div className="text-sm text-amber-600 font-medium">
-            {feesToDelete.size} frais marqué{feesToDelete.size > 1 ? 's' : ''} pour suppression
-          </div>
-        )}
       </div>
 
       {/* Custom Fee Form */}
