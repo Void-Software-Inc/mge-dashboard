@@ -17,14 +17,18 @@ interface QuoteFeesProps {
   fees: any[];
   onFeesChange: (fees: any[]) => void;
   onFeesSubtotalChange?: (subtotal: number) => void;
+  onFeesToDeleteChange?: (feesToDelete: Set<string>) => void;
 }
 
-export function QuoteFees({ quoteId, disabled = false, fees, onFeesChange, onFeesSubtotalChange }: QuoteFeesProps) {
+export function QuoteFees({ quoteId, disabled = false, fees, onFeesChange, onFeesSubtotalChange, onFeesToDeleteChange }: QuoteFeesProps) {
   const [localFees, setLocalFees] = useState<any[]>([]);
   const [newCustomFeeName, setNewCustomFeeName] = useState('');
   const [newCustomFeePrice, setNewCustomFeePrice] = useState('');
   const [newCustomFeeDescription, setNewCustomFeeDescription] = useState('');
+  const [feesToDelete, setFeesToDelete] = useState<Set<string>>(new Set());
+  const [nameError, setNameError] = useState<string>('');
 
+  // Initialize local fees from props
   useEffect(() => {
     if (!fees || fees.length === 0) {
       const initialFees = FEE_TYPES.filter(feeType => !feeType.isCustom).map(feeType => ({
@@ -36,6 +40,11 @@ export function QuoteFees({ quoteId, disabled = false, fees, onFeesChange, onFee
       setLocalFees(initialFees);
       onFeesChange(initialFees);
     } else {
+      // Only reset feesToDelete if the number of fees has changed
+      // This indicates an actual deletion has occurred
+      if (fees.length !== localFees.length) {
+        setFeesToDelete(new Set());
+      }
       setLocalFees(fees);
     }
   }, [fees, onFeesChange]);
@@ -43,17 +52,19 @@ export function QuoteFees({ quoteId, disabled = false, fees, onFeesChange, onFee
   // Calculate subtotal whenever fees change
   useEffect(() => {
     const subtotal = localFees.reduce((sum, fee) => {
+      // Don't include fees marked for deletion in the subtotal
+      if (feesToDelete.has(fee.name)) return sum;
       return sum + (fee.enabled ? (fee.price || 0) : 0);
     }, 0);
     onFeesSubtotalChange?.(subtotal);
-  }, [localFees, onFeesSubtotalChange]);
+  }, [localFees, onFeesSubtotalChange, feesToDelete]);
 
-  const handleToggleFee = async (feeName: string) => {
+  const handleToggleFee = async (feeName: string, checked?: boolean) => {
     if (disabled) return;
     
     const updatedFees = localFees.map(fee => {
       if (fee.name === feeName) {
-        return { ...fee, enabled: !fee.enabled };
+        return { ...fee, enabled: checked !== undefined ? checked : !fee.enabled };
       }
       return fee;
     });
@@ -109,8 +120,25 @@ export function QuoteFees({ quoteId, disabled = false, fees, onFeesChange, onFee
     }
   };
 
-  const handleAddCustomFee = () => {
+  const handleAddCustomFee = (e?: React.MouseEvent) => {
+    // Prevent any event propagation that might trigger form submission
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+    
     if (!newCustomFeeName.trim() || !newCustomFeePrice.trim()) return;
+
+    // Check for duplicate fee names (case-insensitive)
+    const normalizedNewName = newCustomFeeName.trim().toLowerCase();
+    const isDuplicate = localFees.some(fee => 
+      fee.name.toLowerCase() === normalizedNewName
+    );
+
+    if (isDuplicate) {
+      setNameError('Un frais avec ce nom existe déjà');
+      return;
+    }
 
     const newFee = {
       name: newCustomFeeName.trim(),
@@ -128,22 +156,35 @@ export function QuoteFees({ quoteId, disabled = false, fees, onFeesChange, onFee
     setNewCustomFeeName('');
     setNewCustomFeePrice('');
     setNewCustomFeeDescription('');
-
-    // Save to database
-    updateQuoteFee(quoteId, updatedFees).catch(error => {
-      console.error('Error adding custom fee:', error);
-    });
+    setNameError('');
   };
 
-  const handleDeleteCustomFee = (feeName: string) => {
-    const updatedFees = localFees.filter(fee => fee.name !== feeName);
-    setLocalFees(updatedFees);
-    onFeesChange(updatedFees);
-
-    // Save to database
-    updateQuoteFee(quoteId, updatedFees).catch(error => {
-      console.error('Error deleting custom fee:', error);
-    });
+  const handleMarkForDeletion = (feeName: string, e?: React.MouseEvent) => {
+    // Prevent any event propagation that might trigger form submission
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+    
+    if (disabled) return;
+    
+    // Create new Set to ensure state update
+    const newFeesToDelete = new Set(feesToDelete);
+    
+    // Toggle fee in the Set
+    if (newFeesToDelete.has(feeName)) {
+-      newFeesToDelete.delete(feeName);
+    } else {
+      newFeesToDelete.add(feeName);
+    }
+        
+    // Update local state
+    setFeesToDelete(newFeesToDelete);
+    
+    // Notify parent component
+    if (onFeesToDeleteChange) {
+      onFeesToDeleteChange(newFeesToDelete);
+    }
   };
 
   return (
@@ -160,11 +201,17 @@ export function QuoteFees({ quoteId, disabled = false, fees, onFeesChange, onFee
             <Label className="text-xs text-gray-600">Nom</Label>
             <Input
               value={newCustomFeeName}
-              onChange={(e) => setNewCustomFeeName(e.target.value)}
+              onChange={(e) => {
+                setNewCustomFeeName(e.target.value);
+                setNameError(''); // Clear error when user types
+              }}
               disabled={disabled}
-              className="border-gray-200 h-8 text-sm"
+              className={`border-gray-200 h-8 text-sm ${nameError ? 'border-red-500' : ''}`}
               placeholder="Nom du frais..."
             />
+            {nameError && (
+              <p className="text-xs text-red-500 mt-1">{nameError}</p>
+            )}
           </div>
           <div className="space-y-1">
             <Label className="text-xs text-gray-600">Prix HT</Label>
@@ -192,9 +239,10 @@ export function QuoteFees({ quoteId, disabled = false, fees, onFeesChange, onFee
         </div>
         <div className="mt-3">
           <Button
-            onClick={handleAddCustomFee}
+            onClick={(e) => handleAddCustomFee(e)}
             disabled={disabled || !newCustomFeeName.trim() || !newCustomFeePrice.trim()}
-            className="h-8 text-sm"
+            className="bg-white h-8 text-sm border border-lime-500 text-lime-500 hover:bg-lime-50 disabled:bg-gray-50"
+            type="button"
           >
             <PlusIcon className="mr-2 h-4 w-4" />
             Ajouter
@@ -206,30 +254,36 @@ export function QuoteFees({ quoteId, disabled = false, fees, onFeesChange, onFee
         {localFees.map((fee) => {
           const feeType = FEE_TYPES.find(ft => ft.name === fee.name);
           if (!feeType && !fee.isCustom) return null;
+          
+          const isMarkedForDeletion = feesToDelete.has(fee.name);
 
           return (
-            <Card key={fee.name} className="border-gray-200">
+            <Card 
+              key={fee.name} 
+              className={`border-gray-200 ${isMarkedForDeletion ? 'bg-red-50 border-red-200' : ''}`}
+            >
               <CardHeader className="pb-2">
                 <div className="flex items-center justify-between">
-                  <CardTitle className="text-sm font-medium">
+                  <CardTitle className={`text-sm font-medium ${isMarkedForDeletion ? 'line-through text-gray-500' : ''}`}>
                     {fee.isCustom ? fee.name : feeType?.displayName}
                   </CardTitle>
                   <div className="flex items-center space-x-2">
                     {fee.isCustom && (
                       <Button
-                        variant="ghost"
+                        variant={isMarkedForDeletion ? "destructive" : "ghost"}
                         size="icon"
                         className="h-6 w-6"
-                        onClick={() => handleDeleteCustomFee(fee.name)}
+                        onClick={(e) => handleMarkForDeletion(fee.name, e)}
                         disabled={disabled}
+                        type="button"
                       >
-                        <TrashIcon className="h-4 w-4 text-red-500" />
+                        <TrashIcon className={`h-4 w-4 ${isMarkedForDeletion ? 'text-white' : 'text-red-500'}`} />
                       </Button>
                     )}
                     <Switch
                       checked={fee.enabled}
-                      onCheckedChange={() => handleToggleFee(fee.name)}
-                      disabled={disabled}
+                      onCheckedChange={(checked: boolean) => handleToggleFee(fee.name, checked)}
+                      disabled={disabled || isMarkedForDeletion}
                       className="data-[state=checked]:bg-lime-500"
                     />
                   </div>
@@ -242,8 +296,8 @@ export function QuoteFees({ quoteId, disabled = false, fees, onFeesChange, onFee
                     type="number"
                     value={fee.price || ''}
                     onChange={(e) => handlePriceChange(fee.name, e.target.value)}
-                    disabled={!fee.enabled || disabled}
-                    className="border-gray-200 h-8 text-sm"
+                    disabled={!fee.enabled || disabled || isMarkedForDeletion}
+                    className={`border-gray-200 h-8 text-sm ${isMarkedForDeletion ? 'opacity-50' : ''}`}
                     min="0"
                     step="0.01"
                   />
@@ -253,8 +307,8 @@ export function QuoteFees({ quoteId, disabled = false, fees, onFeesChange, onFee
                   <Textarea
                     value={fee.description || ''}
                     onChange={(e) => handleDescriptionChange(fee.name, e.target.value)}
-                    disabled={!fee.enabled || disabled}
-                    className="border-gray-200 text-sm min-h-[60px]"
+                    disabled={!fee.enabled || disabled || isMarkedForDeletion}
+                    className={`border-gray-200 text-sm min-h-[60px] ${isMarkedForDeletion ? 'opacity-50' : ''}`}
                     placeholder="Description des frais..."
                   />
                 </div>
