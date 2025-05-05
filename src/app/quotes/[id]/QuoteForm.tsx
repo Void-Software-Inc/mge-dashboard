@@ -603,17 +603,16 @@ export default function QuoteForm({ quoteId }: { quoteId: string }) {
       // Filter out fees marked for deletion before updating the quote
       if (formData?.fees) {
         // Log before deletion for debugging
-        console.log('Before deletion - feesToDelete set contents:', Array.from(feesToDelete));
-        console.log('Before deletion - formData.fees:', formData.fees);
+   //       console.log('Before deletion - feesToDelete set contents:', Array.from(feesToDelete));
+   //       console.log('Before deletion - formData.fees:', formData.fees);
         
         // Create a filtered copy of the fees array
         const filteredFees = formData.fees.filter(fee => {
           const shouldKeep = !feesToDelete.has(fee.name);
-          console.log(`Fee ${fee.name} - keep: ${shouldKeep}`);
           return shouldKeep;
         });
         
-        console.log('After filtering - filteredFees:', filteredFees);
+  //      console.log('After filtering - filteredFees:', filteredFees);
         
         // Make a local copy of formData with the updated fees
         const updatedFormData = {
@@ -655,7 +654,6 @@ export default function QuoteForm({ quoteId }: { quoteId: string }) {
 
       // Update the quote
       const response = await updateQuote(formDataToSend);
-      console.log('Response from server:', response);
 
       const updatePromises = [];
       
