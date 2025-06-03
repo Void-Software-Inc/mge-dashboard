@@ -153,7 +153,7 @@ export const generateDocumentPDF = (
         const product = products.find((p: Product) => p.id === item.product_id);
         if (!product) return;
 
-        const unitPriceHT = product.price || 0;
+        const unitPriceHT = product.ttc_price || 0;
         const subtotalHT = unitPriceHT * item.quantity;
         
         const productItem = {
