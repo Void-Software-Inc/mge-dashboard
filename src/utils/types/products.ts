@@ -59,6 +59,15 @@ export const productTypes: ProductType[] = [
     { value: "mignardises", name: "Mignardises", category: "traiteur" },
     { value: "menus", name: "Menus", category: "traiteur" },
     { value: "stands", name: "Stands", category: "traiteur" },
+    { value: "outils", name: "Outils", category: "interne" },
+    { value: "materiel", name: "Matériel", category: "interne" },
+    { value: "equipement", name: "Équipement", category: "interne" },
+    { value: "uniforme", name: "Uniformes", category: "interne" },
+    { value: "fournitures", name: "Fournitures", category: "interne" },
+    { value: "transport", name: "Transport", category: "interne" },
+    { value: "nettoyage", name: "Nettoyage", category: "interne" },
+    { value: "securite", name: "Sécurité", category: "interne" },
+    { value: "autre", name: "Autre", category: "interne" },
 ];
 
 export type ProductColor = {
@@ -85,6 +94,7 @@ export const productColors: ProductColor[] = [
     { value: "silver", name: "Argenté", hex: "#C0C0C0" },
     { value: "multicolore", name: "Multicolore", hex: "#000000" },
     { value: "transparent", name: "Transparent", hex: "#FFFFFF" },
+    { value: "sans", name: "Sans", hex: "#B5B5B4" },
 ]
 
 export type ProductCategory = {
@@ -95,4 +105,5 @@ export type ProductCategory = {
 export const productCategories: ProductCategory[] = [
     { value: "decoration", name: "Décoration" },
     { value: "traiteur", name: "Traiteur" },
+    { value: "interne", name: "Interne" },
 ];

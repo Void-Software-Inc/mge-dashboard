@@ -93,6 +93,13 @@ export default function ProductCreateForm() {
         color: '', // Empty to show placeholder
         stock: 0, // Default stock value
       }));
+    } else if (formData.category === 'interne') {
+      // For internal products, set appropriate defaults
+      setFormData(prev => ({
+        ...prev,
+        color: 'sans', // Default color for internal items
+        stock: 1, // Default stock value
+      }));
     }
   }, [formData.category]);
 
@@ -113,14 +120,14 @@ export default function ProductCreateForm() {
       isValid = false
     }
     
-    // Only validate color for decoration products
-    if (formData.category === 'decoration' && !formData.color && touched.color) {
+    // Only validate color for decoration and internal products
+    if ((formData.category === 'decoration' || formData.category === 'interne') && !formData.color && touched.color) {
       newErrors.color = "La couleur du produit est obligatoire"
       isValid = false
     }
     
-    // Only validate stock for decoration products
-    if (formData.category === 'decoration' && 
+    // Only validate stock for decoration and internal products
+    if ((formData.category === 'decoration' || formData.category === 'interne') && 
         formData.stock !== undefined && 
         (formData.stock === null || formData.stock <= 0) && 
         touched.stock) {
@@ -139,7 +146,7 @@ export default function ProductCreateForm() {
     }
     
     // Adjust validation criteria based on category
-    if (formData.category === 'decoration') {
+    if (formData.category === 'decoration' || formData.category === 'interne') {
       if(formData.name && formData.category && formData.type && formData.color && formData.price && formData.stock && selectedFile) {
         isValid = true
       }
@@ -375,7 +382,7 @@ export default function ProductCreateForm() {
             <div className="mb-4">
               <Label htmlFor="color" className={`text-base flex items-center ${formData.category === 'traiteur' ? 'text-gray-400' : ''}`}>
                 Couleur du produit
-                {formData.category === 'decoration' && (
+                {(formData.category === 'decoration' || formData.category === 'interne') && (
                   <Tooltip>
                     <TooltipTrigger asChild>
                       <InfoCircledIcon className="w-3 h-3 text-gray-500 ml-1 cursor-help" />
@@ -432,7 +439,7 @@ export default function ProductCreateForm() {
             <div className="mb-4">
               <Label htmlFor="stock" className={`text-base flex items-center ${formData.category === 'traiteur' ? 'text-gray-400' : ''}`}>
                 Stock du produit
-                {formData.category === 'decoration' && (
+                {(formData.category === 'decoration' || formData.category === 'interne') && (
                   <Tooltip>
                     <TooltipTrigger asChild>
                       <InfoCircledIcon className="w-3 h-3 text-gray-500 ml-1 cursor-help" />
