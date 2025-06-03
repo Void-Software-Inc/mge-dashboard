@@ -97,8 +97,8 @@ export default function ProductForm({ productId }: { productId: string }) {
         color: 'blanc', // Default color for food items
         stock: 999999, // Very high number to represent unlimited stock
       } : null);
-    } else if (formData?.category === 'decoration') {
-      // Reset to default values for decoration products if they're not already set
+    } else if (formData?.category === 'decoration' || formData?.category === 'interne') {
+      // Reset to default values for decoration and internal products if they're not already set
       if (formData.color === 'blanc' && formData.stock === 999999) {
         setFormData(prev => prev ? {
           ...prev,
@@ -126,14 +126,14 @@ export default function ProductForm({ productId }: { productId: string }) {
       isValid = false
     }
     
-    // Only validate color for decoration products
-    if (formData?.category === 'decoration' && !formData?.color) {
+    // Only validate color for decoration and internal products
+    if ((formData?.category === 'decoration' || formData?.category === 'interne') && !formData?.color) {
       newErrors.color = "La couleur du produit est obligatoire"
       isValid = false
     }
     
-    // Only validate stock for decoration products
-    if (formData?.category === 'decoration' && 
+    // Only validate stock for decoration and internal products
+    if ((formData?.category === 'decoration' || formData?.category === 'interne') && 
         (!formData?.stock || formData?.stock <= 0)) {
       newErrors.stock = "Le stock du produit est invalide"
       isValid = false
@@ -464,7 +464,7 @@ export default function ProductForm({ productId }: { productId: string }) {
             <div className="mb-4">
               <Label htmlFor="color" className={`text-base flex items-center ${formData?.category === 'traiteur' ? 'text-gray-400' : ''}`}>
                 Couleur du produit
-                {formData?.category === 'decoration' && (
+                {(formData?.category === 'decoration' || formData?.category === 'interne') && (
                   <Tooltip>
                     <TooltipTrigger asChild>
                       <InfoCircledIcon className="w-3 h-3 text-gray-500 ml-1 cursor-help" />
@@ -512,7 +512,7 @@ export default function ProductForm({ productId }: { productId: string }) {
             <div className="mb-4">
               <Label htmlFor="stock" className={`text-base flex items-center ${formData?.category === 'traiteur' ? 'text-gray-400' : ''}`}>
                 Stock du produit
-                {formData?.category === 'decoration' && (
+                {(formData?.category === 'decoration' || formData?.category === 'interne') && (
                   <Tooltip>
                     <TooltipTrigger asChild>
                       <InfoCircledIcon className="w-3 h-3 text-gray-500 ml-1 cursor-help" />
