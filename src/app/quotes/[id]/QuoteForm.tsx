@@ -888,7 +888,6 @@ export default function QuoteForm({ quoteId }: { quoteId: string }) {
   };
 
   const handleFeesToDeleteChange = (feesToDeleteSet: Set<string>) => {
-    console.log('feesToDelete update received:', Array.from(feesToDeleteSet));
     
     // Create a new Set with the values to ensure state is updated properly
     const newSet = new Set<string>();
