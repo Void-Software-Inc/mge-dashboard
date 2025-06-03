@@ -44,6 +44,7 @@ export default function FinishedQuoteView({ quoteId }: { quoteId: string }) {
   const [quoteItems, setQuoteItems] = useState<QuoteItem[]>([])
   const [products, setProducts] = useState<Product[]>([])
   const [isLoading, setIsLoading] = useState(true)
+  const [showHtTtcInPdf, setShowHtTtcInPdf] = useState(true)
   
   // Move pagination state to the top level
   const [currentPage, setCurrentPage] = useState(1);
@@ -108,7 +109,7 @@ export default function FinishedQuoteView({ quoteId }: { quoteId: string }) {
     if (!quote) return;
     
     try {
-      await generateQuotePDF(quote, quoteItems, products);
+      await generateQuotePDF(quote, quoteItems, products, showHtTtcInPdf);
       toast.success('Devis généré avec succès');
     } catch (error) {
       console.error('Error generating PDF:', error);
@@ -121,7 +122,7 @@ export default function FinishedQuoteView({ quoteId }: { quoteId: string }) {
     if (!quote) return;
     
     try {
-      await generateInvoicePDF(quote, quoteItems, products);
+      await generateInvoicePDF(quote, quoteItems, products, showHtTtcInPdf);
       toast.success('Facture générée avec succès');
     } catch (error) {
       console.error('Error generating invoice:', error);
@@ -162,26 +163,40 @@ export default function FinishedQuoteView({ quoteId }: { quoteId: string }) {
               <ChevronLeftIcon className="w-4 h-4" />
             </Button>
             
-            <div className="flex space-x-2">
-              <Button 
-                className="bg-lime-300 hover:bg-lime-400 whitespace-nowrap"
-                variant="secondary"
-                onClick={downloadPDF}
-              >
-                <DownloadIcon className="w-4 h-4 mr-2" />
-                <span className="hidden sm:inline">Télécharger le devis en PDF</span>
-                <span className="inline sm:hidden">Devis PDF</span>
-              </Button>
+            <div className="flex flex-col items-end space-y-3">
+              <div className="flex items-center space-x-2">
+                <Switch
+                  id="show_ht_ttc_pdf"
+                  checked={showHtTtcInPdf}
+                  onCheckedChange={setShowHtTtcInPdf}
+                  className="data-[state=checked]:bg-lime-500"
+                />
+                <Label htmlFor="show_ht_ttc_pdf" className="text-sm text-gray-600">
+                  Afficher les mentions HT/TTC dans le PDF
+                </Label>
+              </div>
               
-              <Button 
-                className="bg-blue-300 hover:bg-blue-400 whitespace-nowrap"
-                variant="secondary"
-                onClick={downloadInvoice}
-              >
-                <DownloadIcon className="w-4 h-4 mr-2" />
-                <span className="hidden sm:inline">Télécharger la facture en PDF</span>
-                <span className="inline sm:hidden">Facture PDF</span>
-              </Button>
+              <div className="flex space-x-2">
+                <Button 
+                  className="bg-lime-300 hover:bg-lime-400 whitespace-nowrap"
+                  variant="secondary"
+                  onClick={downloadPDF}
+                >
+                  <DownloadIcon className="w-4 h-4 mr-2" />
+                  <span className="hidden sm:inline">Télécharger le devis en PDF</span>
+                  <span className="inline sm:hidden">Devis PDF</span>
+                </Button>
+                
+                <Button 
+                  className="bg-blue-300 hover:bg-blue-400 whitespace-nowrap"
+                  variant="secondary"
+                  onClick={downloadInvoice}
+                >
+                  <DownloadIcon className="w-4 h-4 mr-2" />
+                  <span className="hidden sm:inline">Télécharger la facture en PDF</span>
+                  <span className="inline sm:hidden">Facture PDF</span>
+                </Button>
+              </div>
             </div>
           </div>
           
@@ -431,8 +446,8 @@ export default function FinishedQuoteView({ quoteId }: { quoteId: string }) {
                                       </TableCell>
                                       <TableCell>{product?.name || `Produit inconnu (ID: ${item.item.product_id})`}</TableCell>
                                       <TableCell className="text-left">{item.item.quantity}</TableCell>
-                                      <TableCell className="text-left">{(product?.price || 0).toFixed(2)}€</TableCell>
-                                      <TableCell className="text-left">{((product?.price || 0) * item.item.quantity).toFixed(2)}€</TableCell>
+                                      <TableCell className="text-left">{(product?.ttc_price || 0).toFixed(2)}€</TableCell>
+                                      <TableCell className="text-left">{((product?.ttc_price || 0) * item.item.quantity).toFixed(2)}€</TableCell>
                                     </TableRow>
                                   );
                                 }
