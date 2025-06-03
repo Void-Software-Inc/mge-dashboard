@@ -280,7 +280,7 @@ export function QuoteItemList({
                       </div>
                     )}
                   </TableCell>
-                  <TableCell className="whitespace-nowrap overflow-hidden text-ellipsis">
+                  <TableCell className="max-w-[200px] whitespace-nowrap overflow-hidden text-ellipsis">
                     {product ? product.name : 'Loading...'}
                   </TableCell>
                   <TableCell className="whitespace-nowrap">
@@ -319,7 +319,7 @@ export function QuoteItemList({
                   <TableCell className="whitespace-nowrap">
                     {product ? `${product.ttc_price} €` : 'Loading...'}
                   </TableCell>
-                  <TableCell className="whitespace-nowrap">{`${calculateTotalPrice(item)} €`}</TableCell>
+                  <TableCell className="whitespace-nowrap">{`${calculateTotalPrice(item).toFixed(2)} €`}</TableCell>
                   <TableCell className="whitespace-nowrap">
                     <Button
                       variant="ghost"
