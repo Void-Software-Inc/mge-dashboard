@@ -27,7 +27,8 @@ export const generateDocumentPDF = (
   quote: AnyQuote,
   quoteItems: QuoteItem[],
   products: Product[],
-  documentType: DocumentType = DocumentType.QUOTE // Default to quote
+  documentType: DocumentType = DocumentType.QUOTE, // Default to quote
+  showHtTtc: boolean = true // New parameter to control HT/TTC display
 ) => {
   if (!quote) return null;
 
@@ -153,14 +154,14 @@ export const generateDocumentPDF = (
         const product = products.find((p: Product) => p.id === item.product_id);
         if (!product) return;
 
-        const unitPriceHT = product.ttc_price || 0;
-        const subtotalHT = unitPriceHT * item.quantity;
+        const unitPriceTTC = product.ttc_price || 0;
+        const subtotalTTC = unitPriceTTC * item.quantity;
         
         const productItem = {
           name: product.name || 'Produit inconnu',
           quantity: item.quantity,
-          unitPrice: unitPriceHT,
-          totalPrice: subtotalHT.toFixed(2)
+          unitPrice: showHtTtc ? unitPriceTTC / 1.20 : unitPriceTTC,
+          totalPrice: showHtTtc ? (subtotalTTC / 1.20).toFixed(2) : subtotalTTC.toFixed(2)
         };
 
         // Categorize based on product type (assuming there's a category field)
@@ -177,8 +178,8 @@ export const generateDocumentPDF = (
         traiteurProducts.push({
           name: 'Service traiteur',
           quantity: 1,
-          unitPrice: quote.traiteur_price,
-          totalPrice: quote.traiteur_price.toFixed(2)
+          unitPrice: showHtTtc ? quote.traiteur_price : quote.traiteur_price * 1.20,
+          totalPrice: showHtTtc ? quote.traiteur_price.toFixed(2) : (quote.traiteur_price * 1.20).toFixed(2)
         });
       }
       
@@ -186,8 +187,8 @@ export const generateDocumentPDF = (
         decorationProducts.push({
           name: 'Frais supplémentaires',
           quantity: 1,
-          unitPrice: quote.other_expenses,
-          totalPrice: quote.other_expenses.toFixed(2)
+          unitPrice: showHtTtc ? quote.other_expenses : quote.other_expenses * 1.20,
+          totalPrice: showHtTtc ? quote.other_expenses.toFixed(2) : (quote.other_expenses * 1.20).toFixed(2)
         });
       }
 
@@ -294,8 +295,8 @@ export const generateDocumentPDF = (
         // Header text alignment to match autoTable
         doc.text("Produit", 17, tableStartY + 6); // Adjusted for smaller row height
         doc.text("Quantité", 15 + colWidths[0] + 5, tableStartY + 6);
-        doc.text("Prix unitaire HT", 15 + colWidths[0] + colWidths[1] + 5, tableStartY + 6);
-        doc.text("Sous-Total HT", 15 + colWidths[0] + colWidths[1] + colWidths[2] + 5, tableStartY + 6);
+        doc.text(showHtTtc ? "Prix unitaire HT" : "Prix unitaire", 15 + colWidths[0] + colWidths[1] + 5, tableStartY + 6);
+        doc.text(showHtTtc ? "Sous-Total HT" : "Sous-Total", 15 + colWidths[0] + colWidths[1] + colWidths[2] + 5, tableStartY + 6);
         
         // Draw table rows
         doc.setTextColor(0, 0, 0);
@@ -319,8 +320,8 @@ export const generateDocumentPDF = (
             doc.setFont('helvetica', 'bold');
             doc.text("Produit", 17, currentY + 6);
             doc.text("Quantité", 15 + colWidths[0] + 5, currentY + 6);
-            doc.text("Prix unitaire HT", 15 + colWidths[0] + colWidths[1] + 5, currentY + 6);
-            doc.text("Sous-Total HT", 15 + colWidths[0] + colWidths[1] + colWidths[2] + 5, currentY + 6);
+            doc.text(showHtTtc ? "Prix unitaire HT" : "Prix unitaire", 15 + colWidths[0] + colWidths[1] + 5, currentY + 6);
+            doc.text(showHtTtc ? "Sous-Total HT" : "Sous-Total", 15 + colWidths[0] + colWidths[1] + colWidths[2] + 5, currentY + 6);
             doc.setTextColor(0, 0, 0);
             doc.setFont('helvetica', 'normal');
             currentY += rowHeight;
@@ -427,8 +428,8 @@ export const generateDocumentPDF = (
         // Header text alignment to match autoTable
         doc.text("Produit", 17, tableStartY + 6); // Adjusted for smaller row height
         doc.text("Quantité", 15 + colWidths[0] + 5, tableStartY + 6);
-        doc.text("Prix unitaire HT", 15 + colWidths[0] + colWidths[1] + 5, tableStartY + 6);
-        doc.text("Sous-Total HT", 15 + colWidths[0] + colWidths[1] + colWidths[2] + 5, tableStartY + 6);
+        doc.text(showHtTtc ? "Prix unitaire HT" : "Prix unitaire", 15 + colWidths[0] + colWidths[1] + 5, tableStartY + 6);
+        doc.text(showHtTtc ? "Sous-Total HT" : "Sous-Total", 15 + colWidths[0] + colWidths[1] + colWidths[2] + 5, tableStartY + 6);
         
         // Draw table rows
         doc.setTextColor(0, 0, 0);
@@ -452,8 +453,8 @@ export const generateDocumentPDF = (
             doc.setFont('helvetica', 'bold');
             doc.text("Produit", 17, currentY + 6);
             doc.text("Quantité", 15 + colWidths[0] + 5, currentY + 6);
-            doc.text("Prix unitaire HT", 15 + colWidths[0] + colWidths[1] + 5, currentY + 6);
-            doc.text("Sous-Total HT", 15 + colWidths[0] + colWidths[1] + colWidths[2] + 5, currentY + 6);
+            doc.text(showHtTtc ? "Prix unitaire HT" : "Prix unitaire", 15 + colWidths[0] + colWidths[1] + 5, currentY + 6);
+            doc.text(showHtTtc ? "Sous-Total HT" : "Sous-Total", 15 + colWidths[0] + colWidths[1] + colWidths[2] + 5, currentY + 6);
             doc.setTextColor(0, 0, 0);
             doc.setFont('helvetica', 'normal');
             currentY += rowHeight;
@@ -566,8 +567,8 @@ export const generateDocumentPDF = (
       // Header text alignment to match autoTable
       doc.text("Option", 17, finalY + 6); // Adjusted for smaller row height
       doc.text("Quantité", 15 + colWidths[0] + 5, finalY + 6);
-      doc.text("Prix unitaire HT", 15 + colWidths[0] + colWidths[1] + 5, finalY + 6);
-      doc.text("Sous-Total HT", 15 + colWidths[0] + colWidths[1] + colWidths[2] + 5, finalY + 6);
+      doc.text(showHtTtc ? "Prix unitaire HT" : "Prix unitaire", 15 + colWidths[0] + colWidths[1] + 5, finalY + 6);
+      doc.text(showHtTtc ? "Sous-Total HT" : "Sous-Total", 15 + colWidths[0] + colWidths[1] + colWidths[2] + 5, finalY + 6);
       
       // Draw table rows
       doc.setTextColor(0, 0, 0);
@@ -595,8 +596,8 @@ export const generateDocumentPDF = (
             doc.setFont('helvetica', 'bold');
             doc.text("Option", 17, currentY + 6);
             doc.text("Quantité", 15 + colWidths[0] + 5, currentY + 6);
-            doc.text("Prix unitaire HT", 15 + colWidths[0] + colWidths[1] + 5, currentY + 6);
-            doc.text("Sous-Total HT", 15 + colWidths[0] + colWidths[1] + colWidths[2] + 5, currentY + 6);
+            doc.text(showHtTtc ? "Prix unitaire HT" : "Prix unitaire", 15 + colWidths[0] + colWidths[1] + 5, currentY + 6);
+            doc.text(showHtTtc ? "Sous-Total HT" : "Sous-Total", 15 + colWidths[0] + colWidths[1] + colWidths[2] + 5, currentY + 6);
             doc.setTextColor(0, 0, 0);
             doc.setFont('helvetica', 'normal');
             currentY += rowHeight;
@@ -620,12 +621,12 @@ export const generateDocumentPDF = (
           doc.text(qtyText, 15 + colWidths[0] + (colWidths[1] / 2) - (qtyWidth / 2), currentY + 6);
           
           // Unit price (right aligned)
-          const unitPrice = `${fee.price.toFixed(2)}€`;
+          const unitPrice = `${(showHtTtc ? fee.price : fee.price * 1.20).toFixed(2)}€`;
           const unitPriceWidth = doc.getTextWidth(unitPrice);
           doc.text(unitPrice, 15 + colWidths[0] + colWidths[1] + colWidths[2] - 5 - unitPriceWidth, currentY + 6);
           
           // Total price (right aligned)
-          const totalPrice = `${fee.price.toFixed(2)}€`;
+          const totalPrice = `${(showHtTtc ? fee.price : fee.price * 1.20).toFixed(2)}€`;
           const totalPriceWidth = doc.getTextWidth(totalPrice);
           doc.text(totalPrice, 15 + tableWidth - 5 - totalPriceWidth, currentY + 6);
           
@@ -634,7 +635,7 @@ export const generateDocumentPDF = (
         
         // Add options subtotal row
         const optionsTotal = quote.fees.reduce(
-          (sum: number, fee: any) => sum + (fee.enabled ? fee.price : 0), 
+          (sum: number, fee: any) => sum + (fee.enabled ? (showHtTtc ? fee.price : fee.price * 1.20) : 0), 
           0
         ).toFixed(2);
         
@@ -694,7 +695,8 @@ export const generateDocumentPDF = (
           documentType,
           pageHeight,
           currentPage,
-          totalPages
+          totalPages,
+          showHtTtc
         );
       } else {
         totalPages = currentPage + 1; // Add one more for conditions page
@@ -710,7 +712,8 @@ export const generateDocumentPDF = (
           documentType,
           pageHeight,
           currentPage,
-          totalPages
+          totalPages,
+          showHtTtc
         );
       }
       
@@ -745,7 +748,8 @@ const addTotalsAndSignature = (
   documentType: DocumentType,
   pageHeight: number,
   currentPage: number,
-  totalPages: number
+  totalPages: number,
+  showHtTtc: boolean
 ) => {
   // Add totals section
   doc.setFontSize(10);
@@ -755,29 +759,39 @@ const addTotalsAndSignature = (
   doc.setFillColor(245, 245, 245);
   doc.rect(pageWidth - 97, startY, 85, lineSpacing * 4, 'F');
   
-  // Total HT
-  doc.setFont('helvetica', 'bold');
-  doc.text("Total HT:", pageWidth - 95, startY + lineSpacing);
-  doc.setFont('helvetica', 'normal');
-  const totalHTText = `${totalHT.toFixed(2)}€`;
-  const totalHTWidth = doc.getTextWidth(totalHTText);
-  doc.text(totalHTText, pageWidth - rightMargin - totalHTWidth, startY + lineSpacing);
-  
-  // TVA
-  doc.setFont('helvetica', 'bold');
-  doc.text("TVA 20%:", pageWidth - 95, startY + (lineSpacing * 2));
-  doc.setFont('helvetica', 'normal');
-  const tvaText = `${tva.toFixed(2)}€`;
-  const tvaWidth = doc.getTextWidth(tvaText);
-  doc.text(tvaText, pageWidth - rightMargin - tvaWidth, startY + (lineSpacing * 2));
-  
-  // Total TTC
-  doc.setFont('helvetica', 'bold');
-  doc.text("Total TTC:", pageWidth - 95, startY + (lineSpacing * 3));
-  doc.setFont('helvetica', 'normal');
-  const totalTTCText = `${totalTTC.toFixed(2)}€`;
-  const totalTTCWidth = doc.getTextWidth(totalTTCText);
-  doc.text(totalTTCText, pageWidth - rightMargin - totalTTCWidth, startY + (lineSpacing * 3));
+  if (showHtTtc) {
+    // Show full breakdown: Total HT, TVA, Total TTC
+    doc.setFont('helvetica', 'bold');
+    doc.text("Total HT:", pageWidth - 95, startY + lineSpacing);
+    doc.setFont('helvetica', 'normal');
+    const totalHTText = `${totalHT.toFixed(2)}€`;
+    const totalHTWidth = doc.getTextWidth(totalHTText);
+    doc.text(totalHTText, pageWidth - rightMargin - totalHTWidth, startY + lineSpacing);
+    
+    // TVA
+    doc.setFont('helvetica', 'bold');
+    doc.text("TVA 20%:", pageWidth - 95, startY + (lineSpacing * 2));
+    doc.setFont('helvetica', 'normal');
+    const tvaText = `${tva.toFixed(2)}€`;
+    const tvaWidth = doc.getTextWidth(tvaText);
+    doc.text(tvaText, pageWidth - rightMargin - tvaWidth, startY + (lineSpacing * 2));
+    
+    // Total TTC
+    doc.setFont('helvetica', 'bold');
+    doc.text("Total TTC:", pageWidth - 95, startY + (lineSpacing * 3));
+    doc.setFont('helvetica', 'normal');
+    const totalTTCText = `${totalTTC.toFixed(2)}€`;
+    const totalTTCWidth = doc.getTextWidth(totalTTCText);
+    doc.text(totalTTCText, pageWidth - rightMargin - totalTTCWidth, startY + (lineSpacing * 3));
+  } else {
+    // Show only total TTC
+    doc.setFont('helvetica', 'bold');
+    doc.text("Total:", pageWidth - 95, startY + lineSpacing);
+    doc.setFont('helvetica', 'normal');
+    const totalText = `${(totalTTC / 1.20).toFixed(2)}€`;
+    const totalWidth = doc.getTextWidth(totalText);
+    doc.text(totalText, pageWidth - rightMargin - totalWidth, startY + lineSpacing);
+  }
 
   // Add a new page for conditions générales de location
   doc.addPage();
@@ -936,16 +950,18 @@ const addTotalsAndSignature = (
 export const generateQuotePDF = (
   quote: AnyQuote,
   quoteItems: QuoteItem[],
-  products: Product[]
+  products: Product[],
+  showHtTtc: boolean = true
 ) => {
-  return generateDocumentPDF(quote, quoteItems, products, DocumentType.QUOTE);
+  return generateDocumentPDF(quote, quoteItems, products, DocumentType.QUOTE, showHtTtc);
 };
 
 // Export a dedicated function for invoices
 export const generateInvoicePDF = (
   quote: AnyQuote,
   quoteItems: QuoteItem[],
-  products: Product[]
+  products: Product[],
+  showHtTtc: boolean = true
 ) => {
-  return generateDocumentPDF(quote, quoteItems, products, DocumentType.INVOICE);
+  return generateDocumentPDF(quote, quoteItems, products, DocumentType.INVOICE, showHtTtc);
 }; 

@@ -82,6 +82,7 @@ export default function QuoteForm({ quoteId }: { quoteId: string }) {
   const [isProductsLoading, setIsProductsLoading] = useState(true);
 
   const [feesSubtotal, setFeesSubtotal] = useState(0);
+  const [showHtTtcInPdf, setShowHtTtcInPdf] = useState(true);
 
   useEffect(() => {
     const fetchProducts = async () => {
@@ -789,7 +790,8 @@ export default function QuoteForm({ quoteId }: { quoteId: string }) {
     (generateQuotePDF(
       formData, 
       filteredQuoteItems || [], 
-      products || []
+      products || [],
+      showHtTtcInPdf
     ) as Promise<void>)
       .then(() => {
         toast.success('PDF généré avec succès');
@@ -1564,24 +1566,37 @@ export default function QuoteForm({ quoteId }: { quoteId: string }) {
               }) : ''} className="w-full text-base" disabled />
           </div>
           <div className="flex justify-center mb-20">
-            <Button
-              onClick={downloadPDF}
-              className={`
-                ${!isChanged 
-                  ? "bg-lime-300 hover:bg-lime-400" 
-                  : "bg-gray-300 hover:bg-gray-400 cursor-not-allowed"
+            <div className="flex flex-col items-center space-y-4">
+              <div className="flex items-center space-x-2">
+                <Switch
+                  id="show_ht_ttc_pdf"
+                  checked={showHtTtcInPdf}
+                  onCheckedChange={setShowHtTtcInPdf}
+                  className="data-[state=checked]:bg-lime-500"
+                />
+                <Label htmlFor="show_ht_ttc_pdf" className="text-sm text-gray-600">
+                  Afficher les mentions HT/TTC dans le PDF
+                </Label>
+              </div>
+              <Button
+                onClick={downloadPDF}
+                className={`
+                  ${!isChanged 
+                    ? "bg-lime-300 hover:bg-lime-400" 
+                    : "bg-gray-300 hover:bg-gray-400 cursor-not-allowed"
+                  }
+                  text-black
+                `}
+                variant="secondary"
+                disabled={isChanged}
+              >
+                <DownloadIcon className="w-4 h-4 mr-2" />
+                {isChanged 
+                  ? "Sauvegardez les modifications avant de télécharger" 
+                  : "Télécharger le devis en PDF"
                 }
-                text-black
-              `}
-              variant="secondary"
-              disabled={isChanged}
-            >
-              <DownloadIcon className="w-4 h-4 mr-2" />
-              {isChanged 
-                ? "Sauvegardez les modifications avant de télécharger" 
-                : "Télécharger le devis en PDF"
-              }
-            </Button>
+              </Button>
+            </div>
           </div>
         </div>
       </form>
