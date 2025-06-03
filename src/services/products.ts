@@ -18,10 +18,13 @@ export async function getProducts(): Promise<Product[]> {
       type: product.type,
       color: product.color,
       stock: product.stock,
-      price: product.price,
+      ttc_price: product.ttc_price,
+      ht_price: product.ht_price,
       description: product.description,
       image_url: product.image_url,
       category: product.category,
+      created_at: product.created_at,
+      last_update: product.last_update,
     }))
     return cleanProducts;
   } catch (error) {
@@ -187,7 +190,8 @@ export async function getProductsRecords(): Promise<ProductRecord[]> {
       type: product.type,
       color: product.color,
       stock: product.stock,
-      price: product.price,
+      ttc_price: product.ttc_price,
+      ht_price: product.ht_price,
       description: product.description,
       image_url: product.image_url,
       category: product.category,

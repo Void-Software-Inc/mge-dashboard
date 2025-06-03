@@ -45,7 +45,7 @@ const initialProduct: Partial<Product> = {
   type: '',
   color: '',
   stock: 0,
-  price: 0,
+  ttc_price: 0,
   description: '',
   image_url: '',
   category: '',
@@ -135,7 +135,7 @@ export default function ProductCreateForm() {
       isValid = false
     }
     
-    if (formData.price !== undefined && (formData.price === null || formData.price <= 0) && touched.price) {
+    if (formData.ttc_price !== undefined && (formData.ttc_price === null || formData.ttc_price <= 0) && touched.price) {
       newErrors.price = "Le prix du produit est invalide"
       isValid = false
     }
@@ -147,11 +147,11 @@ export default function ProductCreateForm() {
     
     // Adjust validation criteria based on category
     if (formData.category === 'decoration' || formData.category === 'interne') {
-      if(formData.name && formData.category && formData.type && formData.color && formData.price && formData.stock && selectedFile) {
+      if(formData.name && formData.category && formData.type && formData.color && formData.ttc_price && formData.stock && selectedFile) {
         isValid = true
       }
     } else { // catering
-      if(formData.name && formData.category && formData.type && formData.price && selectedFile) {
+      if(formData.name && formData.category && formData.type && formData.ttc_price && selectedFile) {
         isValid = true
       }
     }
@@ -489,7 +489,7 @@ export default function ProductCreateForm() {
                 type="number"
                 step="1"
                 min="0"
-                value={formData.price} 
+                value={formData.ttc_price} 
                 onChange={handleInputChange} 
                 className={`w-full text-base ${errors.price ? 'border-red-500' : ''}`}
               />

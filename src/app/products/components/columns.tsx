@@ -416,10 +416,10 @@ export const columns: ColumnDef<Product>[] = [
     header: "Stock",
   },
   {
-    accessorKey: "price",
+    accessorKey: "ttc_price",
     header: () => <div className="">Prix</div>,
     cell: ({ row }) => {
-      const price = parseFloat(row.getValue("price"))
+      const price = parseFloat(row.getValue("ttc_price"))
       const formatted = new Intl.NumberFormat("en-US", {
         style: "currency",
         currency: "EUR",

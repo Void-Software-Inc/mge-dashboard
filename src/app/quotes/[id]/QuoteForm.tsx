@@ -541,13 +541,14 @@ export default function QuoteForm({ quoteId }: { quoteId: string }) {
     
     if (filteredItems.length === 0) return '0.00';
     
-    // Calculate total using product price from products array
-    const total = filteredItems.reduce((sum, item) => {
+    // Calculate total using product price from products array (this is the HT base amount)
+    const totalHT = filteredItems.reduce((sum, item) => {
       const product = products.find(p => p.id === item.product_id);
-      return sum + ((product?.price || 0) * item.quantity);
+      return sum + ((product?.ttc_price || 0) * item.quantity);
     }, 0);
     
-    return includeTax ? (total * 1.2).toFixed(2) : total.toFixed(2);
+    // Return HT or TTC based on includeTax parameter
+    return includeTax ? (totalHT).toFixed(2) : (totalHT / 1.20).toFixed(2);
   };
 
   // Update the total cost calculation to include fees
@@ -556,6 +557,7 @@ export default function QuoteForm({ quoteId }: { quoteId: string }) {
     
     const decorationTotal = parseFloat(calculateSubtotal('decoration'));
     const traiteurTotal = parseFloat(calculateSubtotal('traiteur'));
+    // Fees are already HT values, no reduction needed
     const feesTotal = formData.fees?.reduce((sum, fee) => sum + (fee.enabled ? (fee.price || 0) : 0), 0) || 0;
     
     const newTotalCost = Number((decorationTotal + traiteurTotal + feesTotal).toFixed(2));
@@ -864,7 +866,7 @@ export default function QuoteForm({ quoteId }: { quoteId: string }) {
   };
 
   const handleFeesChange = (updatedFees: any[]) => {
-    // Process fees - calculate total for all fees not marked for deletion
+    // Process fees - calculate total for all fees not marked for deletion (fees are HT values)
     const feesTotal = updatedFees
       .filter(fee => !feesToDelete.has(fee.name))
       .reduce((sum, fee) => sum + (fee.enabled ? (fee.price || 0) : 0), 0);
@@ -1232,7 +1234,7 @@ export default function QuoteForm({ quoteId }: { quoteId: string }) {
                   <Input 
                     id="fees_subtotal_ht" 
                     type="number"
-                    value={formData?.fees?.reduce((sum, fee) => sum + (fee.enabled ? (fee.price || 0) : 0), 0).toFixed(2) || '0.00'}
+                    value={(formData?.fees?.reduce((sum, fee) => sum + (fee.enabled ? (fee.price || 0) : 0), 0) || 0).toFixed(2)}
                     className="w-full text-base font-semibold disabled:text-gray-600 disabled:opacity-100" 
                     disabled
                   />
@@ -1243,7 +1245,7 @@ export default function QuoteForm({ quoteId }: { quoteId: string }) {
                   <Input 
                     id="fees_subtotal_ttc" 
                     type="number"
-                    value={((formData?.fees?.reduce((sum, fee) => sum + (fee.enabled ? (fee.price || 0) : 0), 0) ?? 0) * 1.2).toFixed(2)}
+                    value={((formData?.fees?.reduce((sum, fee) => sum + (fee.enabled ? (fee.price || 0) : 0), 0) || 0) * 1.20).toFixed(2)}
                     className="w-full text-base font-semibold disabled:text-gray-600 disabled:opacity-100" 
                     disabled
                   />
@@ -1256,7 +1258,7 @@ export default function QuoteForm({ quoteId }: { quoteId: string }) {
                     type="number"
                     step="1"
                     min="0"
-                    value={formData?.total_cost.toFixed(2) ?? ''} 
+                    value={(formData!.total_cost).toFixed(2) ?? ''} 
                     onChange={handleInputChange} 
                     className={`w-full text-base font-semibold disabled:text-gray-600 disabled:opacity-100 ${errors.total_cost ? 'border-red-500' : 'border-gray-300'}`} 
                     disabled
