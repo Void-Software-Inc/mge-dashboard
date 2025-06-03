@@ -139,7 +139,7 @@ export default function ProductForm({ productId }: { productId: string }) {
       isValid = false
     }
     
-    if (!formData?.price || formData?.price <= 0) {
+    if (!formData?.ttc_price || formData?.ttc_price <= 0) {
       newErrors.price = "Le prix du produit est invalide"
       isValid = false
     }
@@ -173,7 +173,7 @@ export default function ProductForm({ productId }: { productId: string }) {
       //@ts-ignore
       setFormData(prev => ({
         ...prev,
-        [id]: numValue
+        ttc_price: numValue
       }));
     } else {
       setFormData(prev => prev ? { ...prev, [id]: value } : null)
@@ -555,7 +555,7 @@ export default function ProductForm({ productId }: { productId: string }) {
                 type="number"
                 step="1"
                 min="0"
-                value={formData?.price ?? ''} 
+                value={formData?.ttc_price ?? ''} 
                 onChange={handleInputChange} 
                 className={`w-full text-base ${errors.price ? 'border-red-500' : ''}`} 
               />
