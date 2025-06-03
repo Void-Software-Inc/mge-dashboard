@@ -105,7 +105,7 @@ export function QuoteItemList({
 
   const calculateTotalPrice = (item: QuoteItem) => {
     const product = productDetails[item.product_id];
-    return product ? item.quantity * product.price : 0;
+    return product ? item.quantity * product.ttc_price : 0;
   };
 
   const calculateTotalCost = useCallback(() => {
@@ -115,7 +115,7 @@ export function QuoteItemList({
       }
       const product = productDetails[item.product_id];
       const quantity = editedItems.get(item.id) ?? item.quantity;
-      return sum + (product ? quantity * product.price : 0);
+      return sum + (product ? quantity * product.ttc_price : 0);
     }, 0);
     return totalCost;
   }, [allItems, productDetails, taintedItems, editedItems]);
@@ -178,7 +178,7 @@ export function QuoteItemList({
           quote_id: quoteId,
           product: {
             name: product.name,
-            price: product.price
+            price: product.ttc_price
           }
         };
       }).filter(Boolean) as QuoteItem[];
@@ -317,7 +317,7 @@ export function QuoteItemList({
                     )}
                   </TableCell>
                   <TableCell className="whitespace-nowrap">
-                    {product ? `${product.price} €` : 'Loading...'}
+                    {product ? `${product.ttc_price} €` : 'Loading...'}
                   </TableCell>
                   <TableCell className="whitespace-nowrap">{`${calculateTotalPrice(item)} €`}</TableCell>
                   <TableCell className="whitespace-nowrap">
@@ -353,7 +353,7 @@ export function QuoteItemList({
       </div>
       {allItems.length > 0 && (
       <div className="text-center text-sm text-gray-400 pt-4">
-          Prix total des produits HT : {calculateTotalCost().toFixed(2)} €
+          Prix total des produits TTC : {calculateTotalCost().toFixed(2)} €
         </div>
       )}
       <div className="flex items-center justify-between mt-4">
