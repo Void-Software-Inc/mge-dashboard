@@ -142,7 +142,7 @@ export const generateDocumentPDF = (
       doc.text(addressTitle, pageWidth - 15 - addressTitleWidth, lastClientInfoY + 15);
 
       doc.setFont('helvetica', 'normal');
-      const addressText = "Chemin des droits de l'homme et du citoyen, 31450 Ayguevives";
+      const addressText = "14 Allée Chantecaille, 31670 Labège";
       const addressWidth = doc.getTextWidth(addressText);
       doc.text(addressText, pageWidth - 15 - addressWidth, lastClientInfoY + 20);
 
@@ -233,7 +233,7 @@ export const generateDocumentPDF = (
         doc.setTextColor(89, 89, 89);
         doc.text("MG Événements", 15, footerY + 7);
         doc.setFont('helvetica', 'normal');
-        doc.text("Entreprise Individuelle\nChemin des droits de l'homme\net du citoyen, 31450 Ayguevives\nSIREN : 918 638 008\nNuméro de TVA : FR88918638008\nCode APE : 82.30Z", 15, footerY + 10);
+        doc.text("Entreprise Individuelle\nSIREN : 918 638 008\nNuméro de TVA : FR88918638008\nCode APE : 82.30Z", 15, footerY + 10);
 
         // MG Traiteur section
         const traiteurX = (pageWidth / 4) + 10;
@@ -670,7 +670,7 @@ export const generateDocumentPDF = (
       const totalHT = [...decorationProducts, ...traiteurProducts].reduce(
         (sum, item) => sum + Number(item.totalPrice), 
         0
-      ) + (quote.fees?.reduce((sum, fee) => sum + (fee.enabled ? fee.price : 0), 0) || 0);
+      ) + (quote.fees?.reduce((sum, fee) => sum + (fee.enabled ? (showHtTtc ? fee.price : fee.price * 1.20) : 0), 0) || 0);
       
       const tva = totalHT * 0.2;
       const totalTTC = totalHT * 1.2;
@@ -788,7 +788,7 @@ const addTotalsAndSignature = (
     doc.setFont('helvetica', 'bold');
     doc.text("Total:", pageWidth - 95, startY + lineSpacing);
     doc.setFont('helvetica', 'normal');
-    const totalText = `${(totalTTC / 1.20).toFixed(2)}€`;
+    const totalText = `${totalHT.toFixed(2)}€`;
     const totalWidth = doc.getTextWidth(totalText);
     doc.text(totalText, pageWidth - rightMargin - totalWidth, startY + lineSpacing);
   }
@@ -826,7 +826,7 @@ const addTotalsAndSignature = (
   currentY += addWrappedText("Plusieurs options s'offrent à vous :", currentY);
   currentY += addWrappedText("- Retrait en boutique", currentY);
   currentY += addWrappedText("- Livraison à domicile", currentY);
-  currentY += addWrappedText("Le retrait et le retour du matériel peuvent être effectués au chemin des droits de l'homme et du citoyen, 31450 Ayguesvives.", currentY);
+  currentY += addWrappedText("Le retrait et le retour du matériel peuvent être effectués au 14 Allée Chantecaille,31670 Labège.", currentY);
   currentY += addWrappedText("Ou nous pouvons assurer la livraison et le retour à votre adresse.", currentY);
   currentY += addWrappedText("Pour une location en semaine, la durée de la location est de 48 heures environ avec un retrait du matériel la veille de l'événement et un retour le lendemain de l'événement.", currentY);
   currentY += addWrappedText("Pour une location le week-end, la durée de la location est de 96 heures environ avec un retrait du matériel le jeudi matin au plus tôt et un retour le lundi après-midi au plus tard.", currentY);
@@ -911,7 +911,7 @@ const addTotalsAndSignature = (
   doc.setTextColor(89, 89, 89);
   doc.text("MG Événements", 15, footerY + 7);
   doc.setFont('helvetica', 'normal');
-  doc.text("Entreprise Individuelle\nChemin des droits de l'homme\net du citoyen, 31450 Ayguevives\nSIREN : 918 638 008\nNuméro de TVA : FR88918638008\nCode APE : 82.30Z", 15, footerY + 10);
+  doc.text("Entreprise Individuellen\nSIREN : 918 638 008\nNuméro de TVA : FR88918638008\nCode APE : 82.30Z", 15, footerY + 10);
   
   // MG Traiteur section
   const traiteurX = (pageWidth / 4) + 10;
