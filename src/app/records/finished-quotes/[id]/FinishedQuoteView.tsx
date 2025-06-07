@@ -104,6 +104,32 @@ export default function FinishedQuoteView({ quoteId }: { quoteId: string }) {
     }
   }
 
+  // Calculate subtotals by category
+  const calculateSubtotal = (category: string, includeTax: boolean = false) => {
+    if (!quoteItems || !products) return '0.00';
+    
+    // Get all product IDs for the given category
+    const categoryProductIds = products
+      .filter(product => product.category === category)
+      .map(product => product.id);
+    
+    // Filter quote items by product_id
+    const filteredItems = quoteItems.filter(item => 
+      categoryProductIds.includes(item.product_id)
+    );
+    
+    if (filteredItems.length === 0) return '0.00';
+    
+    // Calculate total using product price from products array (this is the TTC price)
+    const totalTTC = filteredItems.reduce((sum, item) => {
+      const product = products.find(p => p.id === item.product_id);
+      return sum + ((product?.ttc_price || 0) * item.quantity);
+    }, 0);
+    
+    // Return HT or TTC based on includeTax parameter
+    return includeTax ? totalTTC.toFixed(2) : (totalTTC / 1.20).toFixed(2);
+  };
+
   // Download PDF functionality
   const downloadPDF = async () => {
     if (!quote) return;
@@ -420,7 +446,7 @@ export default function FinishedQuoteView({ quoteId }: { quoteId: string }) {
                                 <TableHead className="w-1/3 whitespace-nowrap">Nom</TableHead>
                                 <TableHead className="w-1/6 whitespace-nowrap">Quantité</TableHead>
                                 <TableHead className="w-1/6 whitespace-nowrap">Prix unitaire</TableHead>
-                                <TableHead className="w-1/6 whitespace-nowrap">Total HT</TableHead>
+                                <TableHead className="w-1/6 whitespace-nowrap">Total TTC</TableHead>
                               </TableRow>
                             </TableHeader>
                             <TableBody>
@@ -525,6 +551,72 @@ export default function FinishedQuoteView({ quoteId }: { quoteId: string }) {
               <h4 className="text-base font-medium mb-3">Détail du prix</h4>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
+                  <Label htmlFor="decoration_subtotal_ht" className="text-sm text-gray-600">Sous-total meubles et décoration HT</Label>
+                  <Input 
+                    id="decoration_subtotal_ht" 
+                    type="number"
+                    value={calculateSubtotal('decoration')}
+                    className="w-full text-base font-semibold bg-gray-50" 
+                    disabled
+                  />
+                </div>
+                
+                <div>
+                  <Label htmlFor="traiteur_subtotal_ht" className="text-sm text-gray-600">Sous-total traiteur HT</Label>
+                  <Input 
+                    id="traiteur_subtotal_ht" 
+                    type="number"
+                    value={calculateSubtotal('traiteur')}
+                    className="w-full text-base font-semibold bg-gray-50" 
+                    disabled
+                  />
+                </div>
+
+                <div>
+                  <Label htmlFor="decoration_subtotal_ttc" className="text-sm text-gray-600">Sous-total meubles et décoration TTC</Label>
+                  <Input 
+                    id="decoration_subtotal_ttc" 
+                    type="number"
+                    value={calculateSubtotal('decoration', true)}
+                    className="w-full text-base font-semibold bg-gray-50" 
+                    disabled
+                  />
+                </div>
+                
+                <div>
+                  <Label htmlFor="traiteur_subtotal_ttc" className="text-sm text-gray-600">Sous-total traiteur TTC</Label>
+                  <Input 
+                    id="traiteur_subtotal_ttc" 
+                    type="number"
+                    value={calculateSubtotal('traiteur', true)}
+                    className="w-full text-base font-semibold bg-gray-50" 
+                    disabled
+                  />
+                </div>
+
+                <div>
+                  <Label htmlFor="fees_subtotal_ht" className="text-sm text-gray-600">Frais supplémentaires Montant HT</Label>
+                  <Input 
+                    id="fees_subtotal_ht" 
+                    type="number"
+                    value={(quote?.fees?.reduce((sum, fee) => sum + (fee.enabled ? (fee.price || 0) : 0), 0) || 0).toFixed(2)}
+                    className="w-full text-base font-semibold bg-gray-50" 
+                    disabled
+                  />
+                </div>
+
+                <div>
+                  <Label htmlFor="fees_subtotal_ttc" className="text-sm text-gray-600">Frais supplémentaires Montant TTC</Label>
+                  <Input 
+                    id="fees_subtotal_ttc" 
+                    type="number"
+                    value={((quote?.fees?.reduce((sum, fee) => sum + (fee.enabled ? (fee.price || 0) : 0), 0) || 0) * 1.20).toFixed(2)}
+                    className="w-full text-base font-semibold bg-gray-50" 
+                    disabled
+                  />
+                </div>
+
+                <div>
                   <Label htmlFor="total_cost" className="text-sm text-gray-600">Prix total HT</Label>
                   <Input 
                     id="total_cost" 
@@ -545,11 +637,11 @@ export default function FinishedQuoteView({ quoteId }: { quoteId: string }) {
                 </div>
                 
                 <div className="md:col-span-2">
-                  <Label htmlFor="total_cost_ttc" className="text-sm text-gray-600">Prix total TTC</Label>
+                  <Label htmlFor="total_cost_ttc" className="text-sm text-gray-800 font-bold">Prix total TTC</Label>
                   <Input 
                     id="total_cost_ttc" 
                     value={quote?.total_cost ? calculateTTC(quote.total_cost).toFixed(2) : '0.00'} 
-                    className="w-full text-base font-semibold bg-gray-50" 
+                    className="w-full text-base font-semibold bg-white border-lime-400 disabled:text-gray-800 disabled:opacity-100" 
                     disabled
                   />
                 </div>
