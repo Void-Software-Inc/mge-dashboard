@@ -45,7 +45,7 @@ const initialProduct: Partial<Product> = {
   type: '',
   color: '',
   stock: 0,
-  ttc_price: 0,
+  ttc_price: undefined,
   description: '',
   image_url: '',
   category: '',
@@ -173,7 +173,7 @@ export default function ProductCreateForm() {
       const numValue = value === '' ? null : parseInt(value) // Default to 0 instead of empty string
       //@ts-ignore
       setFormData(prev => ({ ...prev, [id]: numValue }))
-    } else if (id === 'price') {
+    } else if (id === 'ttc_price') {
       // Allow decimal numbers for price
       if (!/^\d*\.?\d*$/.test(value)) return
       const numValue = value === '' ? null : parseFloat(value) // Default to 0 instead of empty string
@@ -473,8 +473,8 @@ export default function ProductCreateForm() {
               {errors.stock && <p className="text-red-500 text-sm mt-1">{errors.stock}</p>}
             </div>
             <div className="mb-4">
-              <Label htmlFor="price" className="text-base flex items-center">
-                Prix du produit
+              <Label htmlFor="ttc_price" className="text-base flex items-center">
+                Prix du produit TTC
                 <Tooltip>
                   <TooltipTrigger asChild>
                     <InfoCircledIcon className="w-3 h-3 text-gray-500 ml-1 cursor-help" />
@@ -485,11 +485,11 @@ export default function ProductCreateForm() {
                 </Tooltip>
               </Label>
               <Input 
-                id="price" 
+                id="ttc_price" 
                 type="number"
                 step="1"
                 min="0"
-                value={formData.ttc_price} 
+                value={formData.ttc_price === null || formData.ttc_price === undefined || formData.ttc_price === 0 ? '' : formData.ttc_price} 
                 onChange={handleInputChange} 
                 className={`w-full text-base ${errors.price ? 'border-red-500' : ''}`}
               />
@@ -553,7 +553,7 @@ export default function ProductCreateForm() {
               </div>
               {errors.image_url && <p className="text-red-500 text-sm mt-1">{errors.image_url}</p>}
             </div>
-            <div className="mb-4">
+            <div className="mb-20">
               <Label className="text-base">Images secondaires du produit</Label>
               <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mt-2">
                 <div 
