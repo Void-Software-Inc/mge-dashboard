@@ -255,8 +255,8 @@ export const generateDocumentPDF = (
         doc.setFont('helvetica', 'bold');
         doc.text("Coordonnées bancaires", bankX, footerY + 7);
         doc.setFont('helvetica', 'normal');
-        doc.text("IBAN FR76 2823 3000 0113 2935 6527 041\nCode BIC / SWIFT REVOFRP2\nPaypal: mani.grimaudo@icloud.com", bankX, footerY + 10);
-        
+        doc.text("IBAN IE03 MPOS 9903 9021 1561 79\nCode BIC/SWIFT MPOSIE2D\nÉtablissement: myPOS Ltd\nPaypal: mani.grimaudo@icloud.com", bankX, footerY + 10);
+
         // Add page numbers
         doc.setFontSize(8);
         const text = `Page ${currentPage} sur ${totalPages}`;
@@ -933,8 +933,8 @@ const addTotalsAndSignature = (
   doc.setFont('helvetica', 'bold');
   doc.text("Coordonnées bancaires", bankX, footerY + 7);
   doc.setFont('helvetica', 'normal');
-  doc.text("IBAN FR76 2823 3000 0113 2935 6527 041\nCode BIC / SWIFT REVOFRP2\nPaypal: mani.grimaudo@icloud.com", bankX, footerY + 10);
-  
+  doc.text("IBAN IE03 MPOS 9903 9021 1561 79\nCode BIC/SWIFT MPOSIE2D\nÉtablissement: myPOS Ltd\nPaypal: mani.grimaudo@icloud.com", bankX, footerY + 10);
+
   // Add page numbers
   doc.setFontSize(8);
   const text = `Page ${currentPage} sur ${totalPages}`;
