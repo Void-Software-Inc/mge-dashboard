@@ -8,6 +8,7 @@ export async function GET() {
   const { data: products, error } = await supabase
     .from('products')
     .select('*')
+    .eq('status', 'active')
     .order('last_update', { ascending: false });
 
   if (error) {

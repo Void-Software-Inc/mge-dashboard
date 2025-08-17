@@ -23,6 +23,7 @@ export async function GET(request: Request, { params }: { params: { id: string }
   const { data: availableProducts, error: productsError } = await supabase
     .from('products')
     .select('*')
+    .eq('status', 'active')
     .not('id', 'in', `(${existingProductIds.join(',')})`)
     .order('last_update', { ascending: false });
 

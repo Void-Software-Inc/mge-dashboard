@@ -12,6 +12,7 @@ export async function GET(request: { url: string | URL; }) {
     .from('products')
     .select('*')
     .eq('id', id)
+    .eq('status', 'active')
     .single();
 
   if (error) {
