@@ -41,16 +41,21 @@ export async function POST(request: NextRequest) {
   // Generate current timestamp in Paris timezone
   const parisDate = formatInTimeZone(new Date(), 'Europe/Paris', "yyyy-MM-dd'T'HH:mm:ss.SSSxxx")
 
+  // Calculate HT price from TTC price (remove 20% tax)
+  const ttcPrice = parseFloat(formData.get('ttc_price') as string)
+  const htPrice = ttcPrice / 1.2 // Remove 20% tax
+
   const productData = {
     name: formData.get('name'),
     type: formData.get('type'),
     color: formData.get('color'),
     stock: formData.get('stock'),
-    ttc_price: formData.get('ttc_price'),
-    ht_price: formData.get('ht_price'),
+    ttc_price: ttcPrice,
+    ht_price: htPrice,
     description: formData.get('description'),
     image_url: imageUrl,
     category: formData.get('category'),
+    status: 'active',
     created_at: parisDate,
     last_update: parisDate
   }
