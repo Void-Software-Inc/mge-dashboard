@@ -12,7 +12,6 @@ import { Toaster, toast } from 'sonner'
 import { Skeleton } from "@/components/ui/skeleton"
 import { Switch } from "@/components/ui/switch"
 import { ChevronLeftIcon, DownloadIcon, PlusIcon, TrashIcon } from "@radix-ui/react-icons"
-import jsPDF from 'jspdf';
 import 'jspdf-autotable';
 import { isEqual as lodashEqual } from 'lodash';
 
@@ -82,7 +81,7 @@ export default function QuoteForm({ quoteId }: { quoteId: string }) {
   const [isProductsLoading, setIsProductsLoading] = useState(true);
 
   const [feesSubtotal, setFeesSubtotal] = useState(0);
-  const [showHtTtcInPdf, setShowHtTtcInPdf] = useState(true);
+  const [showHtTtcInPdf, setShowHtTtcInPdf] = useState(false);
 
   useEffect(() => {
     const fetchProducts = async () => {
@@ -125,7 +124,6 @@ export default function QuoteForm({ quoteId }: { quoteId: string }) {
         const [fetchedQuote] = await Promise.all([
           getQuote(parseInt(quoteId))
         ])
-        
         // Fix the total_cost rounding issue by ensuring both copies have exactly the same values
         // Round all numeric values to 2 decimal places for consistency
         const normalizedQuote = {
@@ -341,7 +339,15 @@ export default function QuoteForm({ quoteId }: { quoteId: string }) {
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { id, value } = e.target
-    if (id === 'traiteur_price' || id === 'other_expenses') {
+    if (id === 'traiteur_price_ttc' || id === 'other_expenses_ttc') {
+      // Allow decimal numbers for TTC prices
+      if (!/^\d*\.?\d*$/.test(value)) return
+      // Convert TTC to HT and store HT value
+      const ttcValue = value === '' ? 0 : parseFloat(value)
+      const htValue = ttcValue / 1.20
+      const fieldName = id === 'traiteur_price_ttc' ? 'traiteur_price' : 'other_expenses'
+      setFormData(prev => prev ? { ...prev, [fieldName]: htValue } : null)
+    } else if (id === 'traiteur_price' || id === 'other_expenses') {
       // Allow decimal numbers for traiteur_price and other_expenses
       if (!/^\d*\.?\d*$/.test(value)) return
       // Convert to number or null if empty
@@ -552,39 +558,49 @@ export default function QuoteForm({ quoteId }: { quoteId: string }) {
     return includeTax ? (totalHT).toFixed(2) : (totalHT / 1.20).toFixed(2);
   };
 
-  // Update the total cost calculation to include fees
+  // Update the total cost calculation to properly include all components
   useEffect(() => {
     if (!formData) return;
     
-    const decorationTotal = parseFloat(calculateSubtotal('decoration'));
-    const traiteurTotal = parseFloat(calculateSubtotal('traiteur'));
-    // Fees are already HT values, no reduction needed
-    const feesTotal = formData.fees?.reduce((sum, fee) => sum + (fee.enabled ? (fee.price || 0) : 0), 0) || 0;
+    // Calculate totals from quote items (these are TTC values from products)
+    const decorationTotalTTC = parseFloat(calculateSubtotal('decoration', true));
+    const traiteurTotalTTC = parseFloat(calculateSubtotal('traiteur', true));
     
-    const newTotalCost = Number((decorationTotal + traiteurTotal + feesTotal).toFixed(2));
-
+    // Convert quote items to HT
+    const decorationTotalHT = decorationTotalTTC / 1.20;
+    const traiteurTotalHT = traiteurTotalTTC / 1.20;
     
-    if (formData.total_cost !== newTotalCost) {
+    // Additional traiteur price (stored as HT)
+    const additionalTraiteurHT = formData.is_traiteur ? (formData.traiteur_price || 0) : 0;
+    
+    // Other expenses (stored as HT)
+    const otherExpensesHT = formData.other_expenses || 0;
+    
+    // Fees (stored as HT)
+    const feesHT = formData.fees?.reduce((sum, fee) => sum + (fee.enabled ? (fee.price || 0) : 0), 0) || 0;
+    
+    // Calculate total HT
+    const newTotalCostHT = Number((decorationTotalHT + traiteurTotalHT + additionalTraiteurHT + otherExpensesHT + feesHT).toFixed(2));
+    
+    if (formData.total_cost !== newTotalCostHT) {
       setFormData(prev => {
         if (!prev) return prev;
         return {
           ...prev,
-          total_cost: newTotalCost
-        };
-      });
-      
-      // Also update the quote to keep them in sync
-      setQuote(prev => {
-        if (!prev) return prev;
-        return {
-          ...prev,
-          total_cost: newTotalCost
+          total_cost: newTotalCostHT
         };
       });
       
       setIsChanged(true);
     }
-  }, [formData, formData?.fees, calculateSubtotal]);
+  }, [
+    formData?.is_traiteur,
+    formData?.traiteur_price, 
+    formData?.other_expenses,
+    formData?.fees,
+    calculateSubtotal,
+    quoteItems
+  ]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -1180,12 +1196,68 @@ export default function QuoteForm({ quoteId }: { quoteId: string }) {
               }
             </div>
           </div>
-          
-          <div className="mb-8 mt-8 border border-gray-200 rounded-lg p-6 bg-gray-50">
-            <h3 className="text-lg font-semibold mb-4">Prix et Paiement</h3>
+
+          {/* Options supplémentaires Section */}
+          <div className="mb-8 border border-gray-200 rounded-lg p-6 bg-gray-50">
+            <h3 className="text-lg font-semibold mb-4">Options supplémentaires</h3>
+            
+            <div className="p-4 border border-gray-200 rounded-lg bg-white">
+              <div className="flex items-center space-x-2 mb-4">
+                <Switch
+                  id="is_traiteur"
+                  checked={formData?.is_traiteur ?? false}
+                  onCheckedChange={() => handleSwitchChange('is_traiteur')}
+                  disabled={formData?.is_paid || formData?.is_deposit}
+                />
+                <Label htmlFor="is_traiteur" className="text-base">Service traiteur supplémentaire</Label>
+              </div>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  <Label htmlFor="traiteur_price_ttc" className="text-sm text-gray-600">Prix traiteur TTC</Label>
+                  <Input 
+                    id="traiteur_price_ttc" 
+                    type="number"
+                    value={formData?.is_traiteur ? ((formData?.traiteur_price || 0) * 1.20).toFixed(2) : ''} 
+                    onChange={handleInputChange} 
+                    className={`w-full text-base mt-1 ${errors.traiteur_price ? 'border-red-500' : ''}`} 
+                    disabled={!formData?.is_traiteur || formData?.is_paid || formData?.is_deposit}
+                    placeholder="Prix TTC"
+                  />
+                  {errors.traiteur_price && <p className="text-red-500 text-sm mt-1">{errors.traiteur_price}</p>}
+                </div>
+                
+                <div>
+                  <Label htmlFor="traiteur_price_ht" className="text-sm text-gray-600">Prix traiteur HT (calculé)</Label>
+                  <Input 
+                    id="traiteur_price_ht" 
+                    type="number"
+                    value={formData?.is_traiteur ? (formData?.traiteur_price || 0).toFixed(2) : ''} 
+                    className="w-full text-base mt-1 bg-gray-100" 
+                    disabled
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Frais additionnels Section */}
+          <div className="mb-8 border border-gray-200 rounded-lg p-6 bg-gray-50">
+            <QuoteFees
+              quoteId={parseInt(quoteId)}
+              disabled={formData?.status === 'termine' || formData?.is_paid || formData?.is_deposit}
+              fees={formData?.fees || []}
+              onFeesChange={handleFeesChange}
+              onFeesToDeleteChange={handleFeesToDeleteChange}
+              onFeesSubtotalChange={setFeesSubtotal}
+            />
+          </div>
+
+          {/* Détails du prix - Last section before payment */}
+          <div className="mb-8 border border-gray-200 rounded-lg p-6 bg-gray-50">
+            <h3 className="text-lg font-semibold mb-4">Détails du prix</h3>
             
             <div className="p-4 border border-gray-200 rounded-lg bg-white mb-4">
-              <h4 className="text-base font-medium mb-3">Détail du prix</h4>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
                   <Label htmlFor="decoration_subtotal_ht" className="text-sm text-gray-600">Sous-total meubles et décoration HT</Label>
@@ -1199,23 +1271,23 @@ export default function QuoteForm({ quoteId }: { quoteId: string }) {
                 </div>
                 
                 <div>
-                  <Label htmlFor="traiteur_subtotal_ht" className="text-sm text-gray-600">Sous-total traiteur HT</Label>
-                  <Input 
-                    id="traiteur_subtotal_ht" 
-                    type="number"
-                    value={calculateSubtotal('traiteur')}
-                    className="w-full text-base font-semibold disabled:opacity-100 disabled:text-gray-600" 
-                    disabled
-                  />
-                </div>
-
-                <div>
                   <Label htmlFor="decoration_subtotal_ttc" className="text-sm text-gray-600">Sous-total meubles et décoration TTC</Label>
                   <Input 
                     id="decoration_subtotal_ttc" 
                     type="number"
                     value={calculateSubtotal('decoration', true)}
                     className="w-full text-base font-semibold disabled:text-gray-600 disabled:opacity-100" 
+                    disabled
+                  />
+                </div>
+
+                <div>
+                  <Label htmlFor="traiteur_subtotal_ht" className="text-sm text-gray-600">Sous-total traiteur HT</Label>
+                  <Input 
+                    id="traiteur_subtotal_ht" 
+                    type="number"
+                    value={calculateSubtotal('traiteur')}
+                    className="w-full text-base font-semibold disabled:opacity-100 disabled:text-gray-600" 
                     disabled
                   />
                 </div>
@@ -1232,7 +1304,29 @@ export default function QuoteForm({ quoteId }: { quoteId: string }) {
                 </div>
 
                 <div>
-                  <Label htmlFor="fees_subtotal_ht" className="text-sm text-gray-600">Frais supplémentaires Montant HT</Label>
+                  <Label htmlFor="additional_traiteur_ht" className="text-sm text-gray-600">Service traiteur supplémentaire HT</Label>
+                  <Input 
+                    id="additional_traiteur_ht" 
+                    type="number"
+                    value={formData?.is_traiteur ? (formData?.traiteur_price || 0).toFixed(2) : '0.00'}
+                    className="w-full text-base font-semibold disabled:text-gray-600 disabled:opacity-100" 
+                    disabled
+                  />
+                </div>
+
+                <div>
+                  <Label htmlFor="additional_traiteur_ttc" className="text-sm text-gray-600">Service traiteur supplémentaire TTC</Label>
+                  <Input 
+                    id="additional_traiteur_ttc" 
+                    type="number"
+                    value={formData?.is_traiteur ? ((formData?.traiteur_price || 0) * 1.20).toFixed(2) : '0.00'}
+                    className="w-full text-base font-semibold disabled:text-gray-600 disabled:opacity-100" 
+                    disabled
+                  />
+                </div>
+
+                <div>
+                  <Label htmlFor="fees_subtotal_ht" className="text-sm text-gray-600">Frais additionnels HT</Label>
                   <Input 
                     id="fees_subtotal_ht" 
                     type="number"
@@ -1243,7 +1337,7 @@ export default function QuoteForm({ quoteId }: { quoteId: string }) {
                 </div>
 
                 <div>
-                  <Label htmlFor="fees_subtotal_ttc" className="text-sm text-gray-600">Frais supplémentaires Montant TTC</Label>
+                  <Label htmlFor="fees_subtotal_ttc" className="text-sm text-gray-600">Frais additionnels TTC</Label>
                   <Input 
                     id="fees_subtotal_ttc" 
                     type="number"
@@ -1291,54 +1385,11 @@ export default function QuoteForm({ quoteId }: { quoteId: string }) {
                 </div>
               </div>
             </div>
-            <div className="mb-4">
-            <Label htmlFor="is_traiteur" className="text-base font-medium">Options supplémentaires</Label>
-            <div className="mt-2 grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="p-4 border border-gray-200 rounded-lg bg-white">
-                <div className="flex items-center space-x-2 mb-4">
-                  <Switch
-                    id="is_traiteur"
-                    checked={formData?.is_traiteur ?? false}
-                    onCheckedChange={() => handleSwitchChange('is_traiteur')}
-                    disabled={formData?.is_paid || formData?.is_deposit}
-                  />
-                  <Label htmlFor="is_traiteur" className="text-base">Service traiteur</Label>
-                </div>
-                
-                <div>
-                  <Label htmlFor="traiteur_price" className="text-sm text-gray-600">Prix traiteur HT</Label>
-                  <Input 
-                    id="traiteur_price" 
-                    type="number"
-                    value={formData?.traiteur_price ?? ''} 
-                    onChange={handleInputChange} 
-                    className={`w-full text-base mt-1 ${errors.traiteur_price ? 'border-red-500' : ''}`} 
-                    disabled={!formData?.is_traiteur || formData?.is_paid || formData?.is_deposit}
-                  />
-                  {errors.traiteur_price && <p className="text-red-500 text-sm mt-1">{errors.traiteur_price}</p>}
-                </div>
-              </div>
-              
-              <div className="p-4 border border-gray-200 rounded-lg bg-white">
-                <div className="flex items-center space-x-2 mb-4">
-                  <Label htmlFor="other_expenses" className="text-base">Frais supplémentaires</Label>
-                </div>
-                
-                <div>
-                  <Label htmlFor="other_expenses" className="text-sm text-gray-600">Montant HT</Label>
-                  <Input 
-                    id="other_expenses" 
-                    type="number"
-                    value={formData?.other_expenses ?? ''} 
-                    onChange={handleInputChange} 
-                    className={`w-full text-base mt-1 ${errors.other_expenses ? 'border-red-500' : ''}`} 
-                    disabled={formData?.is_paid || formData?.is_deposit}
-                  />
-                  {errors.other_expenses && <p className="text-red-500 text-sm mt-1">{errors.other_expenses}</p>}
-                </div>
-              </div>
-            </div>
           </div>
+
+          {/* Prix et Paiement Section */}
+          <div className="mb-8 border border-gray-200 rounded-lg p-6 bg-gray-50">
+            <h3 className="text-lg font-semibold mb-4">Acompte versé, modes de paiement et payé intégralement</h3>
             <div className="p-4 border border-gray-200 rounded-lg bg-white mb-6">
               <div className="flex items-center justify-between mb-4">
                 <div className="flex items-center space-x-2">
@@ -1536,17 +1587,6 @@ export default function QuoteForm({ quoteId }: { quoteId: string }) {
                 )}
               </div>
             </div>
-          </div>
-          
-          <div className="mb-8 border border-gray-200 rounded-lg p-6 bg-gray-50">
-            <QuoteFees
-              quoteId={parseInt(quoteId)}
-              disabled={formData?.status === 'termine' || formData?.is_paid || formData?.is_deposit}
-              fees={formData?.fees || []}
-              onFeesChange={handleFeesChange}
-              onFeesToDeleteChange={handleFeesToDeleteChange}
-              onFeesSubtotalChange={setFeesSubtotal}
-            />
           </div>
           
           <div className="mb-4">

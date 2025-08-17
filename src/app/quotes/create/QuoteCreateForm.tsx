@@ -6,7 +6,6 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { Toaster, toast } from 'sonner';
 import { ChevronLeftIcon, PlusIcon } from "@radix-ui/react-icons";
@@ -170,7 +169,18 @@ export default function QuoteCreateForm({ clientId }: QuoteCreateFormProps) {
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { id, value } = e.target;
     
-    if (id === 'traiteur_price' || id === 'other_expenses') {
+    if (id === 'traiteur_price_ttc' || id === 'other_expenses_ttc') {
+      // Allow decimal numbers for TTC prices
+      if (!/^\d*\.?\d*$/.test(value)) return;
+      // Convert TTC to HT and store HT value
+      const ttcValue = value === '' ? 0 : parseFloat(value);
+      const htValue = ttcValue / 1.20;
+      const fieldName = id === 'traiteur_price_ttc' ? 'traiteur_price' : 'other_expenses';
+      setFormData(prev => ({
+        ...prev,
+        [fieldName]: htValue
+      }));
+    } else if (id === 'traiteur_price' || id === 'other_expenses') {
       // Allow decimal numbers for traiteur_price and other_expenses
       if (!/^\d*\.?\d*$/.test(value)) return;
       const numValue = value === '' ? null : parseFloat(value);
@@ -258,7 +268,7 @@ export default function QuoteCreateForm({ clientId }: QuoteCreateFormProps) {
         ...prevData,
         is_deposit: newIsDeposit,
         deposit_amount: newIsDeposit && prevData.total_cost 
-          ? prevData.total_cost * 0.3
+          ? calculateTTC(prevData.total_cost) * 0.3
           : 0
       };
     });
@@ -282,12 +292,43 @@ export default function QuoteCreateForm({ clientId }: QuoteCreateFormProps) {
     });
   };
 
+  // Calculate TTC to HT conversion helper
+  const calculateTTC = (ht: number | undefined): number => {
+    return ht !== undefined ? ht * 1.20 : 0;
+  };
+
+  // Update the total cost calculation to properly include all components
   useEffect(() => {
-    setFormData(prev => ({
-      ...prev,
-      total_cost: totalCostFromItems + (prev.traiteur_price ?? 0) + (prev.other_expenses ?? 0) + feesSubtotal
-    }));
-  }, [totalCostFromItems, formData.traiteur_price, formData.other_expenses, feesSubtotal]);
+    if (!formData) return;
+    
+    // Quote items are calculated as TTC from the QuoteItemList, so we need to convert to HT
+    const quoteItemsHT = totalCostFromItems / 1.20;
+    
+    // Additional traiteur price (stored as HT)
+    const additionalTraiteurHT = formData.is_traiteur ? (formData.traiteur_price || 0) : 0;
+    
+    // Other expenses (stored as HT)
+    const otherExpensesHT = formData.other_expenses || 0;
+    
+    // Fees (stored as HT)
+    const feesHT = formData.fees?.reduce((sum, fee) => sum + (fee.enabled ? (fee.price || 0) : 0), 0) || 0;
+    
+    // Calculate total HT
+    const newTotalCostHT = Number((quoteItemsHT + additionalTraiteurHT + otherExpensesHT + feesHT).toFixed(2));
+    
+    if (formData.total_cost !== newTotalCostHT) {
+      setFormData(prev => ({
+        ...prev,
+        total_cost: newTotalCostHT
+      }));
+    }
+  }, [
+    totalCostFromItems,
+    formData?.is_traiteur,
+    formData?.traiteur_price, 
+    formData?.other_expenses,
+    formData?.fees
+  ]);
 
   const validateForm = useCallback(() => {
     const newErrors: FormErrors = {};
@@ -609,69 +650,147 @@ export default function QuoteCreateForm({ clientId }: QuoteCreateFormProps) {
             </div>
           </div>
 
-          {/* Enhanced Price and Payment Section */}
+          {/* Options supplémentaires Section */}
           <div className="mb-8 border border-gray-200 rounded-lg p-6 bg-gray-50">
-            <h3 className="text-lg font-semibold mb-4">Prix et Paiement</h3>
+            <h3 className="text-lg font-semibold mb-4">Options supplémentaires</h3>
             
-            <div className="p-4 border border-gray-200 rounded-lg bg-white mb-4">
-              <h4 className="text-base font-medium mb-3">Options supplémentaires</h4>
+            <div className="p-4 border border-gray-200 rounded-lg bg-white">
+              <div className="flex items-center space-x-2 mb-4">
+                <Switch
+                  id="is_traiteur"
+                  checked={formData?.is_traiteur ?? false}
+                  onCheckedChange={() => handleSwitchChange('is_traiteur')}
+                  disabled={formData?.is_paid || formData?.is_deposit}
+                />
+                <Label htmlFor="is_traiteur" className="text-base">Service traiteur supplémentaire</Label>
+              </div>
+              
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="p-4 border border-gray-200 rounded-lg bg-white">
-                  <div className="flex items-center space-x-2 mb-4">
-                    <Switch
-                      id="is_traiteur"
-                      checked={formData.is_traiteur}
-                      onCheckedChange={() => handleSwitchChange('is_traiteur')}
-                      disabled={!!formData?.is_deposit || !!formData?.is_paid}
-                    />
-                    <Label htmlFor="is_traiteur" className="text-base">Service traiteur</Label>
-                  </div>
-                  
-                  <div>
-                    <Label htmlFor="traiteur_price" className="text-sm text-gray-600">Prix traiteur HT</Label>
-                    <Input 
-                      id="traiteur_price" 
-                      type="number"
-                      value={formData.traiteur_price ?? ''} 
-                      onChange={handleInputChange} 
-                      className={`w-full mt-1 ${errors.traiteur_price ? 'border-red-500' : ''}`} 
-                      disabled={!formData?.is_traiteur || formData?.is_paid || formData?.is_deposit}
-                    />
-                    {errors.traiteur_price && <p className="text-red-500 text-sm mt-1">{errors.traiteur_price}</p>}
-                  </div>
+                <div>
+                  <Label htmlFor="traiteur_price_ttc" className="text-sm text-gray-600">Prix traiteur TTC</Label>
+                  <Input 
+                    id="traiteur_price_ttc" 
+                    type="number"
+                    value={formData?.is_traiteur ? ((formData?.traiteur_price || 0) * 1.20).toFixed(2) : ''} 
+                    onChange={handleInputChange} 
+                    className={`w-full text-base mt-1 ${errors.traiteur_price ? 'border-red-500' : ''}`} 
+                    disabled={!formData?.is_traiteur || formData?.is_paid || formData?.is_deposit}
+                    placeholder="Prix TTC"
+                  />
+                  {errors.traiteur_price && <p className="text-red-500 text-sm mt-1">{errors.traiteur_price}</p>}
                 </div>
                 
-                <div className="p-4 border border-gray-200 rounded-lg bg-white">
-                  <div className="flex items-center space-x-2 mb-4">
-                    <Label htmlFor="other_expenses" className="text-base">Frais supplémentaires</Label>
-                  </div>
-                  
-                  <div>
-                    <Label htmlFor="other_expenses" className="text-sm text-gray-600">Montant HT</Label>
-                    <Input 
-                      id="other_expenses" 
-                      type="number"
-                      value={formData.other_expenses ?? ''} 
-                      onChange={handleInputChange} 
-                      className={`w-full mt-1 ${errors.other_expenses ? 'border-red-500' : ''}`}
-                      disabled={formData?.is_paid || formData?.is_deposit}
-                    />
-                    {errors.other_expenses && <p className="text-red-500 text-sm mt-1">{errors.other_expenses}</p>}
-                  </div>
+                <div>
+                  <Label htmlFor="traiteur_price_ht" className="text-sm text-gray-600">Prix traiteur HT (calculé)</Label>
+                  <Input 
+                    id="traiteur_price_ht" 
+                    type="number"
+                    value={formData?.is_traiteur ? (formData?.traiteur_price || 0).toFixed(2) : ''} 
+                    className="w-full text-base mt-1 bg-gray-100" 
+                    disabled
+                  />
                 </div>
               </div>
             </div>
+          </div>
 
+          {/* Frais additionnels Section */}
+          <div className="mb-8 border border-gray-200 rounded-lg p-6 bg-gray-50">
+            <QuoteFees
+              quoteId={0}
+              disabled={formData?.is_paid || formData?.is_deposit}
+              fees={formData?.fees || []}
+              onFeesChange={(updatedFees) => {
+                setFormData(prev => ({
+                  ...prev,
+                  fees: updatedFees
+                }));
+              }}
+              onFeesSubtotalChange={setFeesSubtotal}
+            />
+          </div>
+
+          {/* Détails du prix - Last section before payment */}
+          <div className="mb-8 border border-gray-200 rounded-lg p-6 bg-gray-50">
+            <h3 className="text-lg font-semibold mb-4">Détails du prix</h3>
+            
             <div className="p-4 border border-gray-200 rounded-lg bg-white mb-4">
-              <h4 className="text-base font-medium mb-3">Détail du prix</h4>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  <Label htmlFor="decoration_subtotal_ht" className="text-sm text-gray-600">Sous-total meubles et décoration HT</Label>
+                  <Input 
+                    id="decoration_subtotal_ht" 
+                    type="number"
+                    value={(totalCostFromItems / 1.20).toFixed(2)}
+                    className="w-full text-base font-semibold disabled:opacity-100 disabled:text-gray-600" 
+                    disabled
+                  />
+                </div>
+                
+                <div>
+                  <Label htmlFor="decoration_subtotal_ttc" className="text-sm text-gray-600">Sous-total meubles et décoration TTC</Label>
+                  <Input 
+                    id="decoration_subtotal_ttc" 
+                    type="number"
+                    value={totalCostFromItems.toFixed(2)}
+                    className="w-full text-base font-semibold disabled:text-gray-600 disabled:opacity-100" 
+                    disabled
+                  />
+                </div>
+
+                <div>
+                  <Label htmlFor="additional_traiteur_ht" className="text-sm text-gray-600">Service traiteur supplémentaire HT</Label>
+                  <Input 
+                    id="additional_traiteur_ht" 
+                    type="number"
+                    value={formData?.is_traiteur ? (formData?.traiteur_price || 0).toFixed(2) : '0.00'}
+                    className="w-full text-base font-semibold disabled:text-gray-600 disabled:opacity-100" 
+                    disabled
+                  />
+                </div>
+
+                <div>
+                  <Label htmlFor="additional_traiteur_ttc" className="text-sm text-gray-600">Service traiteur supplémentaire TTC</Label>
+                  <Input 
+                    id="additional_traiteur_ttc" 
+                    type="number"
+                    value={formData?.is_traiteur ? ((formData?.traiteur_price || 0) * 1.20).toFixed(2) : '0.00'}
+                    className="w-full text-base font-semibold disabled:text-gray-600 disabled:opacity-100" 
+                    disabled
+                  />
+                </div>
+
+                <div>
+                  <Label htmlFor="fees_subtotal_ht" className="text-sm text-gray-600">Frais additionnels HT</Label>
+                  <Input 
+                    id="fees_subtotal_ht" 
+                    type="number"
+                    value={(formData?.fees?.reduce((sum, fee) => sum + (fee.enabled ? (fee.price || 0) : 0), 0) || 0).toFixed(2)}
+                    className="w-full text-base font-semibold disabled:text-gray-600 disabled:opacity-100" 
+                    disabled
+                  />
+                </div>
+
+                <div>
+                  <Label htmlFor="fees_subtotal_ttc" className="text-sm text-gray-600">Frais additionnels TTC</Label>
+                  <Input 
+                    id="fees_subtotal_ttc" 
+                    type="number"
+                    value={((formData?.fees?.reduce((sum, fee) => sum + (fee.enabled ? (fee.price || 0) : 0), 0) || 0) * 1.20).toFixed(2)}
+                    className="w-full text-base font-semibold disabled:text-gray-600 disabled:opacity-100" 
+                    disabled
+                  />
+                </div>
+
                 <div>
                   <Label htmlFor="total_cost" className="text-sm text-gray-600">Prix total HT</Label>
                   <Input 
                     id="total_cost" 
                     type="number"
-                    value={formData.total_cost ?? ''} 
-                    className="w-full text-base font-semibold bg-gray-100" 
+                    step="1"
+                    min="0"
+                    value={(formData.total_cost || 0).toFixed(2)} 
+                    className="w-full text-base font-semibold disabled:text-gray-600 disabled:opacity-100" 
                     disabled
                   />
                 </div>
@@ -682,25 +801,30 @@ export default function QuoteCreateForm({ clientId }: QuoteCreateFormProps) {
                     id="tva_amount" 
                     type="number"
                     value={formData.total_cost ? (formData.total_cost * 0.2).toFixed(2) : '0.00'} 
-                    className="w-full text-base font-semibold bg-gray-100" 
+                    className="w-full text-base font-semibold disabled:opacity-100 disabled:text-gray-600" 
                     disabled
                   />
                 </div>
                 
                 <div className="md:col-span-2">
-                  <Label htmlFor="total_cost_ttc" className="text-sm text-gray-600">Prix total TTC</Label>
+                  <Label htmlFor="total_cost_ttc" className="text-sm text-gray-800 font-bold">Prix total TTC</Label>
                   <Input 
                     id="total_cost_ttc" 
                     type="number"
-                    value={formData.total_cost ? (formData.total_cost * 1.2).toFixed(2) : '0.00'} 
-                    className="w-full text-base font-semibold bg-gray-100" 
+                    value={formData.total_cost ? calculateTTC(formData.total_cost).toFixed(2) : ''} 
+                    className="w-full text-base font-semibold bg-white border-lime-400 disabled:text-gray-800 disabled:opacity-100" 
                     disabled
                   />
                 </div>
               </div>
             </div>
+          </div>
 
-            <div className="p-4 border border-gray-200 rounded-lg bg-white mb-4">
+          {/* Prix et Paiement Section */}
+          <div className="mb-8 border border-gray-200 rounded-lg p-6 bg-gray-50">
+            <h3 className="text-lg font-semibold mb-4">Acompte versé, modes de paiement et payé intégralement</h3>
+            
+            <div className="p-4 border border-gray-200 rounded-lg bg-white mb-6">
               <div className="flex items-center justify-between mb-4">
                 <div className="flex items-center space-x-2">
                   <Switch
@@ -764,21 +888,6 @@ export default function QuoteCreateForm({ clientId }: QuoteCreateFormProps) {
                 )}
               </div>
             </div>
-          </div>
-          
-          <div className="mb-8 border border-gray-200 rounded-lg p-6 bg-gray-50">
-            <QuoteFees
-              quoteId={0}
-              disabled={formData?.is_paid || formData?.is_deposit}
-              fees={formData?.fees || []}
-              onFeesChange={(updatedFees) => {
-                setFormData(prev => ({
-                  ...prev,
-                  fees: updatedFees
-                }));
-              }}
-              onFeesSubtotalChange={setFeesSubtotal}
-            />
           </div>
         </div>
       </form>

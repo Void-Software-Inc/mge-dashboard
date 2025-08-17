@@ -100,6 +100,28 @@ export function QuoteFees({ quoteId, disabled = false, fees, onFeesChange, onFee
     }
   };
 
+  const handlePriceChangeTTC = async (feeName: string, priceTTC: string) => {
+    if (disabled) return;
+    
+    const numPriceTTC = parseFloat(priceTTC) || 0;
+    const numPriceHT = numPriceTTC / 1.20; // Convert TTC to HT
+    const updatedFees = localFees.map(fee => {
+      if (fee.name === feeName) {
+        return { ...fee, price: numPriceHT };
+      }
+      return fee;
+    });
+
+    setLocalFees(updatedFees);
+    onFeesChange(updatedFees);
+
+    try {
+      await updateQuoteFee(quoteId, updatedFees);
+    } catch (error) {
+      console.error('Error updating fee price:', error);
+    }
+  };
+
   const handleDescriptionChange = async (feeName: string, description: string) => {
     if (disabled) return;
     
@@ -214,11 +236,15 @@ export function QuoteFees({ quoteId, disabled = false, fees, onFeesChange, onFee
             )}
           </div>
           <div className="space-y-1">
-            <Label className="text-xs text-gray-600">Prix HT</Label>
+            <Label className="text-xs text-gray-600">Prix TTC</Label>
             <Input
               type="number"
-              value={newCustomFeePrice}
-              onChange={(e) => setNewCustomFeePrice(e.target.value)}
+              value={newCustomFeePrice ? (parseFloat(newCustomFeePrice) * 1.20).toFixed(2) : ''}
+              onChange={(e) => {
+                const ttcValue = parseFloat(e.target.value) || 0;
+                const htValue = ttcValue / 1.20;
+                setNewCustomFeePrice(htValue.toFixed(2));
+              }}
               disabled={disabled}
               className="border-gray-200 h-8 text-sm"
               placeholder="0.00"
@@ -291,11 +317,11 @@ export function QuoteFees({ quoteId, disabled = false, fees, onFeesChange, onFee
               </CardHeader>
               <CardContent className="space-y-3">
                 <div className="space-y-1">
-                  <Label className="text-xs text-gray-600">Prix HT</Label>
+                  <Label className="text-xs text-gray-600">Prix TTC</Label>
                   <Input
                     type="number"
-                    value={fee.price || ''}
-                    onChange={(e) => handlePriceChange(fee.name, e.target.value)}
+                    value={fee.price ? (fee.price * 1.20).toFixed(2) : ''}
+                    onChange={(e) => handlePriceChangeTTC(fee.name, e.target.value)}
                     disabled={!fee.enabled || disabled || isMarkedForDeletion}
                     className={`border-gray-200 h-8 text-sm ${isMarkedForDeletion ? 'opacity-50' : ''}`}
                     min="0"
@@ -319,4 +345,4 @@ export function QuoteFees({ quoteId, disabled = false, fees, onFeesChange, onFee
       </div>
     </div>
   );
-} 
+}
