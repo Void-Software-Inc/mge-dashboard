@@ -3,6 +3,9 @@ import { NextRequest, NextResponse } from "next/server";
 
 export async function POST(request: NextRequest) {
     const supabase = createClient();
+
+    const bucketPath = process.env.NEXT_PUBLIC_SUPABASE_BUCKET || 'mge-product-images';
+
     const { ids } = await request.json();
 
     for (const id of ids) {
@@ -33,7 +36,7 @@ export async function POST(request: NextRequest) {
 
                 const { error: deleteStorageError } = await supabase
                     .storage
-                    .from('mge-product-images')
+                    .from(bucketPath)
                     .remove(imagePaths);
 
                 if (deleteStorageError) throw new Error('Failed to delete images from storage');
@@ -46,7 +49,7 @@ export async function POST(request: NextRequest) {
 
                 const { error: deleteMainImageError } = await supabase
                     .storage
-                    .from('mge-product-images')
+                    .from(bucketPath)
                     .remove([mainImagePath]);
 
                 if (deleteMainImageError) throw new Error('Failed to delete main product image from storage');

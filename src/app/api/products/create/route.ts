@@ -4,6 +4,8 @@ import { formatInTimeZone } from 'date-fns-tz'
 
 export async function POST(request: NextRequest) {
   const supabase = createClient()
+
+  const bucketPath = process.env.NEXT_PUBLIC_SUPABASE_BUCKET || 'mge-product-images';
   
   const formData = await request.formData()
   const file = formData.get('image') as File | null
@@ -19,7 +21,7 @@ export async function POST(request: NextRequest) {
 
     const filename = `product-${Date.now()}-${file.name}`
     const { data, error } = await supabase.storage
-      .from('mge-product-images')
+      .from(bucketPath)
       .upload(filename, file)
 
     if (error) {
@@ -30,7 +32,7 @@ export async function POST(request: NextRequest) {
     
     imageFilename = filename
     const { data: { publicUrl } } = supabase.storage
-      .from('mge-product-images')
+      .from(bucketPath)
       .getPublicUrl(imageFilename)
 
     imageUrl = publicUrl
@@ -64,7 +66,7 @@ export async function POST(request: NextRequest) {
       // Delete the uploaded image if product creation fails
       if (imageFilename) {
         const { error: deleteError } = await supabase.storage
-          .from('mge-product-images')
+          .from(bucketPath)
           .remove([imageFilename])
         
         if (deleteError) {

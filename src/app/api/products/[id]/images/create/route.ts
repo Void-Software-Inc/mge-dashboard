@@ -3,6 +3,9 @@ import { createClient } from '@/utils/supabase/server'
 
 export async function POST(request: NextRequest, { params }: { params: { id: string } }) {
   const supabase = createClient()
+
+  const bucketPath = process.env.NEXT_PUBLIC_SUPABASE_BUCKET || 'mge-product-images'
+
   const productId = params.id
 
   const formData = await request.formData()
@@ -19,7 +22,7 @@ export async function POST(request: NextRequest, { params }: { params: { id: str
 
   const filename = `product-${productId}-${Date.now()}-${file.name}`
   const { data: uploadData, error: uploadError } = await supabase.storage
-    .from('mge-product-images')
+    .from(bucketPath)
     .upload(filename, file)
 
   if (uploadError) {
@@ -28,7 +31,7 @@ export async function POST(request: NextRequest, { params }: { params: { id: str
   }
 
   const { data: { publicUrl } } = supabase.storage
-    .from('mge-product-images')
+    .from(bucketPath)
     .getPublicUrl(filename)
 
   // Create a new row in the productImages table
@@ -45,7 +48,7 @@ export async function POST(request: NextRequest, { params }: { params: { id: str
     console.error('Error inserting image data:', insertError)
     // Delete the uploaded image if database insertion fails
     const { error: deleteError } = await supabase.storage
-      .from('mge-product-images')
+      .from(bucketPath)
       .remove([filename])
     
     if (deleteError) {
