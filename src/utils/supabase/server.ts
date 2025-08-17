@@ -4,6 +4,8 @@ import { cookies } from 'next/headers'
 export function createClient() {
   const cookieStore = cookies()
 
+  const schema = process.env.NEXT_PUBLIC_SUPABASE_SCHEMA || 'public'
+
   return createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
@@ -16,6 +18,7 @@ export function createClient() {
           cookiesToSet.forEach(({ name, value, options }) => cookieStore.set(name, value, options))
         },
       },
+      db: { schema } 
     }
   )
 }
