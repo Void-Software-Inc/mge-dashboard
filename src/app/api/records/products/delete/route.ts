@@ -64,6 +64,14 @@ export async function POST(request: NextRequest) {
 
             if (deleteProductImagesError) throw new Error('Failed to delete productImages');
 
+            // Delete any quoteItems that reference this product
+            const { error: deleteQuoteItemsError } = await supabase
+                .from('quoteItems')
+                .delete()
+                .eq('product_id', id);
+
+            if (deleteQuoteItemsError) throw new Error('Failed to delete quoteItems references');
+
             // Delete the product
             const { error: deleteProductError } = await supabase
                 .from('products')

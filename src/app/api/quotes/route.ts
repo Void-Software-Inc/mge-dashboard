@@ -8,6 +8,7 @@ export async function GET() {
   const { data: quotes, error } = await supabase
     .from('quotes')
     .select('*')
+    .eq('quote_type', 'active')
     .order('last_update', { ascending: false });
 
   if (error) {

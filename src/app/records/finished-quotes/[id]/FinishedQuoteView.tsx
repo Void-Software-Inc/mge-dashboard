@@ -6,12 +6,10 @@ import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { Label } from "@/components/ui/label"
 import { Button } from "@/components/ui/button"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Toaster, toast } from 'sonner'
+import { toast } from 'sonner'
 import { Skeleton } from "@/components/ui/skeleton"
 import { Switch } from "@/components/ui/switch"
-import { ChevronLeftIcon, DownloadIcon, CheckIcon, Cross2Icon, ChevronRightIcon, DoubleArrowLeftIcon, DoubleArrowRightIcon } from "@radix-ui/react-icons"
-import jsPDF from 'jspdf';
+import { ChevronLeftIcon, DownloadIcon, ChevronRightIcon, DoubleArrowLeftIcon, DoubleArrowRightIcon } from "@radix-ui/react-icons"
 import 'jspdf-autotable';
 
 import { useRouter } from 'next/navigation'
@@ -19,7 +17,7 @@ import { getFinishedQuotes, getFinishedQuoteItems } from "@/services/quotes"
 import { FinishedQuote, quoteStatus, QuoteItem, paymentModes } from "@/utils/types/quotes"
 import { format, parseISO } from 'date-fns';
 import { fr } from 'date-fns/locale';
-import { getProducts } from "@/services/products"
+import { getAllProducts } from "@/services/products"
 import { Product } from "@/utils/types/products"
 import { generateQuotePDF, generateInvoicePDF } from "@/utils/pdf/generateDocumentPDF"
 import { QuoteFees } from "@/app/quotes/components/QuoteFees"
@@ -70,7 +68,7 @@ export default function FinishedQuoteView({ quoteId }: { quoteId: string }) {
       setQuoteItems(items)
       
       // Fetch products for reference
-      const productsData = await getProducts()
+      const productsData = await getAllProducts()
       setProducts(productsData)
       
     } catch (error) {
