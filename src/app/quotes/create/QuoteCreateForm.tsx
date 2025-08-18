@@ -89,6 +89,7 @@ export default function QuoteCreateForm({ clientId }: QuoteCreateFormProps) {
 
   const [errors, setErrors] = useState<FormErrors>({});
   const [isFormValid, setIsFormValid] = useState(false);
+  const [inputErrors, setInputErrors] = useState<Set<string>>(new Set());
   const [touched, setTouched] = useState<TouchedFields>({
     first_name: false,
     last_name: false,
@@ -166,27 +167,76 @@ export default function QuoteCreateForm({ clientId }: QuoteCreateFormProps) {
     }
   }, [router, clientIdFromUrl]);
 
+  // Helper function to parse number with both . and , as decimal separators
+  const parseFlexibleNumber = (value: string): number => {
+    if (!value || value.trim() === '') return 0;
+    
+    // Replace comma with dot for parsing
+    const normalizedValue = value.replace(',', '.');
+    const parsed = parseFloat(normalizedValue);
+    return isNaN(parsed) ? 0 : parsed;
+  };
+
+  // Helper function to check if a string represents a valid number
+  const isValidNumber = (value: string): boolean => {
+    if (!value || value.trim() === '') return true; // Empty is valid (will be 0)
+    
+    const trimmedValue = value.trim();
+    
+    // Replace comma with dot for parsing
+    const normalizedValue = trimmedValue.replace(',', '.');
+    
+    // Check if the normalized value matches a valid number pattern
+    // This regex allows: optional minus, digits, optional decimal point with digits
+    const numberPattern = /^-?\d+(\.\d+)?$/;
+    
+    // First check if it matches the pattern
+    if (!numberPattern.test(normalizedValue)) {
+      return false;
+    }
+    
+    // Then check if parseFloat gives a valid result
+    const parsed = parseFloat(normalizedValue);
+    return !isNaN(parsed) && isFinite(parsed);
+  };
+
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { id, value } = e.target;
     
     if (id === 'traiteur_price_ttc' || id === 'other_expenses_ttc') {
-      // Allow decimal numbers for TTC prices
-      if (!/^\d*\.?\d*$/.test(value)) return;
+      // Update input errors state
+      const newErrors = new Set(inputErrors);
+      if (!isValidNumber(value)) {
+        newErrors.add(id);
+      } else {
+        newErrors.delete(id);
+      }
+      setInputErrors(newErrors);
+      
       // Convert TTC to HT and store HT value
-      const ttcValue = value === '' ? 0 : parseFloat(value);
+      const ttcValue = parseFlexibleNumber(value);
       const htValue = ttcValue / 1.20;
       const fieldName = id === 'traiteur_price_ttc' ? 'traiteur_price' : 'other_expenses';
       setFormData(prev => ({
         ...prev,
-        [fieldName]: htValue
+        [fieldName]: htValue,
+        [`${id}_input`]: value // Store raw input for display
       }));
     } else if (id === 'traiteur_price' || id === 'other_expenses') {
-      // Allow decimal numbers for traiteur_price and other_expenses
-      if (!/^\d*\.?\d*$/.test(value)) return;
-      const numValue = value === '' ? null : parseFloat(value);
+      // Update input errors state
+      const newErrors = new Set(inputErrors);
+      if (!isValidNumber(value)) {
+        newErrors.add(id);
+      } else {
+        newErrors.delete(id);
+      }
+      setInputErrors(newErrors);
+      
+      const numValue = parseFlexibleNumber(value);
       setFormData(prev => ({
         ...prev,
-        [id]: numValue
+        [id]: numValue,
+        [`${id}_input`]: value // Store raw input for display
       }));
     } else {
       setFormData(prev => ({
@@ -670,12 +720,11 @@ export default function QuoteCreateForm({ clientId }: QuoteCreateFormProps) {
                   <Label htmlFor="traiteur_price_ttc" className="text-sm text-gray-600">Prix traiteur TTC</Label>
                   <Input 
                     id="traiteur_price_ttc" 
-                    type="number"
-                    value={formData?.is_traiteur ? ((formData?.traiteur_price || 0) * 1.20).toFixed(2) : ''} 
+                    value={(formData as any)?.traiteur_price_ttc_input !== undefined ? (formData as any).traiteur_price_ttc_input : (formData?.is_traiteur && formData?.traiteur_price ? (formData.traiteur_price * 1.20).toFixed(2) : '')}
                     onChange={handleInputChange} 
-                    className={`w-full text-base mt-1 ${errors.traiteur_price ? 'border-red-500' : ''}`} 
+                    className={`w-full text-base mt-1 ${errors.traiteur_price ? 'border-red-500' : ''} ${inputErrors.has('traiteur_price_ttc') ? 'border-red-500' : ''}`} 
                     disabled={!formData?.is_traiteur || formData?.is_paid || formData?.is_deposit}
-                    placeholder="Prix TTC"
+                    placeholder="0.00"
                   />
                   {errors.traiteur_price && <p className="text-red-500 text-sm mt-1">{errors.traiteur_price}</p>}
                 </div>
