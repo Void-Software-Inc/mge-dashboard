@@ -56,14 +56,14 @@ export const AppProvider = ({ children }: { children: React.ReactNode }) => {
 
 
     productsChannel
-      .on('postgres_changes', { event: '*', schema: `'${schema}'`, table: 'products' }, () => {
+      .on('postgres_changes', { event: '*', schema: schema, table: 'products' }, () => {
         setProductsShouldRefetch(true)
         setPopularProductsShouldRefetch(true)
       })
       .subscribe()
 
     quotesChannel
-      .on('postgres_changes', { event: '*', schema: `'${schema}'`, table: 'quotes' }, () => {
+      .on('postgres_changes', { event: '*', schema: schema, table: 'quotes' }, () => {
         setQuotesShouldRefetch(true)
         setPopularProductsShouldRefetch(true)
       })
