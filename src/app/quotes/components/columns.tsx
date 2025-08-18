@@ -345,7 +345,7 @@ export const columns: ColumnDef<Quote>[] = [
   },
   {
     accessorKey: "total_cost",
-    header: () => <div className="text-right font-extrabold whitespace-nowrap overflow-hidden overflow-ellipsis">Prix total TTC</div>,
+    header: () => <div className="text-right font-extrabold whitespace-nowrap overflow-hidden overflow-ellipsis">Prix total HT</div>,
     cell: ({ row }) => {
       // Assuming total_cost in the database is HT (without tax)
       const priceTTC = parseFloat(row.getValue("total_cost"))
