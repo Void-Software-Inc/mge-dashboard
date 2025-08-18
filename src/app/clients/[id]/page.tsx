@@ -4,22 +4,14 @@ import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import { getClient } from "@/services/clients"
 import { Client } from "@/utils/types/clients"
-import { Quote } from "@/utils/types/quotes"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { Separator } from "@/components/ui/separator"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { FileTextIcon, ArrowLeftIcon, MixerHorizontalIcon, Cross2Icon, PlusIcon } from "@radix-ui/react-icons"
+import { ArrowLeftIcon, Cross2Icon, PlusIcon } from "@radix-ui/react-icons"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Skeleton } from "@/components/ui/skeleton"
 import { quoteStatus } from "@/utils/types/quotes"
-import { Checkbox } from "@/components/ui/checkbox"
-import { Label } from "@/components/ui/label"
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover"
 
 export default function ClientDetailPage({ params }: { params: { id: string } }) {
   const router = useRouter()
@@ -30,6 +22,7 @@ export default function ClientDetailPage({ params }: { params: { id: string } })
   const [selectedQuoteStatuses, setSelectedQuoteStatuses] = useState<string[]>([])
   const [isFilterActive, setIsFilterActive] = useState(false)
   const [filteredQuotes, setFilteredQuotes] = useState<any[]>([])
+  const [selectedTab, setSelectedTab] = useState("all")
 
   useEffect(() => {
     const fetchClient = async () => {
@@ -138,62 +131,62 @@ export default function ClientDetailPage({ params }: { params: { id: string } })
       
       return (
         <Card key={index} className="overflow-hidden">
-          <CardHeader className="pb-2">
-            <div className="flex justify-between items-start">
-              <div>
-                <CardTitle>Devis #{quote.id}</CardTitle>
-                <CardDescription>
-                  {(quote as any).quote_type === 'deleted' ? 'Supprimé le ' + formatDate((quote as any).deleted_at || '') :
-                   (quote as any).quote_type === 'finished' ? 'Terminé le ' + formatDate((quote as any).finished_at || '') :
-                   'Créé le ' + formatDate(quote.created_at || '')}
-                  {(quote as any).quote_type && <span> • Type: {(quote as any).quote_type}</span>}
-                </CardDescription>
-              </div>
-              <div className="flex items-center gap-2">
-                <Badge variant={badgeVariant}>
-                  {(quote as any).is_deleted ? 'Supprimé' : 
-                   quote.status === 'completed' || (quote as any).quote_type === 'finished' ? 'Terminé' : 'En cours'}
+          <CardHeader className="pb-3">
+            <div className="text-center sm:text-left">
+              <CardTitle className="text-center sm:text-left">Devis #{quote.id}</CardTitle>
+              <CardDescription className="text-center sm:text-left mt-1">
+                {quote.event_start_date ? formatDate(quote.event_start_date) : "Non spécifiée"}
+              </CardDescription>
+            </div>
+            <div className="flex flex-wrap justify-center sm:justify-start gap-2 mt-3">
+              <Badge variant={badgeVariant}>
+                {(quote as any).is_deleted ? 'Supprimé' : 
+                 quote.status === 'completed' || (quote as any).quote_type === 'finished' ? 'Terminé' : 'En cours'}
+              </Badge>
+              {quote.status && quote.status !== 'completed' && (
+                <Badge 
+                  variant="outline" 
+                  className="flex items-center gap-1"
+                  style={{ borderColor: quoteStatus.find(s => s.value === quote.status)?.color }}
+                >
+                  <div 
+                    className="w-2 h-2 rounded-full"
+                    style={{ backgroundColor: quoteStatus.find(s => s.value === quote.status)?.color }}
+                  />
+                  {quoteStatus.find(s => s.value === quote.status)?.name || quote.status}
                 </Badge>
-                {quote.status && quote.status !== 'completed' && (
-                  <Badge 
-                    variant="outline" 
-                    className="flex items-center gap-1"
-                    style={{ borderColor: quoteStatus.find(s => s.value === quote.status)?.color }}
-                  >
-                    <div 
-                      className="w-2 h-2 rounded-full"
-                      style={{ backgroundColor: quoteStatus.find(s => s.value === quote.status)?.color }}
-                    />
-                    {quoteStatus.find(s => s.value === quote.status)?.name || quote.status}
-                  </Badge>
-                )}
-              </div>
+              )}
             </div>
           </CardHeader>
-          <CardContent className="pb-2">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div>
+          <CardContent className="pb-3">
+            <div className="space-y-4">
+              <div className="text-center sm:text-left">
                 <p className="text-sm font-medium text-muted-foreground">Événement</p>
                 <p className="line-clamp-3">{quote.description || "Non spécifié"}</p>
               </div>
-              <div>
-                <p className="text-sm font-medium text-muted-foreground">Date</p>
-                <p>{quote.event_start_date ? formatDate(quote.event_start_date) : "Non spécifiée"}</p>
-              </div>
-              <div>
-                <p className="text-sm font-medium text-muted-foreground">Montant total</p>
-                <p className="font-medium">
-                  {new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR' }).format(quote.total_cost || 0)}
-                </p>
+              <div className="flex justify-between text-center sm:text-left">
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground">Montant HT</p>
+                  <p className="font-medium">
+                    {new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR' }).format(quote.total_cost || 0)}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground">Montant TTC</p>
+                  <p className="font-medium">
+                    {new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR' }).format((quote.total_cost || 0) * 1.2)}
+                  </p>
+                </div>
               </div>
             </div>
           </CardContent>
-          <CardFooter className="pt-2">
+          <CardFooter className="pt-0">
             <Button 
               variant="outline" 
               size="sm" 
               onClick={() => router.push(quoteUrl)}
-              disabled={(quote as any).is_deleted} // Disable button for deleted quotes
+              disabled={(quote as any).is_deleted}
+              className="w-full sm:w-auto"
             >
               Voir le devis
             </Button>
@@ -242,26 +235,27 @@ export default function ClientDetailPage({ params }: { params: { id: string } })
   const groupedQuotes = client?.quotes ? groupQuotesByType(filteredQuotes) : { active: [], finished: [], deleted: [] };
 
   return (
-    <div className="container mx-auto py-10">
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
+    <div className="container mx-auto py-6 px-4">
+      <div className="flex flex-col space-y-4 mb-6 sm:flex-row sm:items-center sm:justify-between sm:space-y-0">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">{client.name}</h1>
-          <p className="text-muted-foreground">
+          <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">{client.name}</h1>
+          <p className="text-muted-foreground text-sm sm:text-base">
             {client.company ? `${client.company} · ` : ''}
             {client.phone}
           </p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex gap-2 flex-col sm:flex-row">
           <Button 
             variant="outline" 
             onClick={() => router.push('/clients')}
+            className="w-full sm:w-auto"
           >
             <ArrowLeftIcon className="mr-2 h-4 w-4" />
             Retour
           </Button>
           <Button 
             onClick={() => router.push(`/quotes/create?client_id=${params.id}`)}
-            className="bg-lime-300 hover:bg-lime-400 text-black"
+            className="bg-lime-300 hover:bg-lime-400 text-black w-full sm:w-auto"
           >
             <PlusIcon className="mr-2 h-4 w-4" />
             Créer un devis
@@ -269,7 +263,7 @@ export default function ClientDetailPage({ params }: { params: { id: string } })
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <Card>
           <CardHeader>
             <CardTitle>Informations de contact</CardTitle>
@@ -364,38 +358,48 @@ export default function ClientDetailPage({ params }: { params: { id: string } })
         )}
         
         {client?.quotes && client.quotes.length > 0 ? (
-          <Tabs defaultValue="all" className="w-full">
-            <TabsList className="mb-4">
-              <TabsTrigger value="active">
-                Devis actifs ({groupedQuotes.active.length})
-              </TabsTrigger>
-              <TabsTrigger value="finished">
-                Devis terminés ({groupedQuotes.finished.length})
-              </TabsTrigger>
-              <TabsTrigger value="deleted">
-                Devis supprimés ({groupedQuotes.deleted.length})
-              </TabsTrigger>
-              <TabsTrigger value="all">
-                Tous les devis ({filteredQuotes.length})
-              </TabsTrigger>
-            </TabsList>
+          <div className="w-full">
+            {/* Mobile Dropdown */}
+            <div className="sm:hidden mb-4">
+              <Select value={selectedTab} onValueChange={setSelectedTab}>
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="Sélectionner le type de devis" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Tous les devis ({filteredQuotes.length})</SelectItem>
+                  <SelectItem value="active">Devis actifs ({groupedQuotes.active.length})</SelectItem>
+                  <SelectItem value="finished">Devis terminés ({groupedQuotes.finished.length})</SelectItem>
+                  <SelectItem value="deleted">Devis supprimés ({groupedQuotes.deleted.length})</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
             
-            <TabsContent value="active" className="space-y-4">
-              {renderQuotes(groupedQuotes.active)}
-            </TabsContent>
+            {/* Desktop Tabs */}
+            <Tabs value={selectedTab} onValueChange={setSelectedTab} className="w-full hidden sm:block">
+              <TabsList className="mb-4">
+                <TabsTrigger value="active">
+                  Devis actifs ({groupedQuotes.active.length})
+                </TabsTrigger>
+                <TabsTrigger value="finished">
+                  Devis terminés ({groupedQuotes.finished.length})
+                </TabsTrigger>
+                <TabsTrigger value="deleted">
+                  Devis supprimés ({groupedQuotes.deleted.length})
+                </TabsTrigger>
+                <TabsTrigger value="all">
+                  Tous les devis ({filteredQuotes.length})
+                </TabsTrigger>
+              </TabsList>
+            </Tabs>
             
-            <TabsContent value="finished" className="space-y-4">
-              {renderQuotes(groupedQuotes.finished)}
-            </TabsContent>
-            
-            <TabsContent value="deleted" className="space-y-4">
-              {renderQuotes(groupedQuotes.deleted)}
-            </TabsContent>
-            
-            <TabsContent value="all" className="space-y-4">
-              {renderQuotes(filteredQuotes)}
-            </TabsContent>
-          </Tabs>
+            {/* Content based on selected tab */}
+            <div className="space-y-4">
+              {selectedTab === "active" && renderQuotes(groupedQuotes.active)}
+              {selectedTab === "finished" && renderQuotes(groupedQuotes.finished)}
+              {selectedTab === "deleted" && renderQuotes(groupedQuotes.deleted)}
+              {selectedTab === "all" && renderQuotes(filteredQuotes)}
+            </div>
+          </div>
         ) : (
           <div className="text-center py-8 border rounded-md">
             <p className="text-muted-foreground">Aucun devis trouvé pour ce client.</p>
