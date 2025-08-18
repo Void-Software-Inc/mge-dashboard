@@ -23,6 +23,7 @@ export async function getProducts(): Promise<Product[]> {
       description: product.description,
       image_url: product.image_url,
       category: product.category,
+      status: product.status,
       created_at: product.created_at,
       last_update: product.last_update,
     }))
@@ -52,6 +53,7 @@ export async function getAllProducts(): Promise<Product[]> {
       description: product.description,
       image_url: product.image_url,
       category: product.category,
+      status: product.status,
       created_at: product.created_at,
       last_update: product.last_update,
     }))

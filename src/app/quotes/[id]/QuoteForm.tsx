@@ -23,7 +23,7 @@ import { DatePicker } from "../components/date-picker"
 import { QuoteItemList } from "../components/quote-item-list"
 import { format, parseISO } from 'date-fns';
 import { Product } from "@/utils/types/products"
-import { getProducts } from "@/services/products"
+import { getAllProducts } from "@/services/products"
 import { generateQuotePDF } from "@/utils/pdf/generateDocumentPDF"
 import { QuoteFees } from "../components/QuoteFees"
 
@@ -88,7 +88,7 @@ export default function QuoteForm({ quoteId }: { quoteId: string }) {
     const fetchProducts = async () => {
       setIsProductsLoading(true);
       try {
-        const fetchedProducts = await getProducts();
+        const fetchedProducts = await getAllProducts();
         setProducts(fetchedProducts);
       } catch (error) {
         console.error('Error fetching products:', error);

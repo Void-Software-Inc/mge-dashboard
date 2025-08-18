@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button"
 import { toast } from 'sonner'
 import { Skeleton } from "@/components/ui/skeleton"
 import { Switch } from "@/components/ui/switch"
-import { ChevronLeftIcon, DownloadIcon, ChevronRightIcon, DoubleArrowLeftIcon, DoubleArrowRightIcon } from "@radix-ui/react-icons"
+import { ChevronLeftIcon, DownloadIcon, ChevronRightIcon, DoubleArrowLeftIcon, DoubleArrowRightIcon, ExclamationTriangleIcon, CheckCircledIcon } from "@radix-ui/react-icons"
 import 'jspdf-autotable';
 
 import { useRouter } from 'next/navigation'
@@ -21,6 +21,7 @@ import { getAllProducts } from "@/services/products"
 import { Product } from "@/utils/types/products"
 import { generateQuotePDF, generateInvoicePDF } from "@/utils/pdf/generateDocumentPDF"
 import { QuoteFees } from "@/app/quotes/components/QuoteFees"
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import {
   Table,
   TableBody,
@@ -428,6 +429,7 @@ export default function FinishedQuoteView({ quoteId }: { quoteId: string }) {
                           <Table className="w-full">
                             <TableHeader>
                               <TableRow className="h-16">
+                                <TableHead className="w-[60px] whitespace-nowrap">Statut</TableHead>
                                 <TableHead className="w-1/6 whitespace-nowrap">Image</TableHead>
                                 <TableHead className="w-1/3 whitespace-nowrap">Nom</TableHead>
                                 <TableHead className="w-1/6 whitespace-nowrap">Quantité</TableHead>
@@ -441,6 +443,29 @@ export default function FinishedQuoteView({ quoteId }: { quoteId: string }) {
                                   const product = products.find(p => p.id === item.item.product_id);
                                   return (
                                     <TableRow key={`product-${idx}`} className="h-20">
+                                      <TableCell className="whitespace-nowrap">
+                                        <TooltipProvider>
+                                          <Tooltip>
+                                            <TooltipTrigger asChild>
+                                              <div className="flex items-center justify-center">
+                                                {product && product.status === 'record' ? (
+                                                  <ExclamationTriangleIcon className="h-5 w-5 text-orange-500" />
+                                                ) : (
+                                                  <CheckCircledIcon className="h-5 w-5 text-green-500" />
+                                                )}
+                                              </div>
+                                            </TooltipTrigger>
+                                            <TooltipContent>
+                                              <p>
+                                                {product && product.status === 'record' 
+                                                  ? 'Ce produit est dans les archives, attention!' 
+                                                  : 'Produit actif'
+                                                }
+                                              </p>
+                                            </TooltipContent>
+                                          </Tooltip>
+                                        </TooltipProvider>
+                                      </TableCell>
                                       <TableCell className="align-middle">
                                         {product?.image_url ? (
                                           <div className="relative w-16 h-16 rounded-md overflow-hidden">
