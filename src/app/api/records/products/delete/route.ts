@@ -3,70 +3,82 @@ import { NextRequest, NextResponse } from "next/server";
 
 export async function POST(request: NextRequest) {
     const supabase = createClient();
+
+    const bucketPath = process.env.NEXT_PUBLIC_SUPABASE_BUCKET || 'mge-product-images';
+
     const { ids } = await request.json();
 
     for (const id of ids) {
         try {
-            // Fetch the product_record data
-            const { data: productRecord, error: productRecordError } = await supabase
-                .from('products_records')
+            // Fetch the product data (must have status 'record')
+            const { data: product, error: productError } = await supabase
+                .from('products')
                 .select('*')
                 .eq('id', id)
+                .eq('status', 'record')
                 .single();
 
-            if (productRecordError) throw new Error('Failed to fetch product_record');
+            if (productError) throw new Error('Failed to fetch product or product is not a record');
 
-            // Fetch all productImages_records for the product
-            const { data: productImagesRecords, error: productImagesRecordsError } = await supabase
-                .from('productImages_records')
+            // Fetch all productImages for the product
+            const { data: productImages, error: productImagesError } = await supabase
+                .from('productImages')
                 .select('*')
-                .eq('product_record_id', id);
+                .eq('product_id', id);
 
-            if (productImagesRecordsError) throw new Error('Failed to fetch product images records');
+            if (productImagesError) throw new Error('Failed to fetch product images');
 
             // Delete images from storage
-            if (productImagesRecords && productImagesRecords.length > 0) {
-                const imagePaths = productImagesRecords.map(img => {
+            if (productImages && productImages.length > 0) {
+                const imagePaths = productImages.map(img => {
                     const url = new URL(img.url);
                     return url.pathname.split('/').slice(-1)[0];
                 });
 
                 const { error: deleteStorageError } = await supabase
                     .storage
-                    .from('mge-product-images')
+                    .from(bucketPath)
                     .remove(imagePaths);
 
                 if (deleteStorageError) throw new Error('Failed to delete images from storage');
             }
 
             // Delete the main product image if it exists
-            if (productRecord.image_url) {
-                const mainImageUrl = new URL(productRecord.image_url);
+            if (product.image_url) {
+                const mainImageUrl = new URL(product.image_url);
                 const mainImagePath = mainImageUrl.pathname.split('/').slice(-1)[0];
 
                 const { error: deleteMainImageError } = await supabase
                     .storage
-                    .from('mge-product-images')
+                    .from(bucketPath)
                     .remove([mainImagePath]);
 
                 if (deleteMainImageError) throw new Error('Failed to delete main product image from storage');
             }
 
-            // Delete productImages_records
-            const { error: deleteProductImagesRecordError } = await supabase
-                .from('productImages_records')
+            // Delete productImages
+            const { error: deleteProductImagesError } = await supabase
+                .from('productImages')
                 .delete()
-                .eq('product_record_id', id);
+                .eq('product_id', id);
 
-            if (deleteProductImagesRecordError) throw new Error('Failed to delete productImages_records');
+            if (deleteProductImagesError) throw new Error('Failed to delete productImages');
 
-            // Delete the product_record
-            const { error: deleteProductRecordError } = await supabase
-                .from('products_records')
+            // Delete any quoteItems that reference this product
+            const { error: deleteQuoteItemsError } = await supabase
+                .from('quoteItems')
+                .delete()
+                .eq('product_id', id);
+
+            if (deleteQuoteItemsError) throw new Error('Failed to delete quoteItems references');
+
+            // Delete the product
+            const { error: deleteProductError } = await supabase
+                .from('products')
                 .delete()
                 .eq('id', id);
 
-            if (deleteProductRecordError) throw new Error('Failed to delete product_record');
+            if (deleteProductError) throw new Error('Failed to delete product');
 
         } catch (error) {
             console.error('Error in delete process:', error);

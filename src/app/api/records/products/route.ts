@@ -6,8 +6,9 @@ export async function GET() {
   const supabase = createClient();
 
   const { data: products_records, error } = await supabase
-    .from('products_records')
+    .from('products')
     .select('*')
+    .eq('status', 'record')
     .order('deleted_at', { ascending: false });
 
   if (error) {

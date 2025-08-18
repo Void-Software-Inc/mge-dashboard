@@ -1,4 +1,3 @@
-import { Fee } from "@/utils/types/quotes";
 import { createClient } from "@/utils/supabase/client";
 
 const supabase = createClient();

@@ -5,114 +5,27 @@ export async function POST(request: NextRequest) {
     const supabase = createClient();
     const { ids } = await request.json();
 
-    for (const id of ids) {
-        let createdProduct = null;
-        let createdProductImages = [];
+    try {
+        // Update all products status to 'active' and clear deleted_at
+        const { error: updateError } = await supabase
+            .from('products')
+            .update({ 
+                status: 'active',
+                deleted_at: null,
+                last_update: new Date().toISOString()
+            })
+            .in('id', ids);
 
-        try {
-            // Fetch the product_record data
-            const { data: productRecord, error: productRecordError } = await supabase
-                .from('products_records')
-                .select('*')
-                .eq('id', id)
-                .single();
-
-            if (productRecordError) throw new Error('Failed to fetch product_record');
-
-            // Fetch all productImages_records for the product
-            const { data: productImagesRecords, error: productImagesRecordsError } = await supabase
-                .from('productImages_records')
-                .select('*')
-                .eq('product_record_id', id);
-
-            if (productImagesRecordsError) throw new Error('Failed to fetch product images');
-
-            // Create a new record in products
-            const { data: product, error: productError } = await supabase
-                .from('products')
-                .insert({
-                    id: productRecord.id,
-                    name: productRecord.name,
-                    type: productRecord.type,
-                    color: productRecord.color,
-                    stock: productRecord.stock,
-                    ttc_price: productRecord.ttc_price,
-                    ht_price: productRecord.ht_price,
-                    description: productRecord.description,
-                    image_url: productRecord.image_url,
-                    category: productRecord.category,
-                    created_at: productRecord.created_at,
-                    last_update: new Date().toISOString()
-                })
-                .select()
-                .single();
-
-            if (productError) throw new Error('Failed to create product');
-
-            createdProduct = product;
-
-            // Create new records in productImages
-            if (productImagesRecords && productImagesRecords.length > 0) {
-                const { data: insertedImages, error: productImagesError } = await supabase
-                    .from('productImages')
-                    .insert(productImagesRecords.map(img => ({
-                        id: img.id,
-                        product_id: product.id,
-                        url: img.url
-                    })))
-                    .select();
-
-                if (productImagesError) throw new Error('Failed to create productImages');
-
-                createdProductImages = insertedImages;
-            }
-
-            // Delete productImages_records
-            const { error: deleteProductImagesRecordError } = await supabase
-                .from('productImages_records')
-                .delete()
-                .eq('product_record_id', id);
-
-            if (deleteProductImagesRecordError) throw new Error('Failed to delete productImages_records');
-
-            // Delete the product_record
-            const { error: deleteProductRecordError } = await supabase
-                .from('products_records')
-                .delete()
-                .eq('id', id);
-
-            if (deleteProductRecordError) throw new Error('Failed to delete product_record');
-
-        } catch (error) {
-            console.error('Error in restore process:', error);
-
-            // Rollback: Delete created product images
-            if (createdProductImages.length > 0) {
-                const { error: deleteImagesError } = await supabase
-                    .from('productImages')
-                    .delete()
-                    .in('id', createdProductImages.map(img => img.id));
-
-                if (deleteImagesError) {
-                    console.error('Error rolling back product images:', deleteImagesError);
-                }
-            }
-
-            // Rollback: Delete created product
-            if (createdProduct) {
-                const { error: deleteProductError } = await supabase
-                    .from('products')
-                    .delete()
-                    .eq('id', createdProduct.id);
-
-                if (deleteProductError) {
-                    console.error('Error rolling back product:', deleteProductError);
-                }
-            }
-
-            return NextResponse.json({ error: `Failed to restore product: ${error instanceof Error ? error.message : 'Unknown error'}` }, { status: 500 });
+        if (updateError) {
+            throw new Error('Failed to restore products');
         }
-    }
 
-    return NextResponse.json({ message: 'Products and associated images restored successfully' });
+        return NextResponse.json({ message: 'Products successfully restored' });
+
+    } catch (error) {
+        console.error('Error in restore process:', error);
+        return NextResponse.json({ 
+            error: `Failed to restore products: ${error instanceof Error ? error.message : 'Unknown error'}` 
+        }, { status: 500 });
+    }
 }

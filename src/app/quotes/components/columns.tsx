@@ -64,11 +64,6 @@ export const onRowClick = (row: Quote, router: ReturnType<typeof useRouter>) => 
   router.push(`/quotes/${row.id}`)
 }
 
-const calculateTTC = (ht: number): number => {
-  // Add 20% VAT to the HT (tax-excluded) price
-  return ht * 1.20;
-};
-
 export const columns: ColumnDef<Quote>[] = [
   /*Implementation later{
     id: "select",
@@ -350,7 +345,7 @@ export const columns: ColumnDef<Quote>[] = [
   },
   {
     accessorKey: "total_cost",
-    header: () => <div className="text-right font-extrabold whitespace-nowrap overflow-hidden overflow-ellipsis">Prix total TTC</div>,
+    header: () => <div className="text-right font-extrabold whitespace-nowrap overflow-hidden overflow-ellipsis">Prix total HT</div>,
     cell: ({ row }) => {
       // Assuming total_cost in the database is HT (without tax)
       const priceTTC = parseFloat(row.getValue("total_cost"))

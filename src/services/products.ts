@@ -23,6 +23,37 @@ export async function getProducts(): Promise<Product[]> {
       description: product.description,
       image_url: product.image_url,
       category: product.category,
+      status: product.status,
+      created_at: product.created_at,
+      last_update: product.last_update,
+    }))
+    return cleanProducts;
+  } catch (error) {
+    console.error('Error fetching products:', error);
+    throw error;
+  }
+}
+
+export async function getAllProducts(): Promise<Product[]> {
+  try {
+    const url = `${API_URL}/products/getAll`
+    const response = await fetch(url);
+    if (!response.ok) {
+      throw new Error('Failed to fetch products');
+    }
+    const { products } = await response.json();
+    const cleanProducts = products.map((product: Product) => ({
+      id: product.id,
+      name: product.name,
+      type: product.type,
+      color: product.color,
+      stock: product.stock,
+      ttc_price: product.ttc_price,
+      ht_price: product.ht_price,
+      description: product.description,
+      image_url: product.image_url,
+      category: product.category,
+      status: product.status,
       created_at: product.created_at,
       last_update: product.last_update,
     }))

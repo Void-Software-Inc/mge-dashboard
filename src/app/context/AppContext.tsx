@@ -3,6 +3,8 @@
 import React, { createContext, useContext, useState, useEffect } from 'react'
 import { createClient } from '@/utils/supabase/client'
 
+const schema = process.env.NEXT_PUBLIC_SUPABASE_SCHEMA || 'public'
+
 type AppContextType = {
   productsShouldRefetch: boolean;
   setProductsShouldRefetch: (value: boolean) => void;
@@ -51,51 +53,25 @@ export const AppProvider = ({ children }: { children: React.ReactNode }) => {
 
     const productsChannel = supabase.channel('products_changes')
     const quotesChannel = supabase.channel('quotes_changes')
-    const productsRecordsChannel = supabase.channel('products_records_changes')
-    const quotesRecordsChannel = supabase.channel('quotes_records_changes')
-    const finishedQuotesChannel = supabase.channel('finished_quotes_changes')
+
 
     productsChannel
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'products' }, () => {
+      .on('postgres_changes', { event: '*', schema: schema, table: 'products' }, () => {
         setProductsShouldRefetch(true)
         setPopularProductsShouldRefetch(true)
       })
       .subscribe()
 
     quotesChannel
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'quotes' }, () => {
+      .on('postgres_changes', { event: '*', schema: schema, table: 'quotes' }, () => {
         setQuotesShouldRefetch(true)
         setPopularProductsShouldRefetch(true)
-      })
-      .subscribe()
-
-    productsRecordsChannel
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'products_records' }, () => {
-        setProductsRecordsShouldRefetch(true)
-        setProductsShouldRefetch(true)
-      })
-      .subscribe()
-
-    quotesRecordsChannel
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'quotes_records' }, () => {
-        setQuotesRecordsShouldRefetch(true)
-        setQuotesShouldRefetch(true)
-      })
-      .subscribe()
-
-    finishedQuotesChannel
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'finished_quotes' }, () => {
-        setFinishedQuotesShouldRefetch(true)
-        setQuotesShouldRefetch(true)
       })
       .subscribe()
 
     return () => {
       supabase.removeChannel(productsChannel)
       supabase.removeChannel(quotesChannel)
-      supabase.removeChannel(productsRecordsChannel)
-      supabase.removeChannel(quotesRecordsChannel)
-      supabase.removeChannel(finishedQuotesChannel)
     }
   }, [])
 

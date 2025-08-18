@@ -6,7 +6,7 @@ import { Label } from "@/components/ui/label"
 import { Button } from "@/components/ui/button"
 import { Switch } from "@/components/ui/switch"
 import { PlusIcon, TrashIcon } from "@radix-ui/react-icons"
-import { Fee, FeeType, FEE_TYPES } from "@/utils/types/quotes"
+import { FEE_TYPES } from "@/utils/types/quotes"
 import { updateQuoteFee } from "@/services/fees"
 import { Textarea } from "@/components/ui/textarea"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -27,6 +27,7 @@ export function QuoteFees({ quoteId, disabled = false, fees, onFeesChange, onFee
   const [newCustomFeeDescription, setNewCustomFeeDescription] = useState('');
   const [feesToDelete, setFeesToDelete] = useState<Set<string>>(new Set());
   const [nameError, setNameError] = useState<string>('');
+  const [feeInputErrors, setFeeInputErrors] = useState<Set<string>>(new Set());
 
   // Initialize local fees from props
   useEffect(() => {
@@ -79,13 +80,56 @@ export function QuoteFees({ quoteId, disabled = false, fees, onFeesChange, onFee
     }
   };
 
-  const handlePriceChange = async (feeName: string, price: string) => {
+  // Helper function to parse number with both . and , as decimal separators
+  const parseFlexibleNumber = (value: string): number => {
+    if (!value || value.trim() === '') return 0;
+    
+    // Replace comma with dot for parsing
+    const normalizedValue = value.replace(',', '.');
+    const parsed = parseFloat(normalizedValue);
+    return isNaN(parsed) ? 0 : parsed;
+  };
+
+  // Helper function to check if a string represents a valid number
+  const isValidNumber = (value: string): boolean => {
+    if (!value || value.trim() === '') return true; // Empty is valid (will be 0)
+    
+    const trimmedValue = value.trim();
+    
+    // Replace comma with dot for parsing
+    const normalizedValue = trimmedValue.replace(',', '.');
+    
+    // Check if the normalized value matches a valid number pattern
+    // This regex allows: optional minus, digits, optional decimal point with digits
+    const numberPattern = /^-?\d+(\.\d+)?$/;
+    
+    // First check if it matches the pattern
+    if (!numberPattern.test(normalizedValue)) {
+      return false;
+    }
+    
+    // Then check if parseFloat gives a valid result
+    const parsed = parseFloat(normalizedValue);
+    return !isNaN(parsed) && isFinite(parsed);
+  };
+
+  const handlePriceChangeTTC = async (feeName: string, priceTTC: string) => {
     if (disabled) return;
     
-    const numPrice = parseFloat(price) || 0;
+    // Update input errors state
+    const newErrors = new Set(feeInputErrors);
+    if (!isValidNumber(priceTTC)) {
+      newErrors.add(`${feeName}-priceTTC`);
+    } else {
+      newErrors.delete(`${feeName}-priceTTC`);
+    }
+    setFeeInputErrors(newErrors);
+    
+    const numPriceTTC = parseFlexibleNumber(priceTTC);
+    const numPriceHT = numPriceTTC / 1.20; // Convert TTC to HT
     const updatedFees = localFees.map(fee => {
       if (fee.name === feeName) {
-        return { ...fee, price: numPrice };
+        return { ...fee, price: numPriceHT, priceTTCInput: priceTTC };
       }
       return fee;
     });
@@ -93,10 +137,13 @@ export function QuoteFees({ quoteId, disabled = false, fees, onFeesChange, onFee
     setLocalFees(updatedFees);
     onFeesChange(updatedFees);
 
-    try {
-      await updateQuoteFee(quoteId, updatedFees);
-    } catch (error) {
-      console.error('Error updating fee price:', error);
+    // Only save to backend if the number is valid
+    if (isValidNumber(priceTTC)) {
+      try {
+        await updateQuoteFee(quoteId, updatedFees);
+      } catch (error) {
+        console.error('Error updating fee price:', error);
+      }
     }
   };
 
@@ -140,9 +187,18 @@ export function QuoteFees({ quoteId, disabled = false, fees, onFeesChange, onFee
       return;
     }
 
+    // Check if price is valid
+    if (!isValidNumber(newCustomFeePrice)) {
+      return; // Don't add if price is invalid
+    }
+
+    // Convert TTC to HT (the input is TTC, but we store as HT)
+    const priceTTC = parseFlexibleNumber(newCustomFeePrice);
+    const priceHT = priceTTC / 1.20;
+
     const newFee = {
       name: newCustomFeeName.trim(),
-      price: parseFloat(newCustomFeePrice) || 0,
+      price: priceHT, // Store as HT
       enabled: true,
       description: newCustomFeeDescription.trim(),
       isCustom: true
@@ -172,11 +228,28 @@ export function QuoteFees({ quoteId, disabled = false, fees, onFeesChange, onFee
     const newFeesToDelete = new Set(feesToDelete);
     
     // Toggle fee in the Set
+    const isBeingMarkedForDeletion = !newFeesToDelete.has(feeName);
+    
     if (newFeesToDelete.has(feeName)) {
--      newFeesToDelete.delete(feeName);
+      newFeesToDelete.delete(feeName);
     } else {
       newFeesToDelete.add(feeName);
     }
+    
+    // Update the fee's enabled state based on deletion status
+    const updatedFees = localFees.map(fee => {
+      if (fee.name === feeName) {
+        return { 
+          ...fee, 
+          enabled: isBeingMarkedForDeletion ? false : fee.enabled // Disable when marked for deletion
+        };
+      }
+      return fee;
+    });
+
+    // Update local fees state
+    setLocalFees(updatedFees);
+    onFeesChange(updatedFees);
         
     // Update local state
     setFeesToDelete(newFeesToDelete);
@@ -184,6 +257,15 @@ export function QuoteFees({ quoteId, disabled = false, fees, onFeesChange, onFee
     // Notify parent component
     if (onFeesToDeleteChange) {
       onFeesToDeleteChange(newFeesToDelete);
+    }
+
+    // Save to backend if not marked for deletion (when re-enabling)
+    if (!isBeingMarkedForDeletion) {
+      try {
+        updateQuoteFee(quoteId, updatedFees);
+      } catch (error) {
+        console.error('Error updating fee:', error);
+      }
     }
   };
 
@@ -214,16 +296,13 @@ export function QuoteFees({ quoteId, disabled = false, fees, onFeesChange, onFee
             )}
           </div>
           <div className="space-y-1">
-            <Label className="text-xs text-gray-600">Prix HT</Label>
+            <Label className="text-xs text-gray-600">Prix TTC</Label>
             <Input
-              type="number"
               value={newCustomFeePrice}
               onChange={(e) => setNewCustomFeePrice(e.target.value)}
               disabled={disabled}
-              className="border-gray-200 h-8 text-sm"
+              className={`border-gray-200 h-8 text-sm ${!isValidNumber(newCustomFeePrice) && newCustomFeePrice.trim() !== '' ? 'border-red-500' : ''}`}
               placeholder="0.00"
-              min="0"
-              step="0.01"
             />
           </div>
           <div className="space-y-1">
@@ -240,7 +319,7 @@ export function QuoteFees({ quoteId, disabled = false, fees, onFeesChange, onFee
         <div className="mt-3">
           <Button
             onClick={(e) => handleAddCustomFee(e)}
-            disabled={disabled || !newCustomFeeName.trim() || !newCustomFeePrice.trim()}
+            disabled={disabled || !newCustomFeeName.trim() || !newCustomFeePrice.trim() || !isValidNumber(newCustomFeePrice)}
             className="bg-white h-8 text-sm border border-lime-500 text-lime-500 hover:bg-lime-50 disabled:bg-gray-50"
             type="button"
           >
@@ -291,15 +370,12 @@ export function QuoteFees({ quoteId, disabled = false, fees, onFeesChange, onFee
               </CardHeader>
               <CardContent className="space-y-3">
                 <div className="space-y-1">
-                  <Label className="text-xs text-gray-600">Prix HT</Label>
+                  <Label className="text-xs text-gray-600">Prix TTC</Label>
                   <Input
-                    type="number"
-                    value={fee.price || ''}
-                    onChange={(e) => handlePriceChange(fee.name, e.target.value)}
+                    value={fee.priceTTCInput !== undefined ? fee.priceTTCInput : (fee.price ? (fee.price * 1.20).toFixed(2) : '')}
+                    onChange={(e) => handlePriceChangeTTC(fee.name, e.target.value)}
                     disabled={!fee.enabled || disabled || isMarkedForDeletion}
-                    className={`border-gray-200 h-8 text-sm ${isMarkedForDeletion ? 'opacity-50' : ''}`}
-                    min="0"
-                    step="0.01"
+                    className={`border-gray-200 h-8 text-sm ${isMarkedForDeletion ? 'opacity-50' : ''} ${feeInputErrors.has(`${fee.name}-priceTTC`) ? 'border-red-500' : ''}`}
                   />
                 </div>
                 <div className="space-y-1">
@@ -319,4 +395,4 @@ export function QuoteFees({ quoteId, disabled = false, fees, onFeesChange, onFee
       </div>
     </div>
   );
-} 
+}

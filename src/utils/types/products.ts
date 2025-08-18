@@ -9,6 +9,7 @@ export type Product = {
     description: string,
     image_url: string,
     category: string,
+    status: string,
     created_at: string,
     last_update: string,
 }

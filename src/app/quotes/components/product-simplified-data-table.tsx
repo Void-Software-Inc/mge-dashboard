@@ -129,7 +129,7 @@ export function ProductSimplifiedDataTable({ products, existingItems, isLoading,
                                         {product.name}
                                     </TableCell>
                                     <TableCell className={isExisting ? 'text-gray-500' : ''}>
-                                        {`${product.price} €`}
+                                        {`${product.ttc_price} €`}
                                     </TableCell>
                                     <TableCell>
                                         {isExisting ? (

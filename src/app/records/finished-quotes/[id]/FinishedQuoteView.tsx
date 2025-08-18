@@ -6,12 +6,10 @@ import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { Label } from "@/components/ui/label"
 import { Button } from "@/components/ui/button"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Toaster, toast } from 'sonner'
+import { toast } from 'sonner'
 import { Skeleton } from "@/components/ui/skeleton"
 import { Switch } from "@/components/ui/switch"
-import { ChevronLeftIcon, DownloadIcon, CheckIcon, Cross2Icon, ChevronRightIcon, DoubleArrowLeftIcon, DoubleArrowRightIcon } from "@radix-ui/react-icons"
-import jsPDF from 'jspdf';
+import { ChevronLeftIcon, DownloadIcon, ChevronRightIcon, DoubleArrowLeftIcon, DoubleArrowRightIcon, ExclamationTriangleIcon, CheckCircledIcon } from "@radix-ui/react-icons"
 import 'jspdf-autotable';
 
 import { useRouter } from 'next/navigation'
@@ -19,10 +17,11 @@ import { getFinishedQuotes, getFinishedQuoteItems } from "@/services/quotes"
 import { FinishedQuote, quoteStatus, QuoteItem, paymentModes } from "@/utils/types/quotes"
 import { format, parseISO } from 'date-fns';
 import { fr } from 'date-fns/locale';
-import { getProducts } from "@/services/products"
+import { getAllProducts } from "@/services/products"
 import { Product } from "@/utils/types/products"
 import { generateQuotePDF, generateInvoicePDF } from "@/utils/pdf/generateDocumentPDF"
 import { QuoteFees } from "@/app/quotes/components/QuoteFees"
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import {
   Table,
   TableBody,
@@ -44,7 +43,7 @@ export default function FinishedQuoteView({ quoteId }: { quoteId: string }) {
   const [quoteItems, setQuoteItems] = useState<QuoteItem[]>([])
   const [products, setProducts] = useState<Product[]>([])
   const [isLoading, setIsLoading] = useState(true)
-  const [showHtTtcInPdf, setShowHtTtcInPdf] = useState(true)
+  const [showHtTtcInPdf, setShowHtTtcInPdf] = useState(false)
   
   // Move pagination state to the top level
   const [currentPage, setCurrentPage] = useState(1);
@@ -70,7 +69,7 @@ export default function FinishedQuoteView({ quoteId }: { quoteId: string }) {
       setQuoteItems(items)
       
       // Fetch products for reference
-      const productsData = await getProducts()
+      const productsData = await getAllProducts()
       setProducts(productsData)
       
     } catch (error) {
@@ -387,12 +386,9 @@ export default function FinishedQuoteView({ quoteId }: { quoteId: string }) {
                 />
               </div>
             </div>
-          </div>
-          
-          {/* Add Description Section */}
-          <div className="mb-8 border border-gray-200 rounded-lg p-6 bg-gray-50">
-            <h3 className="text-lg font-semibold mb-4">Description</h3>
+            
             <div className="p-4 border border-gray-200 rounded-lg bg-white">
+              <h4 className="text-base font-medium mb-3 text-gray-700">Description</h4>
               <Textarea 
                 value={quote?.description || 'Aucune description'}
                 className="w-full min-h-[100px] bg-gray-50"
@@ -401,19 +397,10 @@ export default function FinishedQuoteView({ quoteId }: { quoteId: string }) {
             </div>
           </div>
           
-          {/* Add QuoteFees section */}
-          <div className="mb-8 border border-gray-200 rounded-lg p-6 bg-gray-50">
-            <QuoteFees
-              quoteId={parseInt(quoteId)}
-              disabled={true}
-              fees={quote.fees || []}
-              onFeesChange={() => {}}
-            />
-          </div>
-          
-          {/* Products Section */}
+          {/* Enhanced Products Section */}
           <div className="mb-8 border border-gray-200 rounded-lg p-6 bg-gray-50">
             <h3 className="text-lg font-semibold mb-4">Produits du devis</h3>
+            
             <div className="p-4 border border-gray-200 rounded-lg bg-white">
               {quoteItems.length === 0 ? (
                 <div className="text-center py-4 text-gray-500">Aucun produit dans ce devis</div>
@@ -442,6 +429,7 @@ export default function FinishedQuoteView({ quoteId }: { quoteId: string }) {
                           <Table className="w-full">
                             <TableHeader>
                               <TableRow className="h-16">
+                                <TableHead className="w-[60px] whitespace-nowrap">Statut</TableHead>
                                 <TableHead className="w-1/6 whitespace-nowrap">Image</TableHead>
                                 <TableHead className="w-1/3 whitespace-nowrap">Nom</TableHead>
                                 <TableHead className="w-1/6 whitespace-nowrap">Quantité</TableHead>
@@ -455,6 +443,29 @@ export default function FinishedQuoteView({ quoteId }: { quoteId: string }) {
                                   const product = products.find(p => p.id === item.item.product_id);
                                   return (
                                     <TableRow key={`product-${idx}`} className="h-20">
+                                      <TableCell className="whitespace-nowrap">
+                                        <TooltipProvider>
+                                          <Tooltip>
+                                            <TooltipTrigger asChild>
+                                              <div className="flex items-center justify-center">
+                                                {product && product.status === 'record' ? (
+                                                  <ExclamationTriangleIcon className="h-5 w-5 text-orange-500" />
+                                                ) : (
+                                                  <CheckCircledIcon className="h-5 w-5 text-green-500" />
+                                                )}
+                                              </div>
+                                            </TooltipTrigger>
+                                            <TooltipContent>
+                                              <p>
+                                                {product && product.status === 'record' 
+                                                  ? 'Ce produit est dans les archives, attention!' 
+                                                  : 'Produit actif'
+                                                }
+                                              </p>
+                                            </TooltipContent>
+                                          </Tooltip>
+                                        </TooltipProvider>
+                                      </TableCell>
                                       <TableCell className="align-middle">
                                         {product?.image_url ? (
                                           <div className="relative w-16 h-16 rounded-md overflow-hidden">
@@ -542,13 +553,62 @@ export default function FinishedQuoteView({ quoteId }: { quoteId: string }) {
               )}
             </div>
           </div>
-          
-          {/* Price and Payment Section */}
+
+          {/* Options supplémentaires Section */}
           <div className="mb-8 border border-gray-200 rounded-lg p-6 bg-gray-50">
-            <h3 className="text-lg font-semibold mb-4">Prix et Paiement</h3>
+            <h3 className="text-lg font-semibold mb-4">Options supplémentaires</h3>
+            
+            <div className="p-4 border border-gray-200 rounded-lg bg-white">
+              <div className="flex items-center space-x-2 mb-4">
+                <Switch
+                  id="is_traiteur"
+                  checked={quote?.is_traiteur ?? false}
+                  disabled
+                />
+                <Label htmlFor="is_traiteur" className="text-base">Service traiteur supplémentaire</Label>
+              </div>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  <Label htmlFor="traiteur_price_ttc" className="text-sm text-gray-600">Prix traiteur TTC</Label>
+                  <Input 
+                    id="traiteur_price_ttc" 
+                    value={quote?.is_traiteur && quote?.traiteur_price ? (quote.traiteur_price * 1.20).toFixed(2) : '0.00'} 
+                    className="w-full text-base mt-1 bg-gray-50" 
+                    disabled
+                  />
+                </div>
+                
+                <div>
+                  <Label htmlFor="traiteur_price_ht" className="text-sm text-gray-600">Prix traiteur HT (calculé)</Label>
+                  <Input 
+                    id="traiteur_price_ht" 
+                    value={quote?.is_traiteur ? (quote?.traiteur_price || 0).toFixed(2) : '0.00'} 
+                    className="w-full text-base mt-1 bg-gray-50" 
+                    disabled
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Frais additionnels Section */}
+          <div className="mb-8 border border-gray-200 rounded-lg p-6 bg-gray-50">
+            <QuoteFees
+              quoteId={parseInt(quoteId)}
+              disabled={true}
+              fees={quote?.fees || []}
+              onFeesChange={() => {}}
+              onFeesToDeleteChange={() => {}}
+              onFeesSubtotalChange={() => {}}
+            />
+          </div>
+
+          {/* Détails du prix Section */}
+          <div className="mb-8 border border-gray-200 rounded-lg p-6 bg-gray-50">
+            <h3 className="text-lg font-semibold mb-4">Détails du prix</h3>
             
             <div className="p-4 border border-gray-200 rounded-lg bg-white mb-4">
-              <h4 className="text-base font-medium mb-3">Détail du prix</h4>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
                   <Label htmlFor="decoration_subtotal_ht" className="text-sm text-gray-600">Sous-total meubles et décoration HT</Label>
@@ -556,29 +616,29 @@ export default function FinishedQuoteView({ quoteId }: { quoteId: string }) {
                     id="decoration_subtotal_ht" 
                     type="number"
                     value={calculateSubtotal('decoration')}
-                    className="w-full text-base font-semibold bg-gray-50" 
+                    className="w-full text-base font-semibold disabled:opacity-100 disabled:text-gray-600 bg-gray-50" 
                     disabled
                   />
                 </div>
                 
-                <div>
-                  <Label htmlFor="traiteur_subtotal_ht" className="text-sm text-gray-600">Sous-total traiteur HT</Label>
-                  <Input 
-                    id="traiteur_subtotal_ht" 
-                    type="number"
-                    value={calculateSubtotal('traiteur')}
-                    className="w-full text-base font-semibold bg-gray-50" 
-                    disabled
-                  />
-                </div>
-
                 <div>
                   <Label htmlFor="decoration_subtotal_ttc" className="text-sm text-gray-600">Sous-total meubles et décoration TTC</Label>
                   <Input 
                     id="decoration_subtotal_ttc" 
                     type="number"
                     value={calculateSubtotal('decoration', true)}
-                    className="w-full text-base font-semibold bg-gray-50" 
+                    className="w-full text-base font-semibold disabled:text-gray-600 disabled:opacity-100 bg-gray-50" 
+                    disabled
+                  />
+                </div>
+
+                <div>
+                  <Label htmlFor="traiteur_subtotal_ht" className="text-sm text-gray-600">Sous-total traiteur HT</Label>
+                  <Input 
+                    id="traiteur_subtotal_ht" 
+                    type="number"
+                    value={calculateSubtotal('traiteur')}
+                    className="w-full text-base font-semibold disabled:opacity-100 disabled:text-gray-600 bg-gray-50" 
                     disabled
                   />
                 </div>
@@ -589,29 +649,51 @@ export default function FinishedQuoteView({ quoteId }: { quoteId: string }) {
                     id="traiteur_subtotal_ttc" 
                     type="number"
                     value={calculateSubtotal('traiteur', true)}
-                    className="w-full text-base font-semibold bg-gray-50" 
+                    className="w-full text-base font-semibold disabled:text-gray-600 disabled:opacity-100 bg-gray-50" 
                     disabled
                   />
                 </div>
 
                 <div>
-                  <Label htmlFor="fees_subtotal_ht" className="text-sm text-gray-600">Frais supplémentaires Montant HT</Label>
+                  <Label htmlFor="additional_traiteur_ht" className="text-sm text-gray-600">Service traiteur supplémentaire HT</Label>
+                  <Input 
+                    id="additional_traiteur_ht" 
+                    type="number"
+                    value={quote?.is_traiteur ? (quote?.traiteur_price || 0).toFixed(2) : '0.00'}
+                    className="w-full text-base font-semibold disabled:text-gray-600 disabled:opacity-100 bg-gray-50" 
+                    disabled
+                  />
+                </div>
+
+                <div>
+                  <Label htmlFor="additional_traiteur_ttc" className="text-sm text-gray-600">Service traiteur supplémentaire TTC</Label>
+                  <Input 
+                    id="additional_traiteur_ttc" 
+                    type="number"
+                    value={quote?.is_traiteur ? ((quote?.traiteur_price || 0) * 1.20).toFixed(2) : '0.00'}
+                    className="w-full text-base font-semibold disabled:text-gray-600 disabled:opacity-100 bg-gray-50" 
+                    disabled
+                  />
+                </div>
+
+                <div>
+                  <Label htmlFor="fees_subtotal_ht" className="text-sm text-gray-600">Frais additionnels HT</Label>
                   <Input 
                     id="fees_subtotal_ht" 
                     type="number"
                     value={(quote?.fees?.reduce((sum, fee) => sum + (fee.enabled ? (fee.price || 0) : 0), 0) || 0).toFixed(2)}
-                    className="w-full text-base font-semibold bg-gray-50" 
+                    className="w-full text-base font-semibold disabled:text-gray-600 disabled:opacity-100 bg-gray-50" 
                     disabled
                   />
                 </div>
 
                 <div>
-                  <Label htmlFor="fees_subtotal_ttc" className="text-sm text-gray-600">Frais supplémentaires Montant TTC</Label>
+                  <Label htmlFor="fees_subtotal_ttc" className="text-sm text-gray-600">Frais additionnels TTC</Label>
                   <Input 
                     id="fees_subtotal_ttc" 
                     type="number"
                     value={((quote?.fees?.reduce((sum, fee) => sum + (fee.enabled ? (fee.price || 0) : 0), 0) || 0) * 1.20).toFixed(2)}
-                    className="w-full text-base font-semibold bg-gray-50" 
+                    className="w-full text-base font-semibold disabled:text-gray-600 disabled:opacity-100 bg-gray-50" 
                     disabled
                   />
                 </div>
@@ -620,8 +702,9 @@ export default function FinishedQuoteView({ quoteId }: { quoteId: string }) {
                   <Label htmlFor="total_cost" className="text-sm text-gray-600">Prix total HT</Label>
                   <Input 
                     id="total_cost" 
-                    value={quote?.total_cost?.toFixed(2) ?? '0.00'} 
-                    className="w-full text-base font-semibold bg-gray-50" 
+                    type="number"
+                    value={(quote!.total_cost).toFixed(2) ?? ''} 
+                    className="w-full text-base font-semibold disabled:text-gray-600 disabled:opacity-100 bg-gray-50" 
                     disabled
                   />
                 </div>
@@ -630,8 +713,9 @@ export default function FinishedQuoteView({ quoteId }: { quoteId: string }) {
                   <Label htmlFor="tva_amount" className="text-sm text-gray-600">TVA (20%)</Label>
                   <Input 
                     id="tva_amount" 
+                    type="number"
                     value={quote?.total_cost ? (quote.total_cost * 0.2).toFixed(2) : '0.00'} 
-                    className="w-full text-base font-semibold bg-gray-50" 
+                    className="w-full text-base font-semibold disabled:opacity-100 disabled:text-gray-600 bg-gray-50" 
                     disabled
                   />
                 </div>
@@ -640,53 +724,19 @@ export default function FinishedQuoteView({ quoteId }: { quoteId: string }) {
                   <Label htmlFor="total_cost_ttc" className="text-sm text-gray-800 font-bold">Prix total TTC</Label>
                   <Input 
                     id="total_cost_ttc" 
-                    value={quote?.total_cost ? calculateTTC(quote.total_cost).toFixed(2) : '0.00'} 
+                    type="number"
+                    value={quote?.total_cost ? calculateTTC(quote.total_cost).toFixed(2) : ''} 
                     className="w-full text-base font-semibold bg-white border-lime-400 disabled:text-gray-800 disabled:opacity-100" 
                     disabled
                   />
                 </div>
               </div>
             </div>
+          </div>
 
-            <div className="mb-4">
-              <Label htmlFor="is_traiteur" className="text-base font-medium">Options supplémentaires</Label>
-              <div className="mt-2 grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="p-4 border border-gray-200 rounded-lg bg-white">
-                  <div className="flex items-center space-x-2 mb-4">
-                    <Switch
-                      id="is_traiteur"
-                      checked={quote?.is_traiteur ?? false}
-                      disabled
-                    />
-                    <Label htmlFor="is_traiteur" className="text-base">Service traiteur</Label>
-                  </div>
-                  
-                  <div>
-                    <Label htmlFor="traiteur_price" className="text-sm text-gray-600">Prix traiteur HT</Label>
-                    <Input 
-                      id="traiteur_price" 
-                      value={quote?.traiteur_price?.toFixed(2) ?? '0.00'} 
-                      className="w-full text-base mt-1 bg-gray-50" 
-                      disabled
-                    />
-                  </div>
-                </div>
-                
-                <div className="p-4 border border-gray-200 rounded-lg bg-white">
-                  <h4 className="text-base font-medium mb-3 text-gray-700">Frais supplémentaires</h4>
-                  <div>
-                    <Label htmlFor="other_expenses" className="text-sm text-gray-600">Montant HT</Label>
-                    <Input 
-                      id="other_expenses" 
-                      value={quote?.other_expenses?.toFixed(2) ?? '0.00'} 
-                      className="w-full text-base mt-1 bg-gray-50" 
-                      disabled
-                    />
-                  </div>
-                </div>
-              </div>
-            </div>
-
+          {/* Prix et Paiement Section */}
+          <div className="mb-8 border border-gray-200 rounded-lg p-6 bg-gray-50">
+            <h3 className="text-lg font-semibold mb-4">Acompte versé, modes de paiement et payé intégralement</h3>
             <div className="p-4 border border-gray-200 rounded-lg bg-white mb-6">
               <div className="flex items-center justify-between mb-4">
                 <div className="flex items-center space-x-2">
@@ -703,16 +753,13 @@ export default function FinishedQuoteView({ quoteId }: { quoteId: string }) {
                 </div>
               </div>
               
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-4">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 <div>
                   <Label htmlFor="deposit_percentage" className="text-sm text-gray-600">Pourcentage de l'acompte (%)</Label>
                   <Input 
                     id="deposit_percentage" 
-                    value={
-                      quote?.deposit_percentage !== undefined && quote?.deposit_percentage !== null
-                        ? quote.deposit_percentage.toString()
-                        : '0'
-                    } 
+                    type="text"
+                    value={quote?.deposit_percentage?.toString() || '30'} 
                     className="w-full text-base bg-gray-50"
                     disabled
                   />
@@ -722,11 +769,12 @@ export default function FinishedQuoteView({ quoteId }: { quoteId: string }) {
                   <Label htmlFor="deposit_amount" className="text-sm text-gray-600">Montant de l'acompte TTC</Label>
                   <Input 
                     id="deposit_amount" 
+                    type="number"
                     value={
-                      quote?.total_cost && (quote?.deposit_percentage || quote?.deposit_percentage === 0)
+                      quote?.total_cost && quote?.deposit_percentage
                         ? (quote.is_deposit 
                             ? quote.deposit_amount?.toFixed(2) 
-                            : (calculateTTC(quote.total_cost) * (quote.deposit_percentage || 0) / 100).toFixed(2))
+                            : (calculateTTC(quote.total_cost) * (quote.deposit_percentage / 100)).toFixed(2))
                         : '0.00'
                     } 
                     className={`w-full text-base font-semibold ${quote?.is_deposit ? 'bg-lime-50 border-lime-200' : 'bg-gray-50'}`}
@@ -752,7 +800,7 @@ export default function FinishedQuoteView({ quoteId }: { quoteId: string }) {
                             // Calculate remaining amount based on deposit status
                             const totalTTC = calculateTTC(quote.total_cost);
                             const depositAmount = quote.is_deposit 
-                              ? calculateTTC(quote.total_cost) * (quote.deposit_percentage || 0) / 100
+                              ? calculateTTC(quote.total_cost) * (quote.deposit_percentage / 100)
                               : 0;
                             const remainingAmount = totalTTC - depositAmount - totalPayments;
                             
@@ -813,9 +861,9 @@ export default function FinishedQuoteView({ quoteId }: { quoteId: string }) {
                             sum + (payment.amount === null ? 0 : Number(payment.amount)), 
                             0
                           ) || 0) + 
-                          // Add deposit amount if deposit is paid - calculate based on percentage
+                          // Add deposit amount if deposit is paid - calculate based on current percentage
                           (quote.is_deposit && quote.total_cost 
-                            ? calculateTTC(quote.total_cost) * (quote.deposit_percentage || 0) / 100
+                            ? calculateTTC(quote.total_cost) * (quote.deposit_percentage / 100)
                             : 0)
                         ).toFixed(2)}
                     className="w-full mt-1 text-base font-semibold bg-white border-lime-200"
