@@ -18,7 +18,7 @@ import { isEqual as lodashEqual } from 'lodash';
 import { useRouter } from 'next/navigation'
 import { useAppContext } from "@/app/context/AppContext"
 import { getQuote, getQuoteItems, updateQuote, deleteQuoteItem, finishQuote, updateQuoteItem, createQuoteItem } from "@/services/quotes"
-import { Quote, quoteStatus, QuoteItem, Address, PaymentMode, paymentModes, QuotePayment } from "@/utils/types/quotes"
+import { Quote, quoteStatus, QuoteItem, Address, paymentModes } from "@/utils/types/quotes"
 import { DatePicker } from "../components/date-picker"
 import { QuoteItemList } from "../components/quote-item-list"
 import { format, parseISO } from 'date-fns';
