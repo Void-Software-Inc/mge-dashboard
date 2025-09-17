@@ -26,6 +26,8 @@ import { Product } from "@/utils/types/products"
 import { getAllProducts } from "@/services/products"
 import { generateQuotePDF } from "@/utils/pdf/generateDocumentPDF"
 import { QuoteFees } from "../components/QuoteFees"
+import { CodePromo } from "@/utils/types/codesPromos"
+import { getCodesPromos } from "@/services/codesPromos"
 
 interface FormErrors {
   first_name?: string;
@@ -84,6 +86,11 @@ export default function QuoteForm({ quoteId }: { quoteId: string }) {
   const [feesSubtotal, setFeesSubtotal] = useState(0);
   const [showHtTtcInPdf, setShowHtTtcInPdf] = useState(false);
 
+  // Promotional codes state
+  const [promoCodes, setPromoCodes] = useState<CodePromo[]>([]);
+  const [isPromoCodesLoading, setIsPromoCodesLoading] = useState(false);
+  const [selectedPromoCode, setSelectedPromoCode] = useState<CodePromo | null>(null);
+
   useEffect(() => {
     const fetchProducts = async () => {
       setIsProductsLoading(true);
@@ -100,6 +107,36 @@ export default function QuoteForm({ quoteId }: { quoteId: string }) {
 
     fetchProducts();
   }, []);
+
+  // Fetch promotional codes
+  useEffect(() => {
+    const fetchPromoCodes = async () => {
+      setIsPromoCodesLoading(true);
+      try {
+        const fetchedPromoCodes = await getCodesPromos();
+        // Only get active promo codes
+        const activePromoCodes = fetchedPromoCodes.filter(promo => promo.is_active);
+        setPromoCodes(activePromoCodes);
+      } catch (error) {
+        console.error('Error fetching promotional codes:', error);
+        toast.error('Failed to load promotional codes');
+      } finally {
+        setIsPromoCodesLoading(false);
+      }
+    };
+
+    fetchPromoCodes();
+  }, []);
+
+  // Set selected promo code when formData is loaded
+  useEffect(() => {
+    if (formData?.code_promo && promoCodes.length > 0) {
+      const existingPromoCode = promoCodes.find(promo => promo.id === formData.code_promo);
+      if (existingPromoCode) {
+        setSelectedPromoCode(existingPromoCode);
+      }
+    }
+  }, [formData?.code_promo, promoCodes]);
 
   const handleGoBack = useCallback(() => {
     router.push('/quotes')
@@ -418,6 +455,21 @@ export default function QuoteForm({ quoteId }: { quoteId: string }) {
     setFormData(prev => prev ? { ...prev, [id]: value } : null)
   }
 
+  const handlePromoCodeChange = (value: string) => {
+    if (value === 'none') {
+      setSelectedPromoCode(null);
+      setFormData(prev => prev ? { ...prev, code_promo: null } : null);
+    } else {
+      const promoId = parseInt(value);
+      const promo = promoCodes.find(p => p.id === promoId);
+      if (promo) {
+        setSelectedPromoCode(promo);
+        setFormData(prev => prev ? { ...prev, code_promo: promoId } : null);
+      }
+    }
+    setIsChanged(true);
+  };
+
   const handleSwitchChange = (id: string) => {
     setFormData((prevData) => {
       if (!prevData) return null;
@@ -614,7 +666,7 @@ export default function QuoteForm({ quoteId }: { quoteId: string }) {
     return includeTax ? (totalHT).toFixed(2) : (totalHT / 1.20).toFixed(2);
   };
 
-  // Update the total cost calculation to properly include all components
+  // Update the total cost calculation to properly include all components and promotional discount
   useEffect(() => {
     if (!formData) return;
     
@@ -635,8 +687,17 @@ export default function QuoteForm({ quoteId }: { quoteId: string }) {
     // Fees (stored as HT)
     const feesHT = formData.fees?.reduce((sum, fee) => sum + (fee.enabled ? (fee.price || 0) : 0), 0) || 0;
     
-    // Calculate total HT
-    const newTotalCostHT = Number((decorationTotalHT + traiteurTotalHT + additionalTraiteurHT + otherExpensesHT + feesHT).toFixed(2));
+    // Calculate subtotal before discount
+    const subtotalBeforeDiscountHT = decorationTotalHT + traiteurTotalHT + additionalTraiteurHT + otherExpensesHT + feesHT;
+    
+    // Apply promotional discount if a promo code is selected
+    let newTotalCostHT = subtotalBeforeDiscountHT;
+    if (selectedPromoCode && selectedPromoCode.amount > 0) {
+      const discountAmount = (subtotalBeforeDiscountHT * selectedPromoCode.amount) / 100;
+      newTotalCostHT = subtotalBeforeDiscountHT - discountAmount;
+    }
+    
+    newTotalCostHT = Number(newTotalCostHT.toFixed(2));
     
     if (formData.total_cost !== newTotalCostHT) {
       setFormData(prev => {
@@ -654,6 +715,7 @@ export default function QuoteForm({ quoteId }: { quoteId: string }) {
     formData?.traiteur_price, 
     formData?.other_expenses,
     formData?.fees,
+    selectedPromoCode,
     calculateSubtotal,
     quoteItems
   ]);
@@ -1416,6 +1478,42 @@ export default function QuoteForm({ quoteId }: { quoteId: string }) {
                   />
                   {errors.total_cost && <p className="text-red-500 text-sm mt-1">{errors.total_cost}</p>}
                 </div>
+
+                {selectedPromoCode && (() => {
+                  const decorationTotalTTC = parseFloat(calculateSubtotal('decoration', true));
+                  const traiteurTotalTTC = parseFloat(calculateSubtotal('traiteur', true));
+                  const decorationTotalHT = decorationTotalTTC / 1.20;
+                  const traiteurTotalHT = traiteurTotalTTC / 1.20;
+                  const additionalTraiteurHT = formData?.is_traiteur ? (formData?.traiteur_price || 0) : 0;
+                  const otherExpensesHT = formData?.other_expenses || 0;
+                  const feesHT = formData?.fees?.reduce((sum, fee) => sum + (fee.enabled ? (fee.price || 0) : 0), 0) || 0;
+                  const subtotalBeforeDiscountHT = decorationTotalHT + traiteurTotalHT + additionalTraiteurHT + otherExpensesHT + feesHT;
+                  const discountAmountHT = (subtotalBeforeDiscountHT * selectedPromoCode.amount) / 100;
+                  
+                  return (
+                    <>
+                      <div>
+                        <Label className="text-sm text-gray-600">Sous-total avant remise HT</Label>
+                        <Input 
+                          type="number"
+                          value={subtotalBeforeDiscountHT.toFixed(2)}
+                          className="w-full text-base font-semibold disabled:text-gray-600 disabled:opacity-100" 
+                          disabled
+                        />
+                      </div>
+                      
+                      <div>
+                        <Label className="text-sm text-gray-600">Remise ({selectedPromoCode.amount}%) HT</Label>
+                        <Input 
+                          type="number"
+                          value={`-${discountAmountHT.toFixed(2)}`}
+                          className="w-full text-base font-semibold disabled:text-red-600 disabled:opacity-100" 
+                          disabled
+                        />
+                      </div>
+                    </>
+                  );
+                })()}
                 
                 <div>
                   <Label htmlFor="tva_amount" className="text-sm text-gray-600">TVA (20%)</Label>
@@ -1438,6 +1536,62 @@ export default function QuoteForm({ quoteId }: { quoteId: string }) {
                     disabled
                   />
                 </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Code Promo Section */}
+          <div className="mb-8 border border-gray-200 rounded-lg p-6 bg-gray-50">
+            <h3 className="text-lg font-semibold mb-4">Code promo</h3>
+            
+            <div className="p-4 border border-gray-200 rounded-lg bg-white">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-end">
+                <div>
+                  <Label htmlFor="promo_code" className="text-sm text-gray-600">Code promo</Label>
+                  <Select
+                    value={selectedPromoCode?.id?.toString() || 'none'}
+                    onValueChange={handlePromoCodeChange}
+                    disabled={formData?.is_paid || formData?.is_deposit || isPromoCodesLoading}
+                  >
+                    <SelectTrigger className="w-full mt-1">
+                      <SelectValue placeholder={isPromoCodesLoading ? "Chargement..." : "Sélectionner un code promo"} />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="none">Aucun code promo</SelectItem>
+                      {promoCodes.map((promo) => (
+                        <SelectItem key={promo.id} value={promo.id.toString()}>
+                          {promo.code_promo} - {promo.amount}% de réduction
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                
+                {selectedPromoCode && (
+                  <div>
+                    <Label className="text-sm text-gray-600">Réduction appliquée</Label>
+                    <div className="text-lg font-semibold text-lime-600 mt-1">
+                      -{selectedPromoCode.amount}%
+                    </div>
+                    {(() => {
+                      const decorationTotalTTC = parseFloat(calculateSubtotal('decoration', true));
+                      const traiteurTotalTTC = parseFloat(calculateSubtotal('traiteur', true));
+                      const decorationTotalHT = decorationTotalTTC / 1.20;
+                      const traiteurTotalHT = traiteurTotalTTC / 1.20;
+                      const additionalTraiteurHT = formData?.is_traiteur ? (formData?.traiteur_price || 0) : 0;
+                      const otherExpensesHT = formData?.other_expenses || 0;
+                      const feesHT = formData?.fees?.reduce((sum, fee) => sum + (fee.enabled ? (fee.price || 0) : 0), 0) || 0;
+                      const subtotalHT = decorationTotalHT + traiteurTotalHT + additionalTraiteurHT + otherExpensesHT + feesHT;
+                      const discountAmount = (subtotalHT * selectedPromoCode.amount) / 100;
+                      
+                      return (
+                        <div className="text-xs text-lime-700 mt-1">
+                          Économie: {discountAmount.toFixed(2)}€ HT ({(discountAmount * 1.20).toFixed(2)}€ TTC)
+                        </div>
+                      );
+                    })()}
+                  </div>
+                )}
               </div>
             </div>
           </div>
