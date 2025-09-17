@@ -19,6 +19,8 @@ import { format, parseISO } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { getAllProducts } from "@/services/products"
 import { Product } from "@/utils/types/products"
+import { CodePromo } from "@/utils/types/codesPromos"
+import { getCodesPromos } from "@/services/codesPromos"
 import { generateQuotePDF, generateInvoicePDF } from "@/utils/pdf/generateDocumentPDF"
 import { QuoteFees } from "@/app/quotes/components/QuoteFees"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
@@ -44,6 +46,10 @@ export default function FinishedQuoteView({ quoteId }: { quoteId: string }) {
   const [products, setProducts] = useState<Product[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [showHtTtcInPdf, setShowHtTtcInPdf] = useState(false)
+  
+  // Promotional codes state
+  const [selectedPromoCode, setSelectedPromoCode] = useState<CodePromo | null>(null)
+  const [isPromoCodesLoading, setIsPromoCodesLoading] = useState(false)
   
   // Move pagination state to the top level
   const [currentPage, setCurrentPage] = useState(1);
@@ -83,6 +89,26 @@ export default function FinishedQuoteView({ quoteId }: { quoteId: string }) {
   useEffect(() => {
     fetchFinishedQuote()
   }, [fetchFinishedQuote])
+
+  // Fetch promotional code when quote data is available
+  useEffect(() => {
+    const fetchPromoCode = async () => {
+      if (quote?.code_promo) {
+        setIsPromoCodesLoading(true)
+        try {
+          const codesPromos = await getCodesPromos()
+          const promoCode = codesPromos.find(promo => promo.id === quote.code_promo)
+          setSelectedPromoCode(promoCode || null)
+        } catch (error) {
+          console.error('Error fetching promo code:', error)
+        } finally {
+          setIsPromoCodesLoading(false)
+        }
+      }
+    }
+
+    fetchPromoCode()
+  }, [quote?.code_promo])
 
   const handleGoBack = () => {
     router.push('/records')
@@ -697,6 +723,83 @@ export default function FinishedQuoteView({ quoteId }: { quoteId: string }) {
                     disabled
                   />
                 </div>
+
+                {/* Promotional Code Section */}
+                {quote?.code_promo && selectedPromoCode && (
+                  <>
+                    <div className="md:col-span-2">
+                      <div className="p-3 border border-lime-200 rounded-md bg-lime-50">
+                        <div className="flex items-center justify-between mb-3">
+                          <div className="flex items-center space-x-3">
+                            <div className="bg-lime-300 text-black px-3 py-2 rounded text-sm font-medium flex items-center">
+                              <span className="mr-2">🏷️</span>
+                              {selectedPromoCode.code_promo}
+                            </div>
+                            <div className="text-sm text-gray-700">
+                              Réduction: <span className="font-semibold">{selectedPromoCode.amount}%</span>
+                            </div>
+                            {!selectedPromoCode.is_active && (
+                              <div className="flex items-center text-orange-600 text-sm">
+                                <ExclamationTriangleIcon className="w-4 h-4 mr-1" />
+                                Code inactif (conservé sur ce devis)
+                              </div>
+                            )}
+                          </div>
+                          {selectedPromoCode.is_active && (
+                            <div className="flex items-center text-green-600 text-sm">
+                              <CheckCircledIcon className="w-4 h-4 mr-1" />
+                              Code actif
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                    
+                    <div>
+                      <Label htmlFor="total_before_promo_ht" className="text-sm text-gray-600">Total avant promotion HT</Label>
+                      <Input 
+                        id="total_before_promo_ht" 
+                        type="number"
+                        value={quote?.total_cost ? (quote.total_cost / (1 - selectedPromoCode.amount / 100)).toFixed(2) : '0.00'}
+                        className="w-full text-base font-semibold disabled:text-gray-600 disabled:opacity-100 bg-gray-50" 
+                        disabled
+                      />
+                    </div>
+                    
+                    <div>
+                      <Label htmlFor="total_before_promo_ttc" className="text-sm text-gray-600">Total avant promotion TTC</Label>
+                      <Input 
+                        id="total_before_promo_ttc" 
+                        type="number"
+                        value={quote?.total_cost ? ((quote.total_cost / (1 - selectedPromoCode.amount / 100)) * 1.20).toFixed(2) : '0.00'}
+                        className="w-full text-base font-semibold disabled:text-gray-600 disabled:opacity-100 bg-gray-50" 
+                        disabled
+                      />
+                    </div>
+                    
+                    <div>
+                      <Label htmlFor="promo_discount_ht" className="text-sm text-gray-600">Remise promotion HT</Label>
+                      <Input 
+                        id="promo_discount_ht" 
+                        type="number"
+                        value={quote?.total_cost ? ((quote.total_cost / (1 - selectedPromoCode.amount / 100)) - quote.total_cost).toFixed(2) : '0.00'}
+                        className="w-full text-base font-semibold text-red-600 disabled:opacity-100 bg-red-50" 
+                        disabled
+                      />
+                    </div>
+                    
+                    <div>
+                      <Label htmlFor="promo_discount_ttc" className="text-sm text-gray-600">Remise promotion TTC</Label>
+                      <Input 
+                        id="promo_discount_ttc" 
+                        type="number"
+                        value={quote?.total_cost ? (((quote.total_cost / (1 - selectedPromoCode.amount / 100)) - quote.total_cost) * 1.20).toFixed(2) : '0.00'}
+                        className="w-full text-base font-semibold text-red-600 disabled:opacity-100 bg-red-50" 
+                        disabled
+                      />
+                    </div>
+                  </>
+                )}
 
                 <div>
                   <Label htmlFor="total_cost" className="text-sm text-gray-600">Prix total HT</Label>
