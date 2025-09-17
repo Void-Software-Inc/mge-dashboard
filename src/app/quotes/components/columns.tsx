@@ -13,7 +13,6 @@ import {
   } from "@radix-ui/react-icons"
 import { ColumnDef } from "@tanstack/react-table"
 import { Button } from "@/components/ui/button"
-import { Checkbox } from "@/components/ui/checkbox"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import {
   DropdownMenu,
@@ -354,6 +353,25 @@ export const columns: ColumnDef<Quote>[] = [
         currency: "EUR",
       }).format(priceTTC)
       return <div className="text-right font-extrabold">{formatted}</div>
+    },
+  },
+  {
+    accessorKey: "code_promo",
+    header: () => <div className="text-center whitespace-nowrap overflow-hidden overflow-ellipsis">Promotion</div>,
+    cell: ({ row }) => {
+      const codePromo = row.getValue("code_promo");
+      return (
+        <div className="flex justify-center">
+          {codePromo != null ? (
+            <div className="bg-lime-300 text-black px-2 py-1 rounded text-xs font-medium flex items-center">
+              <span className="mr-1">🏷️</span>
+              PROMO
+            </div>
+          ) : (
+            <div className="text-gray-400">-</div>
+          )}
+        </div>
+      );
     },
   },
   {
