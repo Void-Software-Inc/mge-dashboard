@@ -114,9 +114,7 @@ export default function QuoteForm({ quoteId }: { quoteId: string }) {
       setIsPromoCodesLoading(true);
       try {
         const fetchedPromoCodes = await getCodesPromos();
-        // Only get active promo codes
-        const activePromoCodes = fetchedPromoCodes.filter(promo => promo.is_active);
-        setPromoCodes(activePromoCodes);
+        setPromoCodes(fetchedPromoCodes);
       } catch (error) {
         console.error('Error fetching promotional codes:', error);
         toast.error('Failed to load promotional codes');
@@ -457,12 +455,32 @@ export default function QuoteForm({ quoteId }: { quoteId: string }) {
 
   const handlePromoCodeChange = (value: string) => {
     if (value === 'none') {
+      // Check if we're removing an inactive code
+      if (selectedPromoCode && !selectedPromoCode.is_active) {
+        // Show warning about removing inactive code
+        const confirmRemoval = window.confirm(
+          `Attention: Ce code promo "${selectedPromoCode.code_promo}" n'est plus actif. ` +
+          `Si vous le supprimez, vous ne pourrez plus le réappliquer à ce devis. ` +
+          `Voulez-vous vraiment le supprimer ?`
+        );
+        
+        if (!confirmRemoval) {
+          return; // Don't remove the code if user cancels
+        }
+      }
+      
       setSelectedPromoCode(null);
       setFormData(prev => prev ? { ...prev, code_promo: null } : null);
     } else {
       const promoId = parseInt(value);
       const promo = promoCodes.find(p => p.id === promoId);
       if (promo) {
+        // Check if the code is active before allowing selection
+        if (!promo.is_active) {
+          toast.error(`Le code promo "${promo.code_promo}" n'est plus actif et ne peut pas être appliqué.`);
+          return;
+        }
+        
         setSelectedPromoCode(promo);
         setFormData(prev => prev ? { ...prev, code_promo: promoId } : null);
       }
@@ -1558,11 +1576,20 @@ export default function QuoteForm({ quoteId }: { quoteId: string }) {
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="none">Aucun code promo</SelectItem>
-                      {promoCodes.map((promo) => (
-                        <SelectItem key={promo.id} value={promo.id.toString()}>
-                          {promo.code_promo} - {promo.amount}% de réduction
+                      {/* Show currently applied code even if inactive */}
+                      {selectedPromoCode && !selectedPromoCode.is_active && (
+                        <SelectItem key={selectedPromoCode.id} value={selectedPromoCode.id.toString()}>
+                          {selectedPromoCode.code_promo} - {selectedPromoCode.amount}% de réduction (INACTIF)
                         </SelectItem>
-                      ))}
+                      )}
+                      {/* Show all active codes */}
+                      {promoCodes
+                        .filter(promo => promo.is_active)
+                        .map((promo) => (
+                          <SelectItem key={promo.id} value={promo.id.toString()}>
+                            {promo.code_promo} - {promo.amount}% de réduction
+                          </SelectItem>
+                        ))}
                     </SelectContent>
                   </Select>
                 </div>
@@ -1570,9 +1597,17 @@ export default function QuoteForm({ quoteId }: { quoteId: string }) {
                 {selectedPromoCode && (
                   <div>
                     <Label className="text-sm text-gray-600">Réduction appliquée</Label>
-                    <div className="text-lg font-semibold text-lime-600 mt-1">
+                    <div className={`text-lg font-semibold mt-1 ${selectedPromoCode.is_active ? 'text-lime-600' : 'text-orange-600'}`}>
                       -{selectedPromoCode.amount}%
+                      {!selectedPromoCode.is_active && (
+                        <span className="text-xs text-orange-500 ml-2">(Code inactif)</span>
+                      )}
                     </div>
+                    {!selectedPromoCode.is_active && (
+                      <div className="text-xs text-orange-600 mt-1 bg-orange-50 p-2 rounded">
+                        ⚠️ Ce code promo n'est plus actif. Si vous le supprimez, vous ne pourrez plus le réappliquer.
+                      </div>
+                    )}
                     {(() => {
                       const decorationTotalTTC = parseFloat(calculateSubtotal('decoration', true));
                       const traiteurTotalTTC = parseFloat(calculateSubtotal('traiteur', true));
@@ -1585,7 +1620,7 @@ export default function QuoteForm({ quoteId }: { quoteId: string }) {
                       const discountAmount = (subtotalHT * selectedPromoCode.amount) / 100;
                       
                       return (
-                        <div className="text-xs text-lime-700 mt-1">
+                        <div className={`text-xs mt-1 ${selectedPromoCode.is_active ? 'text-lime-700' : 'text-orange-700'}`}>
                           Économie: {discountAmount.toFixed(2)}€ HT ({(discountAmount * 1.20).toFixed(2)}€ TTC)
                         </div>
                       );
