@@ -1,6 +1,7 @@
 import { columns } from "./components/columns"
 import { createClient } from "@/utils/supabase/server"
 import { DataTable } from "./components/data-table"
+import ClientMessage from "./components/ClientMessage"
 import { redirect } from "next/navigation"
 
 export default async function Page() {
@@ -13,6 +14,7 @@ export default async function Page() {
   
   return (
     <div className="p-2 md:p-8">
+      <ClientMessage />
       <DataTable columns={columns} />
     </div>
   )
