@@ -13,22 +13,6 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Code promo and amount are required' }, { status: 400 })
   }
 
-  // Check if code_promo already exists
-  const { data: existingCode, error: checkError } = await supabase
-    .from('codesPromos')
-    .select('id')
-    .eq('code_promo', code_promo)
-    .single()
-
-  if (checkError && checkError.code !== 'PGRST116') { // PGRST116 = no rows returned
-    console.error('Error checking existing code:', checkError)
-    return NextResponse.json({ error: 'Failed to validate code uniqueness' }, { status: 500 })
-  }
-
-  if (existingCode) {
-    return NextResponse.json({ error: 'Code promo already exists' }, { status: 409 })
-  }
-
   // Generate current timestamp in Paris timezone
   const parisDate = formatInTimeZone(new Date(), 'Europe/Paris', "yyyy-MM-dd'T'HH:mm:ss.SSSxxx")
 
@@ -46,6 +30,12 @@ export async function POST(request: NextRequest) {
 
   if (error) {
     console.error('Error creating code promo:', error)
+    
+    // Handle unique constraint violation
+    if (error.code === '23505') {
+      return NextResponse.json({ error: 'Code promo already exists' }, { status: 409 })
+    }
+    
     return NextResponse.json({ error: error.message }, { status: 500 })
   }
 

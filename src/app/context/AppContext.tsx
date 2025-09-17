@@ -20,6 +20,8 @@ type AppContextType = {
   setPopularProductsShouldRefetch: (value: boolean) => void;
   clientsShouldRefetch: boolean;
   setClientsShouldRefetch: (value: boolean) => void;
+  codesPromosShouldRefetch: boolean;
+  setCodesPromosShouldRefetch: (value: boolean) => void;
 };
 
 export const AppContext = createContext<AppContextType>({
@@ -37,6 +39,8 @@ export const AppContext = createContext<AppContextType>({
   setPopularProductsShouldRefetch: () => {},
   clientsShouldRefetch: true,
   setClientsShouldRefetch: () => {},
+  codesPromosShouldRefetch: true,
+  setCodesPromosShouldRefetch: () => {},
 });
 
 export const AppProvider = ({ children }: { children: React.ReactNode }) => {
@@ -47,6 +51,7 @@ export const AppProvider = ({ children }: { children: React.ReactNode }) => {
   const [finishedQuotesShouldRefetch, setFinishedQuotesShouldRefetch] = useState(true);
   const [popularProductsShouldRefetch, setPopularProductsShouldRefetch] = useState(true);
   const [clientsShouldRefetch, setClientsShouldRefetch] = useState(true);
+  const [codesPromosShouldRefetch, setCodesPromosShouldRefetch] = useState(true);
 
   useEffect(() => {
     const supabase = createClient()
@@ -92,6 +97,8 @@ export const AppProvider = ({ children }: { children: React.ReactNode }) => {
         setPopularProductsShouldRefetch,
         clientsShouldRefetch,
         setClientsShouldRefetch,
+        codesPromosShouldRefetch,
+        setCodesPromosShouldRefetch,
       }}
     >
       {children}
