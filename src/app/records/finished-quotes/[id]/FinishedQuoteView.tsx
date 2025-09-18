@@ -160,7 +160,14 @@ export default function FinishedQuoteView({ quoteId }: { quoteId: string }) {
     if (!quote) return;
     
     try {
-      await generateQuotePDF(quote, quoteItems, products, showHtTtcInPdf);
+      // Create enhanced quote object with promo code details
+      const enhancedQuote = {
+        ...quote,
+        code_promo_code: selectedPromoCode?.code_promo,
+        code_promo_discount: selectedPromoCode?.amount
+      };
+      
+      await generateQuotePDF(enhancedQuote, quoteItems, products, showHtTtcInPdf);
       toast.success('Devis généré avec succès');
     } catch (error) {
       console.error('Error generating PDF:', error);
@@ -173,7 +180,14 @@ export default function FinishedQuoteView({ quoteId }: { quoteId: string }) {
     if (!quote) return;
     
     try {
-      await generateInvoicePDF(quote, quoteItems, products, showHtTtcInPdf);
+      // Create enhanced quote object with promo code details
+      const enhancedQuote = {
+        ...quote,
+        code_promo_code: selectedPromoCode?.code_promo,
+        code_promo_discount: selectedPromoCode?.amount
+      };
+      
+      await generateInvoicePDF(enhancedQuote, quoteItems, products, showHtTtcInPdf);
       toast.success('Facture générée avec succès');
     } catch (error) {
       console.error('Error generating invoice:', error);

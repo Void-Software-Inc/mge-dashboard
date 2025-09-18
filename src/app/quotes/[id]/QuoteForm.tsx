@@ -938,9 +938,16 @@ export default function QuoteForm({ quoteId }: { quoteId: string }) {
     // Filter out tainted items
     const filteredQuoteItems = quoteItems.filter(item => !taintedItems.has(item.id));
 
+    // Create enhanced quote object with promo code details
+    const enhancedQuote = {
+      ...formData,
+      code_promo_code: selectedPromoCode?.code_promo,
+      code_promo_discount: selectedPromoCode?.amount
+    };
+
     // Generate the PDF using the centralized utility
     (generateQuotePDF(
-      formData, 
+      enhancedQuote, 
       filteredQuoteItems || [], 
       products || [],
       showHtTtcInPdf

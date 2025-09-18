@@ -56,6 +56,8 @@ export type Quote = {
   payments?: QuotePayment[];
   fees: Fee[];
   code_promo?: number | null; // Optional promo code field foreign key to codesPromos table
+  code_promo_code?: string; // Promo code string (e.g., "REDUCTION20")
+  code_promo_discount?: number; // Promo code discount percentage
 };
 
 export type QuoteRecord = {
@@ -108,6 +110,8 @@ export type FinishedQuote = {
   payments?: QuotePayment[];
   fees: Fee[];
   code_promo?: number | null; // Optional promo code field foreign key to codesPromos table
+  code_promo_code?: string; // Promo code string (e.g., "REDUCTION20")
+  code_promo_discount?: number; // Promo code discount percentage
 };
 
 export type QuoteItem = {
