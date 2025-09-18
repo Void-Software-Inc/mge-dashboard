@@ -55,6 +55,7 @@ export type Quote = {
   address: Address | null;
   payments?: QuotePayment[];
   fees: Fee[];
+  code_promo?: number | null; // Optional promo code field foreign key to codesPromos table
 };
 
 export type QuoteRecord = {
@@ -79,6 +80,7 @@ export type QuoteRecord = {
   deposit_amount: number;
   deposit_percentage: number;
   fees: Fee[];
+  code_promo?: number | null; // Optional promo code field foreign key to codesPromos table
 };
 
 export type FinishedQuote = {
@@ -105,6 +107,7 @@ export type FinishedQuote = {
   address: Address | null;
   payments?: QuotePayment[];
   fees: Fee[];
+  code_promo?: number | null; // Optional promo code field foreign key to codesPromos table
 };
 
 export type QuoteItem = {

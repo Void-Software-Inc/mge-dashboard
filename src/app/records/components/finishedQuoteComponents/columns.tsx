@@ -221,6 +221,25 @@ export const columns: ColumnDef<FinishedQuote>[] = [
     },
   },
   {
+    accessorKey: "code_promo",
+    header: () => <div className="text-center whitespace-nowrap overflow-hidden overflow-ellipsis">Promotion</div>,
+    cell: ({ row }) => {
+      const codePromo = row.getValue("code_promo");
+      return (
+        <div className="flex justify-center">
+          {codePromo != null ? (
+            <div className="bg-lime-300 text-black px-2 py-1 rounded text-xs font-medium flex items-center">
+              <span className="mr-1">🏷️</span>
+              PROMO
+            </div>
+          ) : (
+            <div className="text-gray-400">-</div>
+          )}
+        </div>
+      );
+    },
+  },
+  {
     accessorKey: "total_cost",
     header: () => <div className="whitespace-nowrap overflow-hidden overflow-ellipsis font-extrabold">Prix total HT</div>,
     cell: ({ row }) => {

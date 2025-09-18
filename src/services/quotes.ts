@@ -34,6 +34,7 @@ export async function getQuotes(): Promise<Quote[]> {
       address: quote.address,
       payments: quote.payments || [],
       fees: quotes.fees  || [],
+      code_promo: quote.code_promo,
     }))
     return cleanQuotes;
   } catch (error) {
@@ -352,6 +353,7 @@ export async function getFinishedQuotes(): Promise<FinishedQuote[]> {
       payments: quotes.payments || [],
       address: quotes.address,
       fees: quotes.fees  || [],
+      code_promo: quotes.code_promo,
     }))
     return cleanFinishedQuotes;
   } catch (error) {
