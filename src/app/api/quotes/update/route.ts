@@ -58,6 +58,7 @@ export async function PUT(request: NextRequest) {
       pays: FormDataEntryValue | null;
     };
     fees?: any[]; // Add this to allow the fees property
+    code_promo?: FormDataEntryValue | null; // Optional promo code field
   }
 
   const quoteData: QuoteData = {
@@ -86,7 +87,8 @@ export async function PUT(request: NextRequest) {
       ville: formData.get('address.ville'),
       depart: formData.get('address.depart'),
       pays: formData.get('address.pays')
-    }
+    },
+    code_promo: formData.get('code_promo') || null,
   };
   
   // Handle fees specifically
