@@ -36,6 +36,7 @@ export type Quote = {
   id: number;
   first_name: string;
   last_name: string;
+  raison_sociale?: string | null; // Company name (nullable for individual clients)
   phone_number: string;
   email: string;
   event_start_date: string;
@@ -64,6 +65,7 @@ export type QuoteRecord = {
   id: number;
   first_name: string;
   last_name: string;
+  raison_sociale?: string | null; // Company name (nullable for individual clients)
   phone_number: string;
   email: string;
   event_start_date: string;
@@ -89,6 +91,7 @@ export type FinishedQuote = {
   id: number;
   first_name: string;
   last_name: string;
+  raison_sociale?: string | null; // Company name (nullable for individual clients)
   phone_number: string;
   email: string;
   event_start_date: string;

@@ -103,20 +103,53 @@ export const generateDocumentPDF = (
       doc.text("Client", pageWidth - 15 - doc.getTextWidth("Client"), contentStartY + 15);
       doc.setFont('helvetica', 'normal');
       
-      // Always create 6 lines of client info, using empty strings for missing address fields
-      const clientInfo = [
-        `${quote.first_name} ${quote.last_name}`,
-        quote.email,
-        quote.phone_number,
-        quote.address?.voie ? `${quote.address.voie}${quote.address?.compl ? `, ${quote.address.compl}` : ''}` : '',
-        quote.address?.cp || quote.address?.ville ? `${quote.address?.cp || ''} ${quote.address?.ville || ''}`.trim() : '',
-        quote.address?.depart || ''
-      ];
+      // Create client info array, including company name if present
+      const clientInfo = [];
+      
+      // Clean up potential duplicate names in first_name field
+      const cleanFirstName = quote.first_name?.trim() || '';
+      const cleanLastName = quote.last_name?.trim() || '';
+      
+      // Check if first_name already contains the last name to avoid duplication
+      const fullName = cleanFirstName.includes(cleanLastName) 
+        ? cleanFirstName 
+        : `${cleanFirstName} ${cleanLastName}`.trim();
+
+      if (quote.raison_sociale) {
+        // Company client: show company name first, then individual name, then contact info
+        clientInfo.push(
+          quote.raison_sociale,
+          fullName,
+          quote.email,
+          quote.phone_number
+        );
+      } else {
+        // Individual client: show individual name first, then contact info
+        clientInfo.push(
+          fullName,
+          quote.email,
+          quote.phone_number
+        );
+      }
+      
+      // Add address information (same for both company and individual)
+      if (quote.address?.voie) {
+        clientInfo.push(`${quote.address.voie}${quote.address?.compl ? `, ${quote.address.compl}` : ''}`);
+      }
+      if (quote.address?.cp || quote.address?.ville) {
+        clientInfo.push(`${quote.address?.cp || ''} ${quote.address?.ville || ''}`.trim());
+      }
+      if (quote.address?.depart) {
+        clientInfo.push(quote.address.depart);
+      }
+      
+      // Filter out any empty lines
+      const filteredClientInfo = clientInfo.filter(line => line && line.trim() !== '');
 
       // Fixed position for the last line
       const lastClientInfoY = contentStartY + 21 + (5 * 6); // 5 is the number of spaces between 6 lines
 
-      clientInfo.forEach((line, index) => {
+      filteredClientInfo.forEach((line, index) => {
         if (line) { // Only render non-empty lines
           const lineWidth = doc.getTextWidth(line);
           doc.text(line, pageWidth - 15 - lineWidth, contentStartY + 21 + (index * 6));
