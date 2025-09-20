@@ -8,7 +8,7 @@ import { Switch } from "@/components/ui/switch"
 import { Label } from "@/components/ui/label"
 import { toast } from "sonner"
 import { Skeleton } from "@/components/ui/skeleton"
-import { CheckIcon, ReloadIcon } from "@radix-ui/react-icons"
+import { CheckIcon } from "@radix-ui/react-icons"
 import { getClientMessages, updateClientMessage } from "@/services/clientMessage"
 import { ClientMessage as ClientMessageType } from "@/utils/types/clientMessage"
 
@@ -108,16 +108,6 @@ export default function ClientMessage() {
     }
   }
 
-  const handleReset = () => {
-    if (clientMessage) {
-      setFormData({
-        message: clientMessage.message,
-        is_active: clientMessage.is_active
-      })
-      toast.info('Modifications annulées')
-    }
-  }
-
   // Check if there are unsaved changes
   const hasChanges = clientMessage && (
     formData.message !== clientMessage.message || 
@@ -135,10 +125,7 @@ export default function ClientMessage() {
           <Skeleton className="h-24 w-full" />
           <div className="flex justify-between">
             <Skeleton className="h-6 w-32" />
-            <div className="flex space-x-2">
-              <Skeleton className="h-9 w-20" />
-              <Skeleton className="h-9 w-24" />
-            </div>
+            <Skeleton className="h-9 w-24" />
           </div>
         </CardContent>
       </Card>
@@ -206,26 +193,14 @@ export default function ClientMessage() {
             </Label>
           </div>
 
-          <div className="flex space-x-2">
-            {hasChanges && (
-              <Button 
-                variant="outline" 
-                onClick={handleReset}
-                disabled={isSaving}
-              >
-                <ReloadIcon className="mr-2 h-4 w-4" />
-                Annuler
-              </Button>
-            )}
-            <Button 
-              onClick={handleSave}
-              disabled={isSaving || !hasChanges}
-              className="bg-lime-300 hover:bg-lime-400 text-black"
-            >
-              <CheckIcon className="mr-2 h-4 w-4" />
-              {isSaving ? 'Sauvegarde...' : 'Sauvegarder'}
-            </Button>
-          </div>
+          <Button 
+            onClick={handleSave}
+            disabled={isSaving || !hasChanges}
+            className="bg-lime-300 hover:bg-lime-400 text-black"
+          >
+            <CheckIcon className="mr-2 h-4 w-4" />
+            {isSaving ? 'Sauvegarde...' : 'Sauvegarder'}
+          </Button>
         </div>
 
         {hasChanges && (
