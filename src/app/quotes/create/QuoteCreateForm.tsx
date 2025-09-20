@@ -23,6 +23,7 @@ import { format } from 'date-fns';
 interface FormErrors {
   first_name?: string;
   last_name?: string;
+  raison_sociale?: string;
   phone_number?: string;
   email?: string;
   event_start_date?: string;
@@ -37,6 +38,7 @@ interface FormErrors {
 interface TouchedFields {
   first_name: boolean;
   last_name: boolean;
+  raison_sociale: boolean;
   phone_number: boolean;
   email: boolean;
   event_start_date: boolean;
@@ -55,6 +57,7 @@ interface QuoteCreateFormProps {
 const initialQuote: Partial<Quote> = {
   first_name: '',
   last_name: '',
+  raison_sociale: '',
   phone_number: '',
   email: '',
   event_start_date: '',
@@ -99,6 +102,7 @@ export default function QuoteCreateForm({ clientId }: QuoteCreateFormProps) {
   const [touched, setTouched] = useState<TouchedFields>({
     first_name: false,
     last_name: false,
+    raison_sociale: false,
     phone_number: false,
     email: false,
     event_start_date: false,
@@ -596,6 +600,18 @@ export default function QuoteCreateForm({ clientId }: QuoteCreateFormProps) {
                       className={`w-full mt-1 ${errors.first_name ? 'border-red-500' : ''}`} 
                     />
                     {errors.first_name && <p className="text-red-500 text-sm mt-1">{errors.first_name}</p>}
+                  </div>
+                  
+                  <div>
+                    <Label htmlFor="raison_sociale" className="text-sm text-gray-600">Raison sociale (optionnel)</Label>
+                    <Input 
+                      id="raison_sociale" 
+                      value={formData.raison_sociale || ''} 
+                      onChange={handleInputChange} 
+                      className={`w-full mt-1 ${errors.raison_sociale ? 'border-red-500' : ''}`} 
+                      placeholder="Nom de l'entreprise si client professionnel"
+                    />
+                    {errors.raison_sociale && <p className="text-red-500 text-sm mt-1">{errors.raison_sociale}</p>}
                   </div>
                   
                   <div>

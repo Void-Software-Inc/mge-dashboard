@@ -32,6 +32,7 @@ import { getCodesPromos } from "@/services/codesPromos"
 interface FormErrors {
   first_name?: string;
   last_name?: string;
+  raison_sociale?: string;
   phone_number?: string;
   email?: string;
   event_start_date?: string;
@@ -788,6 +789,9 @@ export default function QuoteForm({ quoteId }: { quoteId: string }) {
           } else if (key === 'fees') {
             // Explicitly stringify the fees array
             freshFormData.append('fees', JSON.stringify(filteredFees));
+          } else if (key === 'raison_sociale') {
+            // Handle raison_sociale specifically to allow empty strings or null values
+            freshFormData.append('raison_sociale', value?.toString() ?? '');
           } else if (value !== null && value !== undefined) {
             freshFormData.append(key, value.toString());
           }
@@ -860,6 +864,9 @@ export default function QuoteForm({ quoteId }: { quoteId: string }) {
             Object.entries(value).forEach(([addressKey, addressValue]) => {
               formDataToSend.append(`address.${addressKey}`, addressValue?.toString() ?? '');
             });
+          } else if (key === 'raison_sociale') {
+            // Handle raison_sociale specifically to allow empty strings or null values
+            formDataToSend.append('raison_sociale', value?.toString() ?? '');
           } else if (value !== null && value !== undefined) {
             formDataToSend.append(key, value.toString());
           }
@@ -1174,6 +1181,18 @@ export default function QuoteForm({ quoteId }: { quoteId: string }) {
                       className={`w-full mt-1 ${errors.first_name ? 'border-red-500' : ''}`} 
                     />
                     {errors.first_name && <p className="text-red-500 text-sm mt-1">{errors.first_name}</p>}
+                  </div>
+                  
+                  <div>
+                    <Label htmlFor="raison_sociale" className="text-sm text-gray-600">Raison sociale (optionnel)</Label>
+                    <Input 
+                      id="raison_sociale" 
+                      value={formData?.raison_sociale ?? ''} 
+                      onChange={handleInputChange} 
+                      className={`w-full mt-1 ${errors.raison_sociale ? 'border-red-500' : ''}`} 
+                      placeholder="Nom de l'entreprise si client professionnel"
+                    />
+                    {errors.raison_sociale && <p className="text-red-500 text-sm mt-1">{errors.raison_sociale}</p>}
                   </div>
                   
                   <div>

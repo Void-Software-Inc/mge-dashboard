@@ -310,6 +310,17 @@ export default function FinishedQuoteView({ quoteId }: { quoteId: string }) {
                   </div>
                   
                   <div>
+                    <Label htmlFor="raison_sociale" className="text-sm text-gray-600">Raison sociale</Label>
+                    <Input 
+                      id="raison_sociale" 
+                      value={quote?.raison_sociale ?? ''} 
+                      className="w-full mt-1 bg-gray-50" 
+                      disabled
+                      placeholder={quote?.raison_sociale ? '' : 'Client particulier'}
+                    />
+                  </div>
+                  
+                  <div>
                     <Label htmlFor="phone_number" className="text-sm text-gray-600">Téléphone</Label>
                     <Input 
                       id="phone_number" 
