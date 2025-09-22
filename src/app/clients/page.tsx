@@ -55,6 +55,48 @@ const quoteTypeFilters = [
   { value: "deleted", label: "Devis supprimés" },
 ]
 
+// Define the service type filter options
+const serviceTypeFilters = [
+  { value: "traiteur", label: "Services traiteur" },
+  { value: "barnum", label: "Barnum/Chapiteau" },
+]
+
+// Helper functions to detect service types from quotes
+const hasTraiteurService = (quote: any): boolean => {
+  // Check if quote has traiteur flag or price
+  const hasTraiteurFlag = quote.is_traiteur === true || (quote.traiteur_price && quote.traiteur_price > 0)
+  
+  // Check if quote has products with traiteur category
+  const hasTraiteurProducts = quote.items && Array.isArray(quote.items) && 
+    quote.items.some((item: any) => item.product && item.product.category === 'traiteur')
+  
+  return hasTraiteurFlag || hasTraiteurProducts
+}
+
+
+const hasBarnumProduct = (quote: any): boolean => {
+  // Check if quote has products with chapiteau type
+  return quote.items && Array.isArray(quote.items) && 
+    quote.items.some((item: any) => item.product && item.product.type === 'chapiteau')
+}
+
+const getClientServiceTypes = (client: any): string[] => {
+  if (!client.quotes || !Array.isArray(client.quotes)) return []
+  
+  const serviceTypes = new Set<string>()
+  
+  client.quotes.forEach((quote: any) => {
+    if (hasTraiteurService(quote)) {
+      serviceTypes.add('traiteur')
+    }
+    if (hasBarnumProduct(quote)) {
+      serviceTypes.add('barnum')
+    }
+  })
+  
+  return Array.from(serviceTypes)
+}
+
 export default function ClientsPage() {
   const router = useRouter()
   const searchParams = useSearchParams()
@@ -68,6 +110,8 @@ export default function ClientsPage() {
   // Add filter states
   const [selectedQuoteTypes, setSelectedQuoteTypes] = useState<string[]>([])
   const [selectedQuoteStatuses, setSelectedQuoteStatuses] = useState<string[]>([])
+  const [selectedServiceTypes, setSelectedServiceTypes] = useState<string[]>([])
+  const [showCompaniesOnly, setShowCompaniesOnly] = useState(false)
   const [isFilterActive, setIsFilterActive] = useState(false)
 
   useEffect(() => {
@@ -87,7 +131,7 @@ export default function ClientsPage() {
   }, [])
 
   useEffect(() => {
-    // Apply all filters: search query, quote types, and quote statuses
+    // Apply all filters: search query, quote types, quote statuses, service types, and company filter
     let filtered = clients
 
     // Apply search filter
@@ -100,6 +144,29 @@ export default function ClientsPage() {
           client.email.toLowerCase().includes(query) ||
           client.phone.includes(query)
       )
+    }
+
+    // Apply company filter
+    if (showCompaniesOnly) {
+      filtered = filtered.filter(client => {
+        // Check if client has any quotes with raison_sociale not null
+        const clientWithQuotes = client as any
+        if (!clientWithQuotes.quotes) return false
+        
+        return clientWithQuotes.quotes.some((quote: any) => 
+          quote.raison_sociale && quote.raison_sociale.trim() !== ""
+        )
+      })
+    }
+
+    // Apply service type filter
+    if (selectedServiceTypes.length > 0) {
+      filtered = filtered.filter(client => {
+        const clientServiceTypes = getClientServiceTypes(client)
+        return selectedServiceTypes.some(serviceType => 
+          clientServiceTypes.includes(serviceType)
+        )
+      })
     }
 
     // Apply quote type filter
@@ -132,8 +199,8 @@ export default function ClientsPage() {
     setCurrentPage(1)
     
     // Update filter active state
-    setIsFilterActive(selectedQuoteTypes.length > 0 || selectedQuoteStatuses.length > 0)
-  }, [searchQuery, clients, selectedQuoteTypes, selectedQuoteStatuses])
+    setIsFilterActive(selectedQuoteTypes.length > 0 || selectedQuoteStatuses.length > 0 || selectedServiceTypes.length > 0 || showCompaniesOnly)
+  }, [searchQuery, clients, selectedQuoteTypes, selectedQuoteStatuses, selectedServiceTypes, showCompaniesOnly])
 
   const totalPages = Math.ceil(filteredClients.length / itemsPerPage)
   const startIndex = (currentPage - 1) * itemsPerPage
@@ -168,9 +235,21 @@ export default function ClientsPage() {
     })
   }
   
+  const handleServiceTypeChange = (serviceType: string) => {
+    setSelectedServiceTypes(prev => {
+      if (prev.includes(serviceType)) {
+        return prev.filter(s => s !== serviceType)
+      } else {
+        return [...prev, serviceType]
+      }
+    })
+  }
+  
   const clearFilters = () => {
     setSelectedQuoteTypes([])
     setSelectedQuoteStatuses([])
+    setSelectedServiceTypes([])
+    setShowCompaniesOnly(false)
   }
 
   return (
@@ -221,6 +300,36 @@ export default function ClientsPage() {
                 </div>
                 
                 <div>
+                  <h5 className="text-sm font-medium mb-2">Type de client</h5>
+                  <div className="space-y-2">
+                    <div className="flex items-center space-x-2">
+                      <Checkbox 
+                        id="companies-only" 
+                        checked={showCompaniesOnly}
+                        onCheckedChange={(checked) => setShowCompaniesOnly(checked as boolean)}
+                      />
+                      <Label htmlFor="companies-only">Entreprises uniquement</Label>
+                    </div>
+                  </div>
+                </div>
+                
+                <div>
+                  <h5 className="text-sm font-medium mb-2">Type de services</h5>
+                  <div className="space-y-2">
+                    {serviceTypeFilters.map((serviceType) => (
+                      <div key={serviceType.value} className="flex items-center space-x-2">
+                        <Checkbox 
+                          id={`service-${serviceType.value}`} 
+                          checked={selectedServiceTypes.includes(serviceType.value)}
+                          onCheckedChange={() => handleServiceTypeChange(serviceType.value)}
+                        />
+                        <Label htmlFor={`service-${serviceType.value}`}>{serviceType.label}</Label>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+                
+                <div>
                   <h5 className="text-sm font-medium mb-2">Type de devis</h5>
                   <div className="space-y-2">
                     {quoteTypeFilters.map((type) => (
@@ -266,6 +375,24 @@ export default function ClientsPage() {
       {/* Display active filters */}
       {isFilterActive && (
         <div className="mb-4 flex flex-wrap gap-2">
+          {showCompaniesOnly && (
+            <Badge variant="secondary" className="flex items-center gap-1">
+              Entreprises uniquement
+              <Cross2Icon 
+                className="h-3 w-3 cursor-pointer" 
+                onClick={() => setShowCompaniesOnly(false)}
+              />
+            </Badge>
+          )}
+          {selectedServiceTypes.map(serviceType => (
+            <Badge key={`service-${serviceType}`} variant="secondary" className="flex items-center gap-1">
+              {serviceTypeFilters.find(s => s.value === serviceType)?.label}
+              <Cross2Icon 
+                className="h-3 w-3 cursor-pointer" 
+                onClick={() => handleServiceTypeChange(serviceType)}
+              />
+            </Badge>
+          ))}
           {selectedQuoteTypes.map(type => (
             <Badge key={`type-${type}`} variant="secondary" className="flex items-center gap-1">
               {quoteTypeFilters.find(t => t.value === type)?.label}
