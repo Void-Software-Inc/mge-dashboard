@@ -12,25 +12,27 @@ import { Toaster, toast } from 'sonner'
 import { Skeleton } from "@/components/ui/skeleton"
 import { Switch } from "@/components/ui/switch"
 import { ChevronLeftIcon, DownloadIcon, PlusIcon, TrashIcon } from "@radix-ui/react-icons"
-import jsPDF from 'jspdf';
 import 'jspdf-autotable';
 import { isEqual as lodashEqual } from 'lodash';
 
 import { useRouter } from 'next/navigation'
 import { useAppContext } from "@/app/context/AppContext"
 import { getQuote, getQuoteItems, updateQuote, deleteQuoteItem, finishQuote, updateQuoteItem, createQuoteItem } from "@/services/quotes"
-import { Quote, quoteStatus, QuoteItem, Address, PaymentMode, paymentModes, QuotePayment } from "@/utils/types/quotes"
+import { Quote, quoteStatus, QuoteItem, Address, paymentModes } from "@/utils/types/quotes"
 import { DatePicker } from "../components/date-picker"
 import { QuoteItemList } from "../components/quote-item-list"
 import { format, parseISO } from 'date-fns';
 import { Product } from "@/utils/types/products"
-import { getProducts } from "@/services/products"
+import { getAllProducts } from "@/services/products"
 import { generateQuotePDF } from "@/utils/pdf/generateDocumentPDF"
 import { QuoteFees } from "../components/QuoteFees"
+import { CodePromo } from "@/utils/types/codesPromos"
+import { getCodesPromos } from "@/services/codesPromos"
 
 interface FormErrors {
   first_name?: string;
   last_name?: string;
+  raison_sociale?: string;
   phone_number?: string;
   email?: string;
   event_start_date?: string;
@@ -65,6 +67,7 @@ export default function QuoteForm({ quoteId }: { quoteId: string }) {
   const [isLoading, setIsLoading] = useState(true)
   const [errors, setErrors] = useState<FormErrors>({})
   const [isFormValid, setIsFormValid] = useState(true)
+  const [inputErrors, setInputErrors] = useState<Set<string>>(new Set())
   
   const [taintedItems, setTaintedItems] = useState<Set<number>>(new Set());
   const [editedItems, setEditedItems] = useState<Map<number, number>>(new Map());
@@ -82,13 +85,18 @@ export default function QuoteForm({ quoteId }: { quoteId: string }) {
   const [isProductsLoading, setIsProductsLoading] = useState(true);
 
   const [feesSubtotal, setFeesSubtotal] = useState(0);
-  const [showHtTtcInPdf, setShowHtTtcInPdf] = useState(true);
+  const [showHtTtcInPdf, setShowHtTtcInPdf] = useState(false);
+
+  // Promotional codes state
+  const [promoCodes, setPromoCodes] = useState<CodePromo[]>([]);
+  const [isPromoCodesLoading, setIsPromoCodesLoading] = useState(false);
+  const [selectedPromoCode, setSelectedPromoCode] = useState<CodePromo | null>(null);
 
   useEffect(() => {
     const fetchProducts = async () => {
       setIsProductsLoading(true);
       try {
-        const fetchedProducts = await getProducts();
+        const fetchedProducts = await getAllProducts();
         setProducts(fetchedProducts);
       } catch (error) {
         console.error('Error fetching products:', error);
@@ -100,6 +108,34 @@ export default function QuoteForm({ quoteId }: { quoteId: string }) {
 
     fetchProducts();
   }, []);
+
+  // Fetch promotional codes
+  useEffect(() => {
+    const fetchPromoCodes = async () => {
+      setIsPromoCodesLoading(true);
+      try {
+        const fetchedPromoCodes = await getCodesPromos();
+        setPromoCodes(fetchedPromoCodes);
+      } catch (error) {
+        console.error('Error fetching promotional codes:', error);
+        toast.error('Failed to load promotional codes');
+      } finally {
+        setIsPromoCodesLoading(false);
+      }
+    };
+
+    fetchPromoCodes();
+  }, []);
+
+  // Set selected promo code when formData is loaded
+  useEffect(() => {
+    if (formData?.code_promo && promoCodes.length > 0) {
+      const existingPromoCode = promoCodes.find(promo => promo.id === formData.code_promo);
+      if (existingPromoCode) {
+        setSelectedPromoCode(existingPromoCode);
+      }
+    }
+  }, [formData?.code_promo, promoCodes]);
 
   const handleGoBack = useCallback(() => {
     router.push('/quotes')
@@ -125,7 +161,6 @@ export default function QuoteForm({ quoteId }: { quoteId: string }) {
         const [fetchedQuote] = await Promise.all([
           getQuote(parseInt(quoteId))
         ])
-        
         // Fix the total_cost rounding issue by ensuring both copies have exactly the same values
         // Round all numeric values to 2 decimal places for consistency
         const normalizedQuote = {
@@ -331,6 +366,39 @@ export default function QuoteForm({ quoteId }: { quoteId: string }) {
     validateForm();
   }, [formData, quote, validateForm, taintedItems, editedItems, createdItems]);
 
+  // Helper function to parse number with both . and , as decimal separators
+  const parseFlexibleNumber = (value: string): number => {
+    if (!value || value.trim() === '') return 0;
+    
+    // Replace comma with dot for parsing
+    const normalizedValue = value.replace(',', '.');
+    const parsed = parseFloat(normalizedValue);
+    return isNaN(parsed) ? 0 : parsed;
+  };
+
+  // Helper function to check if a string represents a valid number
+  const isValidNumber = (value: string): boolean => {
+    if (!value || value.trim() === '') return true; // Empty is valid (will be 0)
+    
+    const trimmedValue = value.trim();
+    
+    // Replace comma with dot for parsing
+    const normalizedValue = trimmedValue.replace(',', '.');
+    
+    // Check if the normalized value matches a valid number pattern
+    // This regex allows: optional minus, digits, optional decimal point with digits
+    const numberPattern = /^-?\d+(\.\d+)?$/;
+    
+    // First check if it matches the pattern
+    if (!numberPattern.test(normalizedValue)) {
+      return false;
+    }
+    
+    // Then check if parseFloat gives a valid result
+    const parsed = parseFloat(normalizedValue);
+    return !isNaN(parsed) && isFinite(parsed);
+  };
+
   useEffect(() => {
     if (createdItems.length > 0 || taintedItems.size > 0 || editedItems.size > 0) {
       setShouldReloadItems(true);
@@ -341,12 +409,42 @@ export default function QuoteForm({ quoteId }: { quoteId: string }) {
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { id, value } = e.target
-    if (id === 'traiteur_price' || id === 'other_expenses') {
-      // Allow decimal numbers for traiteur_price and other_expenses
-      if (!/^\d*\.?\d*$/.test(value)) return
+    if (id === 'traiteur_price_ttc' || id === 'other_expenses_ttc') {
+      // Update input errors state
+      const newErrors = new Set(inputErrors);
+      if (!isValidNumber(value)) {
+        newErrors.add(id);
+      } else {
+        newErrors.delete(id);
+      }
+      setInputErrors(newErrors);
+      
+      // Convert TTC to HT and store HT value
+      const ttcValue = parseFlexibleNumber(value)
+      const htValue = ttcValue / 1.20
+      const fieldName = id === 'traiteur_price_ttc' ? 'traiteur_price' : 'other_expenses'
+      setFormData(prev => prev ? { 
+        ...prev, 
+        [fieldName]: htValue,
+        [`${id}_input`]: value // Store raw input for display
+      } : null)
+    } else if (id === 'traiteur_price' || id === 'other_expenses') {
+      // Update input errors state
+      const newErrors = new Set(inputErrors);
+      if (!isValidNumber(value)) {
+        newErrors.add(id);
+      } else {
+        newErrors.delete(id);
+      }
+      setInputErrors(newErrors);
+      
       // Convert to number or null if empty
-      const numValue = value === '' ? null : parseFloat(value)
-      setFormData(prev => prev ? { ...prev, [id]: numValue } : null)
+      const numValue = parseFlexibleNumber(value)
+      setFormData(prev => prev ? { 
+        ...prev, 
+        [id]: numValue,
+        [`${id}_input`]: value // Store raw input for display
+      } : null)
     } else {
       setFormData(prev => prev ? { ...prev, [id]: value } : null)
     }
@@ -355,6 +453,41 @@ export default function QuoteForm({ quoteId }: { quoteId: string }) {
   const handleSelectChange = (id: string, value: string) => {
     setFormData(prev => prev ? { ...prev, [id]: value } : null)
   }
+
+  const handlePromoCodeChange = (value: string) => {
+    if (value === 'none') {
+      // Check if we're removing an inactive code
+      if (selectedPromoCode && !selectedPromoCode.is_active) {
+        // Show warning about removing inactive code
+        const confirmRemoval = window.confirm(
+          `Attention: Ce code promo "${selectedPromoCode.code_promo}" n'est plus actif. ` +
+          `Si vous le supprimez, vous ne pourrez plus le réappliquer à ce devis. ` +
+          `Voulez-vous vraiment le supprimer ?`
+        );
+        
+        if (!confirmRemoval) {
+          return; // Don't remove the code if user cancels
+        }
+      }
+      
+      setSelectedPromoCode(null);
+      setFormData(prev => prev ? { ...prev, code_promo: null } : null);
+    } else {
+      const promoId = parseInt(value);
+      const promo = promoCodes.find(p => p.id === promoId);
+      if (promo) {
+        // Check if the code is active before allowing selection
+        if (!promo.is_active) {
+          toast.error(`Le code promo "${promo.code_promo}" n'est plus actif et ne peut pas être appliqué.`);
+          return;
+        }
+        
+        setSelectedPromoCode(promo);
+        setFormData(prev => prev ? { ...prev, code_promo: promoId } : null);
+      }
+    }
+    setIsChanged(true);
+  };
 
   const handleSwitchChange = (id: string) => {
     setFormData((prevData) => {
@@ -552,39 +685,59 @@ export default function QuoteForm({ quoteId }: { quoteId: string }) {
     return includeTax ? (totalHT).toFixed(2) : (totalHT / 1.20).toFixed(2);
   };
 
-  // Update the total cost calculation to include fees
+  // Update the total cost calculation to properly include all components and promotional discount
   useEffect(() => {
     if (!formData) return;
     
-    const decorationTotal = parseFloat(calculateSubtotal('decoration'));
-    const traiteurTotal = parseFloat(calculateSubtotal('traiteur'));
-    // Fees are already HT values, no reduction needed
-    const feesTotal = formData.fees?.reduce((sum, fee) => sum + (fee.enabled ? (fee.price || 0) : 0), 0) || 0;
+    // Calculate totals from quote items (these are TTC values from products)
+    const decorationTotalTTC = parseFloat(calculateSubtotal('decoration', true));
+    const traiteurTotalTTC = parseFloat(calculateSubtotal('traiteur', true));
     
-    const newTotalCost = Number((decorationTotal + traiteurTotal + feesTotal).toFixed(2));
-
+    // Convert quote items to HT
+    const decorationTotalHT = decorationTotalTTC / 1.20;
+    const traiteurTotalHT = traiteurTotalTTC / 1.20;
     
-    if (formData.total_cost !== newTotalCost) {
+    // Additional traiteur price (stored as HT)
+    const additionalTraiteurHT = formData.is_traiteur ? (formData.traiteur_price || 0) : 0;
+    
+    // Other expenses (stored as HT)
+    const otherExpensesHT = formData.other_expenses || 0;
+    
+    // Fees (stored as HT)
+    const feesHT = formData.fees?.reduce((sum, fee) => sum + (fee.enabled ? (fee.price || 0) : 0), 0) || 0;
+    
+    // Calculate subtotal before discount
+    const subtotalBeforeDiscountHT = decorationTotalHT + traiteurTotalHT + additionalTraiteurHT + otherExpensesHT + feesHT;
+    
+    // Apply promotional discount if a promo code is selected
+    let newTotalCostHT = subtotalBeforeDiscountHT;
+    if (selectedPromoCode && selectedPromoCode.amount > 0) {
+      const discountAmount = (subtotalBeforeDiscountHT * selectedPromoCode.amount) / 100;
+      newTotalCostHT = subtotalBeforeDiscountHT - discountAmount;
+    }
+    
+    newTotalCostHT = Number(newTotalCostHT.toFixed(2));
+    
+    if (formData.total_cost !== newTotalCostHT) {
       setFormData(prev => {
         if (!prev) return prev;
         return {
           ...prev,
-          total_cost: newTotalCost
-        };
-      });
-      
-      // Also update the quote to keep them in sync
-      setQuote(prev => {
-        if (!prev) return prev;
-        return {
-          ...prev,
-          total_cost: newTotalCost
+          total_cost: newTotalCostHT
         };
       });
       
       setIsChanged(true);
     }
-  }, [formData, formData?.fees, calculateSubtotal]);
+  }, [
+    formData?.is_traiteur,
+    formData?.traiteur_price, 
+    formData?.other_expenses,
+    formData?.fees,
+    selectedPromoCode,
+    calculateSubtotal,
+    quoteItems
+  ]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -636,6 +789,9 @@ export default function QuoteForm({ quoteId }: { quoteId: string }) {
           } else if (key === 'fees') {
             // Explicitly stringify the fees array
             freshFormData.append('fees', JSON.stringify(filteredFees));
+          } else if (key === 'raison_sociale') {
+            // Handle raison_sociale specifically to allow empty strings or null values
+            freshFormData.append('raison_sociale', value?.toString() ?? '');
           } else if (value !== null && value !== undefined) {
             freshFormData.append(key, value.toString());
           }
@@ -708,6 +864,9 @@ export default function QuoteForm({ quoteId }: { quoteId: string }) {
             Object.entries(value).forEach(([addressKey, addressValue]) => {
               formDataToSend.append(`address.${addressKey}`, addressValue?.toString() ?? '');
             });
+          } else if (key === 'raison_sociale') {
+            // Handle raison_sociale specifically to allow empty strings or null values
+            formDataToSend.append('raison_sociale', value?.toString() ?? '');
           } else if (value !== null && value !== undefined) {
             formDataToSend.append(key, value.toString());
           }
@@ -786,9 +945,16 @@ export default function QuoteForm({ quoteId }: { quoteId: string }) {
     // Filter out tainted items
     const filteredQuoteItems = quoteItems.filter(item => !taintedItems.has(item.id));
 
+    // Create enhanced quote object with promo code details
+    const enhancedQuote = {
+      ...formData,
+      code_promo_code: selectedPromoCode?.code_promo,
+      code_promo_discount: selectedPromoCode?.amount
+    };
+
     // Generate the PDF using the centralized utility
     (generateQuotePDF(
-      formData, 
+      enhancedQuote, 
       filteredQuoteItems || [], 
       products || [],
       showHtTtcInPdf
@@ -1018,6 +1184,18 @@ export default function QuoteForm({ quoteId }: { quoteId: string }) {
                   </div>
                   
                   <div>
+                    <Label htmlFor="raison_sociale" className="text-sm text-gray-600">Raison sociale (optionnel)</Label>
+                    <Input 
+                      id="raison_sociale" 
+                      value={formData?.raison_sociale ?? ''} 
+                      onChange={handleInputChange} 
+                      className={`w-full mt-1 ${errors.raison_sociale ? 'border-red-500' : ''}`} 
+                      placeholder="Nom de l'entreprise si client professionnel"
+                    />
+                    {errors.raison_sociale && <p className="text-red-500 text-sm mt-1">{errors.raison_sociale}</p>}
+                  </div>
+                  
+                  <div>
                     <Label htmlFor="phone_number" className="text-sm text-gray-600">Téléphone</Label>
                     <Input 
                       id="phone_number" 
@@ -1180,12 +1358,67 @@ export default function QuoteForm({ quoteId }: { quoteId: string }) {
               }
             </div>
           </div>
-          
-          <div className="mb-8 mt-8 border border-gray-200 rounded-lg p-6 bg-gray-50">
-            <h3 className="text-lg font-semibold mb-4">Prix et Paiement</h3>
+
+          {/* Options supplémentaires Section */}
+          <div className="mb-8 border border-gray-200 rounded-lg p-6 bg-gray-50">
+            <h3 className="text-lg font-semibold mb-4">Options supplémentaires</h3>
+            
+            <div className="p-4 border border-gray-200 rounded-lg bg-white">
+              <div className="flex items-center space-x-2 mb-4">
+                <Switch
+                  id="is_traiteur"
+                  checked={formData?.is_traiteur ?? false}
+                  onCheckedChange={() => handleSwitchChange('is_traiteur')}
+                  disabled={formData?.is_paid || formData?.is_deposit}
+                />
+                <Label htmlFor="is_traiteur" className="text-base">Service traiteur supplémentaire</Label>
+              </div>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  <Label htmlFor="traiteur_price_ttc" className="text-sm text-gray-600">Prix traiteur TTC</Label>
+                  <Input 
+                    id="traiteur_price_ttc" 
+                    value={(formData as any)?.traiteur_price_ttc_input !== undefined ? (formData as any).traiteur_price_ttc_input : (formData?.is_traiteur && formData?.traiteur_price ? (formData.traiteur_price * 1.20).toFixed(2) : '')} 
+                    onChange={handleInputChange} 
+                    className={`w-full text-base mt-1 ${errors.traiteur_price ? 'border-red-500' : ''} ${inputErrors.has('traiteur_price_ttc') ? 'border-red-500' : ''}`} 
+                    disabled={!formData?.is_traiteur || formData?.is_paid || formData?.is_deposit}
+                    placeholder="0.00"
+                  />
+                  {errors.traiteur_price && <p className="text-red-500 text-sm mt-1">{errors.traiteur_price}</p>}
+                </div>
+                
+                <div>
+                  <Label htmlFor="traiteur_price_ht" className="text-sm text-gray-600">Prix traiteur HT (calculé)</Label>
+                  <Input 
+                    id="traiteur_price_ht" 
+                    type="number"
+                    value={formData?.is_traiteur ? (formData?.traiteur_price || 0).toFixed(2) : ''} 
+                    className="w-full text-base mt-1 bg-gray-100" 
+                    disabled
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Frais additionnels Section */}
+          <div className="mb-8 border border-gray-200 rounded-lg p-6 bg-gray-50">
+            <QuoteFees
+              quoteId={parseInt(quoteId)}
+              disabled={formData?.status === 'termine' || formData?.is_paid || formData?.is_deposit}
+              fees={formData?.fees || []}
+              onFeesChange={handleFeesChange}
+              onFeesToDeleteChange={handleFeesToDeleteChange}
+              onFeesSubtotalChange={setFeesSubtotal}
+            />
+          </div>
+
+          {/* Détails du prix - Last section before payment */}
+          <div className="mb-8 border border-gray-200 rounded-lg p-6 bg-gray-50">
+            <h3 className="text-lg font-semibold mb-4">Détails du prix</h3>
             
             <div className="p-4 border border-gray-200 rounded-lg bg-white mb-4">
-              <h4 className="text-base font-medium mb-3">Détail du prix</h4>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
                   <Label htmlFor="decoration_subtotal_ht" className="text-sm text-gray-600">Sous-total meubles et décoration HT</Label>
@@ -1199,23 +1432,23 @@ export default function QuoteForm({ quoteId }: { quoteId: string }) {
                 </div>
                 
                 <div>
-                  <Label htmlFor="traiteur_subtotal_ht" className="text-sm text-gray-600">Sous-total traiteur HT</Label>
-                  <Input 
-                    id="traiteur_subtotal_ht" 
-                    type="number"
-                    value={calculateSubtotal('traiteur')}
-                    className="w-full text-base font-semibold disabled:opacity-100 disabled:text-gray-600" 
-                    disabled
-                  />
-                </div>
-
-                <div>
                   <Label htmlFor="decoration_subtotal_ttc" className="text-sm text-gray-600">Sous-total meubles et décoration TTC</Label>
                   <Input 
                     id="decoration_subtotal_ttc" 
                     type="number"
                     value={calculateSubtotal('decoration', true)}
                     className="w-full text-base font-semibold disabled:text-gray-600 disabled:opacity-100" 
+                    disabled
+                  />
+                </div>
+
+                <div>
+                  <Label htmlFor="traiteur_subtotal_ht" className="text-sm text-gray-600">Sous-total traiteur HT</Label>
+                  <Input 
+                    id="traiteur_subtotal_ht" 
+                    type="number"
+                    value={calculateSubtotal('traiteur')}
+                    className="w-full text-base font-semibold disabled:opacity-100 disabled:text-gray-600" 
                     disabled
                   />
                 </div>
@@ -1232,7 +1465,29 @@ export default function QuoteForm({ quoteId }: { quoteId: string }) {
                 </div>
 
                 <div>
-                  <Label htmlFor="fees_subtotal_ht" className="text-sm text-gray-600">Frais supplémentaires Montant HT</Label>
+                  <Label htmlFor="additional_traiteur_ht" className="text-sm text-gray-600">Service traiteur supplémentaire HT</Label>
+                  <Input 
+                    id="additional_traiteur_ht" 
+                    type="number"
+                    value={formData?.is_traiteur ? (formData?.traiteur_price || 0).toFixed(2) : '0.00'}
+                    className="w-full text-base font-semibold disabled:text-gray-600 disabled:opacity-100" 
+                    disabled
+                  />
+                </div>
+
+                <div>
+                  <Label htmlFor="additional_traiteur_ttc" className="text-sm text-gray-600">Service traiteur supplémentaire TTC</Label>
+                  <Input 
+                    id="additional_traiteur_ttc" 
+                    type="number"
+                    value={formData?.is_traiteur ? ((formData?.traiteur_price || 0) * 1.20).toFixed(2) : '0.00'}
+                    className="w-full text-base font-semibold disabled:text-gray-600 disabled:opacity-100" 
+                    disabled
+                  />
+                </div>
+
+                <div>
+                  <Label htmlFor="fees_subtotal_ht" className="text-sm text-gray-600">Frais additionnels HT</Label>
                   <Input 
                     id="fees_subtotal_ht" 
                     type="number"
@@ -1243,7 +1498,7 @@ export default function QuoteForm({ quoteId }: { quoteId: string }) {
                 </div>
 
                 <div>
-                  <Label htmlFor="fees_subtotal_ttc" className="text-sm text-gray-600">Frais supplémentaires Montant TTC</Label>
+                  <Label htmlFor="fees_subtotal_ttc" className="text-sm text-gray-600">Frais additionnels TTC</Label>
                   <Input 
                     id="fees_subtotal_ttc" 
                     type="number"
@@ -1267,6 +1522,42 @@ export default function QuoteForm({ quoteId }: { quoteId: string }) {
                   />
                   {errors.total_cost && <p className="text-red-500 text-sm mt-1">{errors.total_cost}</p>}
                 </div>
+
+                {selectedPromoCode && (() => {
+                  const decorationTotalTTC = parseFloat(calculateSubtotal('decoration', true));
+                  const traiteurTotalTTC = parseFloat(calculateSubtotal('traiteur', true));
+                  const decorationTotalHT = decorationTotalTTC / 1.20;
+                  const traiteurTotalHT = traiteurTotalTTC / 1.20;
+                  const additionalTraiteurHT = formData?.is_traiteur ? (formData?.traiteur_price || 0) : 0;
+                  const otherExpensesHT = formData?.other_expenses || 0;
+                  const feesHT = formData?.fees?.reduce((sum, fee) => sum + (fee.enabled ? (fee.price || 0) : 0), 0) || 0;
+                  const subtotalBeforeDiscountHT = decorationTotalHT + traiteurTotalHT + additionalTraiteurHT + otherExpensesHT + feesHT;
+                  const discountAmountHT = (subtotalBeforeDiscountHT * selectedPromoCode.amount) / 100;
+                  
+                  return (
+                    <>
+                      <div>
+                        <Label className="text-sm text-gray-600">Sous-total avant remise HT</Label>
+                        <Input 
+                          type="number"
+                          value={subtotalBeforeDiscountHT.toFixed(2)}
+                          className="w-full text-base font-semibold disabled:text-gray-600 disabled:opacity-100" 
+                          disabled
+                        />
+                      </div>
+                      
+                      <div>
+                        <Label className="text-sm text-gray-600">Remise ({selectedPromoCode.amount}%) HT</Label>
+                        <Input 
+                          type="number"
+                          value={`-${discountAmountHT.toFixed(2)}`}
+                          className="w-full text-base font-semibold disabled:text-red-600 disabled:opacity-100" 
+                          disabled
+                        />
+                      </div>
+                    </>
+                  );
+                })()}
                 
                 <div>
                   <Label htmlFor="tva_amount" className="text-sm text-gray-600">TVA (20%)</Label>
@@ -1291,54 +1582,84 @@ export default function QuoteForm({ quoteId }: { quoteId: string }) {
                 </div>
               </div>
             </div>
-            <div className="mb-4">
-            <Label htmlFor="is_traiteur" className="text-base font-medium">Options supplémentaires</Label>
-            <div className="mt-2 grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="p-4 border border-gray-200 rounded-lg bg-white">
-                <div className="flex items-center space-x-2 mb-4">
-                  <Switch
-                    id="is_traiteur"
-                    checked={formData?.is_traiteur ?? false}
-                    onCheckedChange={() => handleSwitchChange('is_traiteur')}
-                    disabled={formData?.is_paid || formData?.is_deposit}
-                  />
-                  <Label htmlFor="is_traiteur" className="text-base">Service traiteur</Label>
+          </div>
+
+          {/* Code Promo Section */}
+          <div className="mb-8 border border-gray-200 rounded-lg p-6 bg-gray-50">
+            <h3 className="text-lg font-semibold mb-4">Code promo</h3>
+            
+            <div className="p-4 border border-gray-200 rounded-lg bg-white">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-end">
+                <div>
+                  <Label htmlFor="promo_code" className="text-sm text-gray-600">Code promo</Label>
+                  <Select
+                    value={selectedPromoCode?.id?.toString() || 'none'}
+                    onValueChange={handlePromoCodeChange}
+                    disabled={formData?.is_paid || formData?.is_deposit || isPromoCodesLoading}
+                  >
+                    <SelectTrigger className="w-full mt-1">
+                      <SelectValue placeholder={isPromoCodesLoading ? "Chargement..." : "Sélectionner un code promo"} />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="none">Aucun code promo</SelectItem>
+                      {/* Show currently applied code even if inactive */}
+                      {selectedPromoCode && !selectedPromoCode.is_active && (
+                        <SelectItem key={selectedPromoCode.id} value={selectedPromoCode.id.toString()}>
+                          {selectedPromoCode.code_promo} - {selectedPromoCode.amount}% de réduction (INACTIF)
+                        </SelectItem>
+                      )}
+                      {/* Show all active codes */}
+                      {promoCodes
+                        .filter(promo => promo.is_active)
+                        .map((promo) => (
+                          <SelectItem key={promo.id} value={promo.id.toString()}>
+                            {promo.code_promo} - {promo.amount}% de réduction
+                          </SelectItem>
+                        ))}
+                    </SelectContent>
+                  </Select>
                 </div>
                 
-                <div>
-                  <Label htmlFor="traiteur_price" className="text-sm text-gray-600">Prix traiteur HT</Label>
-                  <Input 
-                    id="traiteur_price" 
-                    type="number"
-                    value={formData?.traiteur_price ?? ''} 
-                    onChange={handleInputChange} 
-                    className={`w-full text-base mt-1 ${errors.traiteur_price ? 'border-red-500' : ''}`} 
-                    disabled={!formData?.is_traiteur || formData?.is_paid || formData?.is_deposit}
-                  />
-                  {errors.traiteur_price && <p className="text-red-500 text-sm mt-1">{errors.traiteur_price}</p>}
-                </div>
-              </div>
-              
-              <div className="p-4 border border-gray-200 rounded-lg bg-white">
-                <div className="flex items-center space-x-2 mb-4">
-                  <Label htmlFor="other_expenses" className="text-base">Frais supplémentaires</Label>
-                </div>
-                
-                <div>
-                  <Label htmlFor="other_expenses" className="text-sm text-gray-600">Montant HT</Label>
-                  <Input 
-                    id="other_expenses" 
-                    type="number"
-                    value={formData?.other_expenses ?? ''} 
-                    onChange={handleInputChange} 
-                    className={`w-full text-base mt-1 ${errors.other_expenses ? 'border-red-500' : ''}`} 
-                    disabled={formData?.is_paid || formData?.is_deposit}
-                  />
-                  {errors.other_expenses && <p className="text-red-500 text-sm mt-1">{errors.other_expenses}</p>}
-                </div>
+                {selectedPromoCode && (
+                  <div>
+                    <Label className="text-sm text-gray-600">Réduction appliquée</Label>
+                    <div className={`text-lg font-semibold mt-1 ${selectedPromoCode.is_active ? 'text-lime-600' : 'text-orange-600'}`}>
+                      -{selectedPromoCode.amount}%
+                      {!selectedPromoCode.is_active && (
+                        <span className="text-xs text-orange-500 ml-2">(Code inactif)</span>
+                      )}
+                    </div>
+                    {!selectedPromoCode.is_active && (
+                      <div className="text-xs text-orange-600 mt-1 bg-orange-50 p-2 rounded">
+                        ⚠️ Ce code promo n'est plus actif. Si vous le supprimez, vous ne pourrez plus le réappliquer.
+                      </div>
+                    )}
+                    {(() => {
+                      const decorationTotalTTC = parseFloat(calculateSubtotal('decoration', true));
+                      const traiteurTotalTTC = parseFloat(calculateSubtotal('traiteur', true));
+                      const decorationTotalHT = decorationTotalTTC / 1.20;
+                      const traiteurTotalHT = traiteurTotalTTC / 1.20;
+                      const additionalTraiteurHT = formData?.is_traiteur ? (formData?.traiteur_price || 0) : 0;
+                      const otherExpensesHT = formData?.other_expenses || 0;
+                      const feesHT = formData?.fees?.reduce((sum, fee) => sum + (fee.enabled ? (fee.price || 0) : 0), 0) || 0;
+                      const subtotalHT = decorationTotalHT + traiteurTotalHT + additionalTraiteurHT + otherExpensesHT + feesHT;
+                      const discountAmount = (subtotalHT * selectedPromoCode.amount) / 100;
+                      
+                      return (
+                        <div className={`text-xs mt-1 ${selectedPromoCode.is_active ? 'text-lime-700' : 'text-orange-700'}`}>
+                          Économie: {discountAmount.toFixed(2)}€ HT ({(discountAmount * 1.20).toFixed(2)}€ TTC)
+                        </div>
+                      );
+                    })()}
+                  </div>
+                )}
               </div>
             </div>
           </div>
+
+          {/* Prix et Paiement Section */}
+          <div className="mb-8 border border-gray-200 rounded-lg p-6 bg-gray-50">
+            <h3 className="text-lg font-semibold mb-4">Acompte versé, modes de paiement et payé intégralement</h3>
             <div className="p-4 border border-gray-200 rounded-lg bg-white mb-6">
               <div className="flex items-center justify-between mb-4">
                 <div className="flex items-center space-x-2">
@@ -1536,17 +1857,6 @@ export default function QuoteForm({ quoteId }: { quoteId: string }) {
                 )}
               </div>
             </div>
-          </div>
-          
-          <div className="mb-8 border border-gray-200 rounded-lg p-6 bg-gray-50">
-            <QuoteFees
-              quoteId={parseInt(quoteId)}
-              disabled={formData?.status === 'termine' || formData?.is_paid || formData?.is_deposit}
-              fees={formData?.fees || []}
-              onFeesChange={handleFeesChange}
-              onFeesToDeleteChange={handleFeesToDeleteChange}
-              onFeesSubtotalChange={setFeesSubtotal}
-            />
           </div>
           
           <div className="mb-4">

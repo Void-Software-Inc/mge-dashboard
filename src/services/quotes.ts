@@ -18,6 +18,7 @@ export async function getQuotes(): Promise<Quote[]> {
       id: quote.id,
       first_name: quote.first_name,
       last_name: quote.last_name,
+      raison_sociale: quote.raison_sociale,
       phone_number: quote.phone_number,
       email: quote.email,
       event_start_date: quote.event_start_date,
@@ -34,6 +35,7 @@ export async function getQuotes(): Promise<Quote[]> {
       address: quote.address,
       payments: quote.payments || [],
       fees: quotes.fees  || [],
+      code_promo: quote.code_promo,
     }))
     return cleanQuotes;
   } catch (error) {
@@ -258,6 +260,7 @@ export async function getQuotesRecords(): Promise<QuoteRecord[]> {
       id: quotes.id,
       first_name: quotes.first_name,
       last_name: quotes.last_name,
+      raison_sociale: quotes.raison_sociale,
       phone_number: quotes.phone_number,
       email: quotes.email,
       event_start_date: quotes.event_start_date,
@@ -332,6 +335,7 @@ export async function getFinishedQuotes(): Promise<FinishedQuote[]> {
       id: quotes.id,
       first_name: quotes.first_name,
       last_name: quotes.last_name,
+      raison_sociale: quotes.raison_sociale,
       phone_number: quotes.phone_number,
       email: quotes.email,
       event_start_date: quotes.event_start_date,
@@ -352,6 +356,7 @@ export async function getFinishedQuotes(): Promise<FinishedQuote[]> {
       payments: quotes.payments || [],
       address: quotes.address,
       fees: quotes.fees  || [],
+      code_promo: quotes.code_promo,
     }))
     return cleanFinishedQuotes;
   } catch (error) {

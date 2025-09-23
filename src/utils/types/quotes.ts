@@ -36,6 +36,7 @@ export type Quote = {
   id: number;
   first_name: string;
   last_name: string;
+  raison_sociale?: string | null; // Company name (nullable for individual clients)
   phone_number: string;
   email: string;
   event_start_date: string;
@@ -55,12 +56,16 @@ export type Quote = {
   address: Address | null;
   payments?: QuotePayment[];
   fees: Fee[];
+  code_promo?: number | null; // Optional promo code field foreign key to codesPromos table
+  code_promo_code?: string; // Promo code string (e.g., "REDUCTION20")
+  code_promo_discount?: number; // Promo code discount percentage
 };
 
 export type QuoteRecord = {
   id: number;
   first_name: string;
   last_name: string;
+  raison_sociale?: string | null; // Company name (nullable for individual clients)
   phone_number: string;
   email: string;
   event_start_date: string;
@@ -79,12 +84,14 @@ export type QuoteRecord = {
   deposit_amount: number;
   deposit_percentage: number;
   fees: Fee[];
+  code_promo?: number | null; // Optional promo code field foreign key to codesPromos table
 };
 
 export type FinishedQuote = {
   id: number;
   first_name: string;
   last_name: string;
+  raison_sociale?: string | null; // Company name (nullable for individual clients)
   phone_number: string;
   email: string;
   event_start_date: string;
@@ -105,6 +112,9 @@ export type FinishedQuote = {
   address: Address | null;
   payments?: QuotePayment[];
   fees: Fee[];
+  code_promo?: number | null; // Optional promo code field foreign key to codesPromos table
+  code_promo_code?: string; // Promo code string (e.g., "REDUCTION20")
+  code_promo_discount?: number; // Promo code discount percentage
 };
 
 export type QuoteItem = {

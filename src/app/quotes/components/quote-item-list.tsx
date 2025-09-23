@@ -6,10 +6,11 @@ import { Product } from "@/utils/types/products";
 import { getProduct } from "@/services/products";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
-import { TrashIcon, Pencil1Icon, PlusIcon, DoubleArrowLeftIcon, DoubleArrowRightIcon, ChevronLeftIcon, ChevronRightIcon } from '@radix-ui/react-icons';
+import { TrashIcon, Pencil1Icon, PlusIcon, DoubleArrowLeftIcon, DoubleArrowRightIcon, ChevronLeftIcon, ChevronRightIcon, ExclamationTriangleIcon, CheckCircledIcon } from '@radix-ui/react-icons';
 import { Drawer, DrawerTrigger, DrawerContent, DrawerHeader, DrawerTitle, DrawerDescription, DrawerFooter, DrawerClose } from "@/components/ui/drawer";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { ProductSimplifiedDataTable } from './product-simplified-data-table';
 import { getAvailableProducts } from '@/services/quotes';
 
@@ -240,6 +241,7 @@ export function QuoteItemList({
           <Table className="w-full">
             <TableHeader>
               <TableRow className="h-16">
+                <TableHead className="w-[60px] whitespace-nowrap">Statut</TableHead>
                 <TableHead className="w-1/6 whitespace-nowrap">Image</TableHead>
                 <TableHead className="w-1/3 whitespace-nowrap">Nom</TableHead>
                 <TableHead className="w-1/6 whitespace-nowrap">Quantité</TableHead>
@@ -267,6 +269,29 @@ export function QuoteItemList({
                     isEdited ? 'bg-blue-50 hover:bg-blue-50' : ''
                   }`}
                 >
+                  <TableCell className="whitespace-nowrap">
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <div className="flex items-center justify-center">
+                            {product && product.status === 'record' ? (
+                              <ExclamationTriangleIcon className="h-5 w-5 text-orange-500" />
+                            ) : (
+                              <CheckCircledIcon className="h-5 w-5 text-green-500" />
+                            )}
+                          </div>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p>
+                            {product && product.status === 'record' 
+                              ? 'Ce produit est dans les archives, attention!' 
+                              : 'Produit actif'
+                            }
+                          </p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
+                  </TableCell>
                   <TableCell className="whitespace-nowrap">
                     {product && product.image_url && (
                       <div className="w-12 h-12 relative"> {/* Fixed size container for image */}

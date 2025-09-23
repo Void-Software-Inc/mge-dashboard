@@ -5,20 +5,14 @@ import { revalidateTag } from 'next/cache'
 export async function GET() {
   const supabase = createClient();
 
-  // Fetching data from both tables, including quantity
-  const [{ data: quoteItemsData, error: quoteItemsError }, { data: finishedQuoteItemsData, error: finishedQuoteItemsError }] = await Promise.all([
-    supabase
-      .from('quoteItems')
-      .select('product_id, quantity, products:product_id (id, name)')
-      .not('product_id', 'is', null),
-    supabase
-      .from('finished_quoteItems')
-      .select('product_id, quantity, products:product_id (id, name)')
-      .not('product_id', 'is', null)
-  ]);
+  // Fetching data from quoteItems table, including quantity
+  const { data: quoteItemsData, error: quoteItemsError } = await supabase
+    .from('quoteItems')
+    .select('product_id, quantity, products:product_id (id, name)')
+    .not('product_id', 'is', null);
 
-  if (quoteItemsError || finishedQuoteItemsError) {
-    console.error('Error fetching products:', quoteItemsError || finishedQuoteItemsError);
+  if (quoteItemsError) {
+    console.error('Error fetching products:', quoteItemsError);
     return NextResponse.json({ error: 'Failed to fetch products' }, { status: 500 });
   }
 
@@ -31,8 +25,8 @@ export async function GET() {
     };
   }
 
-  // Combine both datasets
-  const allItems = [...(quoteItemsData as unknown as QuoteItem[]), ...(finishedQuoteItemsData as unknown as QuoteItem[])];
+  // Use the single dataset
+  const allItems = quoteItemsData as unknown as QuoteItem[];
 
   // Using a Map for efficient count and quantity aggregation
   const productStats = new Map<string, { id: string; name: string; count: number; totalQuantity: number }>();

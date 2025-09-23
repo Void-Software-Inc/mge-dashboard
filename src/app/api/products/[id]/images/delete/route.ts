@@ -3,6 +3,9 @@ import { NextRequest, NextResponse } from "next/server";
 
 export async function POST(request: NextRequest, { params }: { params: { id: string } }) {
     const supabase = createClient();
+
+    const bucketPath = process.env.NEXT_PUBLIC_SUPABASE_BUCKET || 'mge-product-images';
+
     const productId = params.id;
     const { imageId } = await request.json();
 
@@ -30,7 +33,7 @@ export async function POST(request: NextRequest, { params }: { params: { id: str
     // Delete the image from storage
     const { error: deleteStorageError } = await supabase
         .storage
-        .from('mge-product-images')
+        .from(bucketPath)
         .remove([imagePath]);
 
     if (deleteStorageError) {

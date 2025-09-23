@@ -13,3 +13,7 @@ SET fees = jsonb_build_array(
   jsonb_build_object('name', 'decoration', 'price', 0, 'enabled', false, 'description', '')
 )
 WHERE fees IS NULL OR fees = '[]'::jsonb;
+
+-- Add raison_sociale field for company names (nullable for individual clients)
+ALTER TABLE quotes 
+ADD COLUMN raison_sociale TEXT;

@@ -1,16 +1,11 @@
 "use client"
 
-import { Metadata } from "next"
 import { useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { ArrowLeftIcon, FileTextIcon } from "@radix-ui/react-icons"
 
-export const metadata: Metadata = {
-  title: "Créer un client",
-  description: "Créer un nouveau client",
-}
 
 export default function CreateClientPage() {
   const router = useRouter()

@@ -6,8 +6,9 @@ export async function GET() {
   const supabase = createClient();
 
   const { data: finished_quotes, error } = await supabase
-    .from('finished_quotes')
+    .from('quotes')
     .select('*')
+    .eq('quote_type', 'finished')
     .order('finished_at', { ascending: false });
 
   if (error) {

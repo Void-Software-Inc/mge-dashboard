@@ -29,10 +29,11 @@ export async function PUT(request: NextRequest) {
     }
   }
 
-  // Create a TypeScript interface for QuoteData to include fees
+  // Create a TypeScript interface for QuoteData to include fees and raison_sociale
   interface QuoteData {
     first_name: FormDataEntryValue | null;
     last_name: FormDataEntryValue | null;
+    raison_sociale: FormDataEntryValue | null;
     phone_number: FormDataEntryValue | null;
     email: FormDataEntryValue | null;
     event_start_date: FormDataEntryValue | null;
@@ -58,11 +59,13 @@ export async function PUT(request: NextRequest) {
       pays: FormDataEntryValue | null;
     };
     fees?: any[]; // Add this to allow the fees property
+    code_promo?: FormDataEntryValue | null; // Optional promo code field
   }
 
   const quoteData: QuoteData = {
     first_name: formData.get('first_name'),
     last_name: formData.get('last_name'),
+    raison_sociale: formData.get('raison_sociale'),
     phone_number: formData.get('phone_number'),
     email: formData.get('email'),
     event_start_date: formData.get('event_start_date'),
@@ -86,7 +89,8 @@ export async function PUT(request: NextRequest) {
       ville: formData.get('address.ville'),
       depart: formData.get('address.depart'),
       pays: formData.get('address.pays')
-    }
+    },
+    code_promo: formData.get('code_promo') || null,
   };
   
   // Handle fees specifically

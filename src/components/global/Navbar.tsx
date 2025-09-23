@@ -62,6 +62,12 @@ export default function Navbar(){
           >
             Clients
           </Link>
+          <Link
+            href="/promos"
+            className="text-muted-foreground transition-colors hover:text-foreground"
+          >
+            Promos
+          </Link>
         </nav>
         <Sheet open={isOpen} onOpenChange={setIsOpen}>
           <SheetTrigger asChild>
@@ -91,13 +97,6 @@ export default function Navbar(){
                 Produits
               </Link>
               <Link
-                href="/clients"
-                className="text-muted-foreground hover:text-foreground"
-                onClick={handleItemClick}
-              >
-                Clients
-              </Link>
-              <Link
                 href="/quotes"
                 className="text-muted-foreground hover:text-foreground"
                 onClick={handleItemClick}
@@ -110,6 +109,20 @@ export default function Navbar(){
                 onClick={handleItemClick}
               >
                 Archives
+              </Link>
+              <Link
+                href="/clients"
+                className="text-muted-foreground hover:text-foreground"
+                onClick={handleItemClick}
+              >
+                Clients
+              </Link>
+              <Link
+                href="/promos"
+                className="text-muted-foreground hover:text-foreground"
+                onClick={handleItemClick}
+              >
+                Promos
               </Link>
             </nav>
           </SheetContent>

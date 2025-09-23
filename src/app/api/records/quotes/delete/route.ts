@@ -7,14 +7,36 @@ export async function POST(request: NextRequest) {
 
     for (const id of ids) {
         try {
-            // Delete the quote_record
-            const { error: deleteQuoteRecordError } = await supabase
-                .from('quotes_records')
+            // Check if the quote exists and has quote_type 'record'
+            const { data: quote, error: quoteError } = await supabase
+                .from('quotes')
+                .select('id, quote_type')
+                .eq('id', id)
+                .eq('quote_type', 'record')
+                .single();
+
+            if (quoteError) {
+                throw new Error(`Failed to fetch quote or quote is not a record: ${quoteError.message}`);
+            }
+
+            // Delete any quoteItems that reference this quote
+            const { error: deleteQuoteItemsError } = await supabase
+                .from('quoteItems')
+                .delete()
+                .eq('quote_id', id);
+
+            if (deleteQuoteItemsError) {
+                throw new Error(`Failed to delete quoteItems references: ${deleteQuoteItemsError.message}`);
+            }
+
+            // Delete the quote
+            const { error: deleteQuoteError } = await supabase
+                .from('quotes')
                 .delete()
                 .eq('id', id);
 
-            if (deleteQuoteRecordError) {
-                throw new Error(`Failed to delete quote_record: ${deleteQuoteRecordError.message}`);
+            if (deleteQuoteError) {
+                throw new Error(`Failed to delete quote: ${deleteQuoteError.message}`);
             }
 
         } catch (error) {
