@@ -277,24 +277,10 @@ export default function ClientDetailPage({ params }: { params: { id: string } })
               <p className="text-sm font-medium text-muted-foreground">Téléphone</p>
               <p>{client.phone}</p>
             </div>
-            {(() => {
-              // Find the most recent quote with raison_sociale
-              const quoteWithRaisonSociale = client.quotes?.find(quote => 
-                quote.raison_sociale && quote.raison_sociale.trim() !== ""
-              );
-              
-              return quoteWithRaisonSociale ? (
-                <div>
-                  <p className="text-sm font-medium text-muted-foreground">Raison sociale</p>
-                  <p>{quoteWithRaisonSociale.raison_sociale}</p>
-                </div>
-              ) : (
-                <div>
-                  <p className="text-sm font-medium text-muted-foreground">Entreprise</p>
-                  <p>{client.company || "Non renseigné"}</p>
-                </div>
-              );
-            })()}
+            <div>
+              <p className="text-sm font-medium text-muted-foreground">Entreprise</p>
+              <p>{client.company || "Non renseigné"}</p>
+            </div>
           </CardContent>
         </Card>
 

@@ -1,22 +1,6 @@
 import { Client } from "@/utils/types/clients";
 import { Quote, QuoteRecord, FinishedQuote } from "@/utils/types/quotes";
-import { getQuotes as originalGetQuotes, getFinishedQuotes as originalGetFinishedQuotes, getQuotesRecords as originalGetQuotesRecords, getQuoteItems, getFinishedQuoteItems } from "./quotes";
-import { getAllProducts } from "./products";
-
-// Simple cache to avoid re-fetching products repeatedly
-let productsCache: { data: any[], timestamp: number } | null = null;
-const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
-
-async function getCachedProducts() {
-  const now = Date.now();
-  if (productsCache && (now - productsCache.timestamp) < CACHE_DURATION) {
-    return productsCache.data;
-  }
-  
-  const products = await getAllProducts();
-  productsCache = { data: products, timestamp: now };
-  return products;
-}
+import { getQuotes as originalGetQuotes, getFinishedQuotes as originalGetFinishedQuotes, getQuotesRecords as originalGetQuotesRecords } from "./quotes";
 
 // Helper function to safely get date properties from different quote types
 function getQuoteDates(quote: any): { createdAt: string, updatedAt: string } {
@@ -24,73 +8,6 @@ function getQuoteDates(quote: any): { createdAt: string, updatedAt: string } {
     createdAt: quote.created_at || quote.finished_at || quote.deleted_at || '',
     updatedAt: quote.last_update || quote.finished_at || quote.deleted_at || ''
   };
-}
-
-// Helper function to enrich quotes with their items and products (optimized)
-async function enrichQuotesWithItems(quotes: any[], products: any[], filterRelevantOnly: boolean = true): Promise<any[]> {
-  // Optimization 1: Filter out quotes that don't need product analysis if filterRelevantOnly is true
-  let quotesToProcess = quotes;
-  if (filterRelevantOnly) {
-    quotesToProcess = quotes.filter(quote => {
-      // Include active quotes for service filtering
-      if (quote.quote_type === 'active') return true;
-      
-      // EXCLUDE finished quotes from service filtering (but keep them in client data)
-      // EXCLUDE deleted quotes for performance (they're less relevant for service analysis)
-      return false;
-    });
-  }
-  
-  // Optimization 2: Batch fetch quote items to reduce API calls
-  const enrichedQuotes = await Promise.all(quotesToProcess.map(async (quote) => {
-    try {
-      let quoteItems: any[] = [];
-      
-      // Only fetch items for quotes that might need product-based filtering
-      // Skip if quote already has traiteur flag (no need to check products)
-      const needsProductAnalysis = !quote.is_traiteur || !quote.traiteur_price;
-      
-      if (needsProductAnalysis) {
-        // Fetch quote items based on quote type
-        if (quote.quote_type === 'finished') {
-          quoteItems = await getFinishedQuoteItems(quote.id);
-        } else if (quote.quote_type === 'active') {
-          quoteItems = await getQuoteItems(quote.id);
-        }
-      }
-      
-      // Optimization 3: Only enrich with essential product info (category, type)
-      const enrichedItems = quoteItems.map(item => {
-        const product = products.find(p => p.id === item.product_id);
-        return {
-          ...item,
-          product: product ? {
-            id: product.id,
-            name: product.name,
-            type: product.type,
-            category: product.category
-          } : null
-        };
-      });
-      
-      return {
-        ...quote,
-        items: enrichedItems
-      };
-    } catch (error) {
-      console.error(`Error fetching items for quote ${quote.id}:`, error);
-      return {
-        ...quote,
-        items: []
-      };
-    }
-  }));
-  
-  // Return all quotes, but only processed ones have items
-  return quotes.map(quote => {
-    const enriched = enrichedQuotes.find(eq => eq.id === quote.id);
-    return enriched || { ...quote, items: [] };
-  });
 }
 
 // Wrapper functions for debugging
@@ -112,12 +29,11 @@ async function getQuotesRecords(): Promise<QuoteRecord[]> {
 // Get all clients from quotes
 export async function getClients(): Promise<(Client & { quotes: any[] })[]> {
   try {
-    // Fetch quotes from all sources and products (using cache)
-    const [activeQuotes, finishedQuotes, deletedQuotes, products] = await Promise.all([
+    // Fetch quotes from all sources
+    const [activeQuotes, finishedQuotes, deletedQuotes] = await Promise.all([
       getQuotes(),
       getFinishedQuotes(),
-      getQuotesRecords(),
-      getCachedProducts()
+      getQuotesRecords()
     ]);
     
     // Combine all quotes with type indicators
@@ -127,14 +43,11 @@ export async function getClients(): Promise<(Client & { quotes: any[] })[]> {
       ...deletedQuotes.map(q => ({ ...q, quote_type: 'deleted', is_deleted: true }))
     ];
     
-    // Enrich quotes with their items and products (with optimizations)
-    const enrichedQuotes = await enrichQuotesWithItems(allQuotes, products, true);
-    
     // Create a map to store unique clients by phone number
     const clientMap = new Map<string, Client & { quoteCount: number, quotes: any[] }>();
     
-    // Extract client information from enriched quotes
-    enrichedQuotes.forEach((quote) => {
+    // Extract client information from quotes
+    allQuotes.forEach((quote) => {
       const phoneNumber = quote.phone_number;
       
       if (!phoneNumber) return; // Skip quotes without phone number
@@ -194,12 +107,11 @@ export async function getClients(): Promise<(Client & { quotes: any[] })[]> {
 // Get a single client by phone number
 export async function getClient(phoneNumber: string): Promise<Client & { quotes: Quote[] }> {
   try {    
-    // Fetch quotes from all sources and products (using cache)
-    const [activeQuotes, finishedQuotes, deletedQuotes, products] = await Promise.all([
+    // Fetch quotes from all sources
+    const [activeQuotes, finishedQuotes, deletedQuotes] = await Promise.all([
       getQuotes(),
       getFinishedQuotes(),
-      getQuotesRecords(),
-      getCachedProducts()
+      getQuotesRecords()
     ]);
         
     // Combine all quotes with type indicators
@@ -211,17 +123,14 @@ export async function getClient(phoneNumber: string): Promise<Client & { quotes:
     
     // Filter quotes for this client
     const clientQuotes = allQuotes.filter(quote => quote.phone_number === phoneNumber);
-    
-    // Enrich client quotes with their items and products (no filtering for single client)
-    const enrichedClientQuotes = await enrichQuotesWithItems(clientQuotes, products, false);
 
     
-    if (enrichedClientQuotes.length === 0) {
+    if (clientQuotes.length === 0) {
       throw new Error(`Client with phone number ${phoneNumber} not found`);
     }
     
     // Get the most recent quote for client details
-    const latestQuote = enrichedClientQuotes.reduce((latest, current) => {
+    const latestQuote = clientQuotes.reduce((latest, current) => {
       const latestDates = getQuoteDates(latest);
       const currentDates = getQuoteDates(current);
       
@@ -229,7 +138,7 @@ export async function getClient(phoneNumber: string): Promise<Client & { quotes:
       const currentDate = new Date(currentDates.updatedAt);
       
       return currentDate > latestDate ? current : latest;
-    }, enrichedClientQuotes[0]);
+    }, clientQuotes[0]);
     
     const dates = getQuoteDates(latestQuote);
     
@@ -246,8 +155,8 @@ export async function getClient(phoneNumber: string): Promise<Client & { quotes:
       country: 'fr',
       created_at: dates.createdAt,
       updated_at: dates.updatedAt,
-      quotes: enrichedClientQuotes,
-      quote_count: enrichedClientQuotes.length
+      quotes: clientQuotes,
+      quote_count: clientQuotes.length
     };
         
     return client as Client & { quotes: Quote[] };
