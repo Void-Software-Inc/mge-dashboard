@@ -12,6 +12,7 @@ import { ArrowLeftIcon, Cross2Icon, PlusIcon } from "@radix-ui/react-icons"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Skeleton } from "@/components/ui/skeleton"
 import { quoteStatus } from "@/utils/types/quotes"
+import ClientNotesManager from "../components/ClientNotesManager"
 
 export default function ClientDetailPage({ params }: { params: { id: string } }) {
   const router = useRouter()
@@ -93,6 +94,7 @@ export default function ClientDetailPage({ params }: { params: { id: string } })
   const clearFilters = () => {
     setSelectedQuoteStatuses([])
   }
+
 
   // Helper function to render quotes
   const renderQuotes = (quotes: any[]) => {
@@ -329,6 +331,13 @@ export default function ClientDetailPage({ params }: { params: { id: string } })
             </div>
           </CardContent>
         </Card>
+      </div>
+
+      {/* Client Notes Section */}
+      <div className="mt-6">
+        <ClientNotesManager
+          phoneNumber={client.phone}
+        />
       </div>
 
       <div className="mt-8">
