@@ -84,7 +84,8 @@ export async function getClients(): Promise<(Client & { quotes: any[] })[]> {
           name: `${quote.first_name || ''} ${quote.last_name || ''}`.trim(),
           email: quote.email || '',
           phone: phoneNumber,
-          company: '',
+          company: quote.raison_sociale || '',
+          raison_sociale: quote.raison_sociale,
           address: quote.address?.voie || '',
           city: quote.address?.ville || '',
           postal_code: quote.address?.cp || '',
@@ -108,6 +109,8 @@ export async function getClients(): Promise<(Client & { quotes: any[] })[]> {
         if (quoteDate > clientDate) {
           client.name = `${quote.first_name || ''} ${quote.last_name || ''}`.trim();
           client.email = quote.email || '';
+          client.company = quote.raison_sociale || '';
+          client.raison_sociale = quote.raison_sociale;
           client.address = quote.address?.voie || '';
           client.city = quote.address?.ville || '';
           client.postal_code = quote.address?.cp || '';
@@ -172,7 +175,8 @@ export async function getClient(phoneNumber: string): Promise<Client & { quotes:
       name: `${latestQuote.first_name || ''} ${latestQuote.last_name || ''}`.trim(),
       email: latestQuote.email || '',
       phone: phoneNumber,
-      company: '',
+      company: latestQuote.raison_sociale || '',
+      raison_sociale: latestQuote.raison_sociale,
       address: latestQuote.address?.voie || '',
       city: latestQuote.address?.ville || '',
       postal_code: latestQuote.address?.cp || '',
@@ -187,6 +191,81 @@ export async function getClient(phoneNumber: string): Promise<Client & { quotes:
   } catch (error) {
     console.error(`Error fetching client ${phoneNumber}:`, error);
     throw error;
+  }
+}
+
+// Get company clients (clients with raison_sociale not null)
+export async function getCompanyClients(): Promise<(Client & { quotes: any[] })[]> {
+  try {
+    const response = await fetch('/api/clients/companies');
+    
+    if (!response.ok) {
+      throw new Error('Failed to fetch company clients');
+    }
+
+    const { company_quotes } = await response.json();
+    
+    // Create a map to store unique clients by phone number
+    const clientMap = new Map<string, Client & { quoteCount: number, quotes: any[] }>();
+    
+    // Extract client information from company quotes
+    company_quotes.forEach((quote: any) => {
+      const phoneNumber = quote.phone_number;
+      
+      if (!phoneNumber) return; // Skip quotes without phone number
+      
+      const dates = getQuoteDates(quote);
+      
+      if (!clientMap.has(phoneNumber)) {
+        // Create new client object
+        clientMap.set(phoneNumber, {
+          id: phoneNumber,
+          name: `${quote.first_name || ''} ${quote.last_name || ''}`.trim(),
+          email: quote.email || '',
+          phone: phoneNumber,
+          company: quote.raison_sociale || '', // Use raison_sociale for company field
+          raison_sociale: quote.raison_sociale,
+          address: quote.address?.voie || '',
+          city: quote.address?.ville || '',
+          postal_code: quote.address?.cp || '',
+          country: 'fr',
+          created_at: dates.createdAt,
+          updated_at: dates.updatedAt,
+          quoteCount: 1,
+          quotes: [quote] // Initialize quotes array with this quote
+        });
+      } else {
+        // Update existing client
+        const client = clientMap.get(phoneNumber)!;
+        client.quoteCount += 1;
+        client.quotes.push(quote); // Add this quote to the client's quotes array
+        
+        // Update client info if this quote is newer
+        const dates = getQuoteDates(quote);
+        const quoteDate = new Date(dates.updatedAt);
+        const clientDate = new Date(client.updated_at);
+        
+        if (quoteDate > clientDate) {
+          client.name = `${quote.first_name || ''} ${quote.last_name || ''}`.trim();
+          client.email = quote.email || '';
+          client.company = quote.raison_sociale || '';
+          client.raison_sociale = quote.raison_sociale;
+          client.address = quote.address?.voie || '';
+          client.city = quote.address?.ville || '';
+          client.postal_code = quote.address?.cp || '';
+          client.updated_at = dates.updatedAt;
+        }
+      }
+    });
+    
+    // Convert map to array and add quote_count property
+    return Array.from(clientMap.values()).map(({ quoteCount, ...client }) => ({
+      ...client,
+      quote_count: quoteCount
+    }));
+  } catch (error) {
+    console.error("Error fetching company clients:", error);
+    return [];
   }
 }
 
