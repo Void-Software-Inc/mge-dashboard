@@ -4,6 +4,7 @@ export interface Client {
   email: string;
   phone: string;
   company: string;
+  raison_sociale?: string | null;
   address: string;
   city: string;
   postal_code: string;
