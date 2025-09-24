@@ -147,7 +147,7 @@ export default function ClientNotesManager({
           </div>
         </div>
         <CardDescription>
-          Ajoutez des notes personnalisées pour ce client
+          Ajoutez des notes personnalisées sur ce client
         </CardDescription>
       </CardHeader>
       <CardContent>

@@ -2,6 +2,29 @@ import { Client } from "@/utils/types/clients";
 import { Quote, QuoteRecord, FinishedQuote } from "@/utils/types/quotes";
 import { getQuotes as originalGetQuotes, getFinishedQuotes as originalGetFinishedQuotes, getQuotesRecords as originalGetQuotesRecords } from "./quotes";
 
+// Function to get the first quote date for a client
+async function getFirstQuoteDate(phoneNumber: string): Promise<string> {
+  try {
+    const response = await fetch('/api/quotes/getFirstQuoteDate', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ phone_number: phoneNumber }),
+    });
+
+    if (!response.ok) {
+      throw new Error('Failed to fetch first quote date');
+    }
+
+    const { first_quote_date } = await response.json();
+    return first_quote_date || '';
+  } catch (error) {
+    console.error('Error fetching first quote date:', error);
+    return '';
+  }
+}
+
 // Helper function to safely get date properties from different quote types
 function getQuoteDates(quote: any): { createdAt: string, updatedAt: string } {
   return {
@@ -107,11 +130,12 @@ export async function getClients(): Promise<(Client & { quotes: any[] })[]> {
 // Get a single client by phone number
 export async function getClient(phoneNumber: string): Promise<Client & { quotes: Quote[] }> {
   try {    
-    // Fetch quotes from all sources
-    const [activeQuotes, finishedQuotes, deletedQuotes] = await Promise.all([
+    // Fetch quotes from all sources and first quote date in parallel
+    const [activeQuotes, finishedQuotes, deletedQuotes, firstQuoteDate] = await Promise.all([
       getQuotes(),
       getFinishedQuotes(),
-      getQuotesRecords()
+      getQuotesRecords(),
+      getFirstQuoteDate(phoneNumber)
     ]);
         
     // Combine all quotes with type indicators
@@ -153,7 +177,7 @@ export async function getClient(phoneNumber: string): Promise<Client & { quotes:
       city: latestQuote.address?.ville || '',
       postal_code: latestQuote.address?.cp || '',
       country: 'fr',
-      created_at: dates.createdAt,
+      created_at: firstQuoteDate, // Use the first quote date from database
       updated_at: dates.updatedAt,
       quotes: clientQuotes,
       quote_count: clientQuotes.length
