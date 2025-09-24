@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
-import { getClients } from "@/services/clients"
+import { getClients, getCompanyClients } from "@/services/clients"
 import { Client } from "@/utils/types/clients"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -68,12 +68,13 @@ export default function ClientsPage() {
   // Add filter states
   const [selectedQuoteTypes, setSelectedQuoteTypes] = useState<string[]>([])
   const [selectedQuoteStatuses, setSelectedQuoteStatuses] = useState<string[]>([])
+  const [showCompaniesOnly, setShowCompaniesOnly] = useState(false)
   const [isFilterActive, setIsFilterActive] = useState(false)
 
   useEffect(() => {
     const fetchClients = async () => {
       try {
-        const data = await getClients()
+        const data = showCompaniesOnly ? await getCompanyClients() : await getClients()
         setClients(data)
         setFilteredClients(data)
       } catch (error) {
@@ -84,7 +85,7 @@ export default function ClientsPage() {
     }
 
     fetchClients()
-  }, [])
+  }, [showCompaniesOnly])
 
   useEffect(() => {
     // Apply all filters: search query, quote types, and quote statuses
@@ -132,8 +133,8 @@ export default function ClientsPage() {
     setCurrentPage(1)
     
     // Update filter active state
-    setIsFilterActive(selectedQuoteTypes.length > 0 || selectedQuoteStatuses.length > 0)
-  }, [searchQuery, clients, selectedQuoteTypes, selectedQuoteStatuses])
+    setIsFilterActive(selectedQuoteTypes.length > 0 || selectedQuoteStatuses.length > 0 || showCompaniesOnly)
+  }, [searchQuery, clients, selectedQuoteTypes, selectedQuoteStatuses, showCompaniesOnly])
 
   const totalPages = Math.ceil(filteredClients.length / itemsPerPage)
   const startIndex = (currentPage - 1) * itemsPerPage
@@ -171,6 +172,7 @@ export default function ClientsPage() {
   const clearFilters = () => {
     setSelectedQuoteTypes([])
     setSelectedQuoteStatuses([])
+    setShowCompaniesOnly(false)
   }
 
   return (
@@ -221,6 +223,20 @@ export default function ClientsPage() {
                 </div>
                 
                 <div>
+                  <h5 className="text-sm font-medium mb-2">Type de client</h5>
+                  <div className="space-y-2">
+                    <div className="flex items-center space-x-2">
+                      <Checkbox 
+                        id="companies-only" 
+                        checked={showCompaniesOnly}
+                        onCheckedChange={(checked) => setShowCompaniesOnly(!!checked)}
+                      />
+                      <Label htmlFor="companies-only">Entreprises uniquement</Label>
+                    </div>
+                  </div>
+                </div>
+                
+                <div>
                   <h5 className="text-sm font-medium mb-2">Type de devis</h5>
                   <div className="space-y-2">
                     {quoteTypeFilters.map((type) => (
@@ -266,6 +282,15 @@ export default function ClientsPage() {
       {/* Display active filters */}
       {isFilterActive && (
         <div className="mb-4 flex flex-wrap gap-2">
+          {showCompaniesOnly && (
+            <Badge variant="secondary" className="flex items-center gap-1">
+              Entreprises uniquement
+              <Cross2Icon 
+                className="h-3 w-3 cursor-pointer" 
+                onClick={() => setShowCompaniesOnly(false)}
+              />
+            </Badge>
+          )}
           {selectedQuoteTypes.map(type => (
             <Badge key={`type-${type}`} variant="secondary" className="flex items-center gap-1">
               {quoteTypeFilters.find(t => t.value === type)?.label}
@@ -320,8 +345,8 @@ export default function ClientsPage() {
                     >
                       <TableCell className="font-medium">
                         {client.name}
-                        {client.company && (
-                          <div className="text-sm text-muted-foreground">{client.company}</div>
+                        {client.raison_sociale && (
+                          <div className="text-sm text-muted-foreground">{client.raison_sociale}</div>
                         )}
                       </TableCell>
                       <TableCell className="hidden md:table-cell">{client.email || "—"}</TableCell>
