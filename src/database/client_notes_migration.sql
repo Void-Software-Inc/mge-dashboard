@@ -35,3 +35,14 @@ CREATE TRIGGER trigger_update_client_notes_updated_at
 -- ('0123456789', 'Client très sympathique, préfère les événements en extérieur'),
 -- ('0987654321', 'Demande toujours des devis détaillés, attention aux délais');
 
+----------------
+
+-- Migration to add first_relation_date column to client_notes table
+-- This column stores the date when the relationship with the client first started
+
+-- Add first_relation_date column to client_notes table
+ALTER TABLE client_notes 
+ADD COLUMN IF NOT EXISTS first_relation_date DATE;
+
+-- Add comment to the column for documentation
+COMMENT ON COLUMN client_notes.first_relation_date IS 'Date when the relationship with this client first started';
