@@ -8,16 +8,25 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { ArrowLeftIcon, Cross2Icon, PlusIcon } from "@radix-ui/react-icons"
+import { ArrowLeftIcon, Cross2Icon, PlusIcon, CalendarIcon } from "@radix-ui/react-icons"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Skeleton } from "@/components/ui/skeleton"
 import { quoteStatus } from "@/utils/types/quotes"
 import ClientNotesManager from "../components/ClientNotesManager"
+import { Calendar } from "@/components/ui/calendar"
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
+import { format } from "date-fns"
+import { fr } from "date-fns/locale"
+import { cn } from "@/lib/utils"
+import { toast } from "sonner"
+import { ClientNote } from "@/utils/types/clients"
 
 export default function ClientDetailPage({ params }: { params: { id: string } }) {
   const router = useRouter()
   const [client, setClient] = useState<Client & { quotes?: any[] }>()
   const [isLoading, setIsLoading] = useState(true)
+  const [firstRelationDate, setFirstRelationDate] = useState<Date | undefined>(undefined)
+  const [isSavingDate, setIsSavingDate] = useState(false)
   
   // Add filter states
   const [selectedQuoteStatuses, setSelectedQuoteStatuses] = useState<string[]>([])
@@ -44,6 +53,30 @@ export default function ClientDetailPage({ params }: { params: { id: string } })
 
     fetchClient()
   }, [params.id])
+
+  // Fetch client notes including first relation date
+  useEffect(() => {
+    const fetchClientNotes = async () => {
+      if (!client?.phone) return
+      
+      try {
+        const response = await fetch(`/api/client-notes?phone_number=${encodeURIComponent(client.phone)}`)
+        if (response.ok) {
+          const data = await response.json()
+          if (data.notes?.first_relation_date) {
+            // Parse the date string as local date to avoid timezone issues
+            const dateParts = data.notes.first_relation_date.split('-')
+            const localDate = new Date(parseInt(dateParts[0]), parseInt(dateParts[1]) - 1, parseInt(dateParts[2]))
+            setFirstRelationDate(localDate)
+          }
+        }
+      } catch (error) {
+        console.error('Error fetching client notes:', error)
+      }
+    }
+
+    fetchClientNotes()
+  }, [client?.phone])
   
   // Apply filters when selectedQuoteStatuses changes
   useEffect(() => {
@@ -93,6 +126,47 @@ export default function ClientDetailPage({ params }: { params: { id: string } })
   
   const clearFilters = () => {
     setSelectedQuoteStatuses([])
+  }
+
+  // Handle saving first relation date
+  const handleSaveFirstRelationDate = async (date: Date | undefined) => {
+    if (!client?.phone) return
+    
+    setIsSavingDate(true)
+    try {
+      // First, fetch existing notes to preserve them
+      const existingNotesResponse = await fetch(`/api/client-notes?phone_number=${encodeURIComponent(client.phone)}`)
+      let existingNotes = ''
+      if (existingNotesResponse.ok) {
+        const existingData = await existingNotesResponse.json()
+        existingNotes = existingData.notes?.notes || ''
+      }
+
+      // Save with existing notes preserved
+      const response = await fetch('/api/client-notes', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          phone_number: client.phone,
+          notes: existingNotes,
+          first_relation_date: date ? format(date, 'yyyy-MM-dd') : null
+        }),
+      })
+
+      if (!response.ok) {
+        throw new Error('Failed to save first relation date')
+      }
+
+      setFirstRelationDate(date)
+      toast.success('Date de première relation sauvegardée')
+    } catch (error) {
+      console.error('Error saving first relation date:', error)
+      toast.error('Erreur lors de la sauvegarde de la date')
+    } finally {
+      setIsSavingDate(false)
+    }
   }
 
 
@@ -317,6 +391,37 @@ export default function ClientDetailPage({ params }: { params: { id: string } })
             <CardTitle>Statistiques</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
+            <div>
+              <p className="text-sm font-medium text-muted-foreground">Date de première relation</p>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    className={cn(
+                      "w-full justify-start text-left font-normal h-8 px-3",
+                      !firstRelationDate && "text-muted-foreground"
+                    )}
+                    disabled={isSavingDate}
+                  >
+                    <CalendarIcon className="mr-2 h-4 w-4" />
+                    {firstRelationDate ? (
+                      format(firstRelationDate, "PPP", { locale: fr })
+                    ) : (
+                      <span>Sélectionner une date</span>
+                    )}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <Calendar
+                    mode="single"
+                    selected={firstRelationDate}
+                    onSelect={handleSaveFirstRelationDate}
+                    disabled={(date) => date > new Date()}
+                    initialFocus
+                  />
+                </PopoverContent>
+              </Popover>
+            </div>
             <div>
               <p className="text-sm font-medium text-muted-foreground">Nombre de devis</p>
               <p className="text-2xl font-bold">{client.quotes?.length || 0}</p>
