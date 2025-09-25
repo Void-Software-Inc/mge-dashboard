@@ -58,13 +58,22 @@ export async function POST(request: Request) {
     }
 
     const supabase = createClient();
+    
+    // Prepare the data object for upsert
+    const upsertData: any = {
+      phone_number: body.phone_number,
+      notes: body.notes,
+      updated_at: new Date().toISOString()
+    };
+
+    // Only include first_relation_date if it's provided
+    if (body.first_relation_date !== undefined) {
+      upsertData.first_relation_date = body.first_relation_date;
+    }
+
     const { data, error } = await supabase
       .from('client_notes')
-      .upsert({
-        phone_number: body.phone_number,
-        notes: body.notes,
-        updated_at: new Date().toISOString()
-      }, {
+      .upsert(upsertData, {
         onConflict: 'phone_number'
       })
       .select()

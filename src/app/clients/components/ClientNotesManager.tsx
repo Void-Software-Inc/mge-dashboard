@@ -4,9 +4,14 @@ import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Textarea } from "@/components/ui/textarea"
-import { Pencil1Icon, CheckIcon, Cross2Icon, FileTextIcon } from "@radix-ui/react-icons"
+import { Pencil1Icon, CheckIcon, Cross2Icon, FileTextIcon, CalendarIcon } from "@radix-ui/react-icons"
 import { toast } from "sonner"
 import { ClientNote } from "@/utils/types/clients"
+import { Calendar } from "@/components/ui/calendar"
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
+import { format } from "date-fns"
+import { fr } from "date-fns/locale"
+import { cn } from "@/lib/utils"
 
 interface ClientNotesManagerProps {
   phoneNumber: string
@@ -16,6 +21,7 @@ export default function ClientNotesManager({
   phoneNumber
 }: ClientNotesManagerProps) {
   const [notes, setNotes] = useState('')
+  const [firstRelationDate, setFirstRelationDate] = useState<Date | undefined>(undefined)
   const [isEditing, setIsEditing] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false)
@@ -32,6 +38,12 @@ export default function ClientNotesManager({
         if (response.ok) {
           const data = await response.json()
           setNotes(data.notes?.notes || '')
+          if (data.notes?.first_relation_date) {
+            // Parse the date string as local date to avoid timezone issues
+            const dateParts = data.notes.first_relation_date.split('-')
+            const localDate = new Date(parseInt(dateParts[0]), parseInt(dateParts[1]) - 1, parseInt(dateParts[2]))
+            setFirstRelationDate(localDate)
+          }
         }
       } catch (error) {
         console.error('Error fetching notes:', error)
@@ -56,7 +68,8 @@ export default function ClientNotesManager({
         },
         body: JSON.stringify({
           phone_number: phoneNumber,
-          notes: notes.trim()
+          notes: notes.trim(),
+          first_relation_date: firstRelationDate ? format(firstRelationDate, 'yyyy-MM-dd') : null
         }),
       })
 
@@ -66,6 +79,12 @@ export default function ClientNotesManager({
 
       const data = await response.json()
       setNotes(data.notes.notes)
+      if (data.notes.first_relation_date) {
+        // Parse the date string as local date to avoid timezone issues
+        const dateParts = data.notes.first_relation_date.split('-')
+        const localDate = new Date(parseInt(dateParts[0]), parseInt(dateParts[1]) - 1, parseInt(dateParts[2]))
+        setFirstRelationDate(localDate)
+      }
       setHasUnsavedChanges(false)
       setIsEditing(false)
       toast.success('Notes sauvegardées avec succès')
@@ -85,6 +104,14 @@ export default function ClientNotesManager({
         if (response.ok) {
           const data = await response.json()
           setNotes(data.notes?.notes || '')
+          if (data.notes?.first_relation_date) {
+            // Parse the date string as local date to avoid timezone issues
+            const dateParts = data.notes.first_relation_date.split('-')
+            const localDate = new Date(parseInt(dateParts[0]), parseInt(dateParts[1]) - 1, parseInt(dateParts[2]))
+            setFirstRelationDate(localDate)
+          } else {
+            setFirstRelationDate(undefined)
+          }
         }
       } catch (error) {
         console.error('Error resetting notes:', error)
@@ -98,6 +125,11 @@ export default function ClientNotesManager({
 
   const handleNotesChange = (value: string) => {
     setNotes(value)
+    setHasUnsavedChanges(true)
+  }
+
+  const handleDateChange = (date: Date | undefined) => {
+    setFirstRelationDate(date)
     setHasUnsavedChanges(true)
   }
 
@@ -120,7 +152,7 @@ export default function ClientNotesManager({
                 disabled={isLoading}
               >
                 <Pencil1Icon className="h-4 w-4 mr-1" />
-                {hasNotes ? 'Modifier' : 'Ajouter'}
+                {hasNotes || firstRelationDate ? 'Modifier' : 'Ajouter'}
               </Button>
             ) : (
               <div className="flex gap-2">
@@ -153,13 +185,51 @@ export default function ClientNotesManager({
       <CardContent>
         {isEditing ? (
           <div className="space-y-4">
-            <Textarea
-              value={notes}
-              onChange={(e) => handleNotesChange(e.target.value)}
-              placeholder="Saisissez vos notes sur ce client..."
-              className="min-h-[120px] resize-none"
-              disabled={isLoading}
-            />
+            <div>
+              <label className="text-sm font-medium text-muted-foreground mb-2 block">
+                Date de première relation
+              </label>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    className={cn(
+                      "w-full justify-start text-left font-normal",
+                      !firstRelationDate && "text-muted-foreground"
+                    )}
+                    disabled={isLoading}
+                  >
+                    <CalendarIcon className="mr-2 h-4 w-4" />
+                    {firstRelationDate ? (
+                      format(firstRelationDate, "PPP", { locale: fr })
+                    ) : (
+                      <span>Sélectionner une date</span>
+                    )}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <Calendar
+                    mode="single"
+                    selected={firstRelationDate}
+                    onSelect={handleDateChange}
+                    disabled={(date) => date > new Date()}
+                    initialFocus
+                  />
+                </PopoverContent>
+              </Popover>
+            </div>
+            <div>
+              <label className="text-sm font-medium text-muted-foreground mb-2 block">
+                Notes
+              </label>
+              <Textarea
+                value={notes}
+                onChange={(e) => handleNotesChange(e.target.value)}
+                placeholder="Saisissez vos notes sur ce client..."
+                className="min-h-[120px] resize-none"
+                disabled={isLoading}
+              />
+            </div>
           </div>
         ) : (
           <div className="min-h-[120px]">
@@ -170,16 +240,31 @@ export default function ClientNotesManager({
                   <p className="text-sm">Chargement des notes...</p>
                 </div>
               </div>
-            ) : hasNotes ? (
-              <div className="whitespace-pre-wrap text-sm leading-relaxed">
-                {notes}
+            ) : hasNotes || firstRelationDate ? (
+              <div className="space-y-4">
+                {firstRelationDate && (
+                  <div>
+                    <p className="text-sm font-medium text-muted-foreground mb-1">Date de première relation</p>
+                    <p className="text-sm">
+                      {format(firstRelationDate, "PPP", { locale: fr })}
+                    </p>
+                  </div>
+                )}
+                {hasNotes && (
+                  <div>
+                    <p className="text-sm font-medium text-muted-foreground mb-1">Notes</p>
+                    <div className="whitespace-pre-wrap text-sm leading-relaxed">
+                      {notes}
+                    </div>
+                  </div>
+                )}
               </div>
             ) : (
               <div className="flex items-center justify-center h-full text-muted-foreground">
                 <div className="text-center">
                   <FileTextIcon className="h-8 w-8 mx-auto mb-2 opacity-50" />
-                  <p className="text-sm">Aucune note pour ce client</p>
-                  <p className="text-xs">Cliquez sur "Ajouter" pour commencer</p>
+                  <p className="text-sm">Aucune information pour ce client</p>
+                  <p className="text-xs">Cliquez sur "Ajouter" pour ajouter des notes ou une date</p>
                 </div>
               </div>
             )}
