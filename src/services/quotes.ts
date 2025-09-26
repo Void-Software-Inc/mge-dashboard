@@ -33,6 +33,7 @@ export async function getQuotes(): Promise<Quote[]> {
       is_deposit: quote.is_deposit,
       deposit_amount: quote.deposit_amount,
       address: quote.address,
+      location_address: quote.location_address,
       payments: quote.payments || [],
       fees: quotes.fees  || [],
       code_promo: quote.code_promo,
@@ -355,6 +356,7 @@ export async function getFinishedQuotes(): Promise<FinishedQuote[]> {
       finished_at: quotes.finished_at,
       payments: quotes.payments || [],
       address: quotes.address,
+      location_address: quotes.location_address,
       fees: quotes.fees  || [],
       code_promo: quotes.code_promo,
     }))

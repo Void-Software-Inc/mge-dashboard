@@ -190,23 +190,55 @@ export const generateContractPDF = (quote: AnyQuote, quoteItems: QuoteItem[], pr
       const checkboxSize = 3;
       const checkboxSpacing = 35; // Space between each checkbox
       
+      // Check which fees are enabled
+      const enabledFees = quote.fees?.filter(fee => fee.enabled) || [];
+      const isMontageEnabled = enabledFees.some(fee => fee.name === 'marquee_setup');
+      const isDemontageEnabled = enabledFees.some(fee => fee.name === 'marquee_dismantling');
+      const isLivraisonEnabled = enabledFees.some(fee => fee.name === 'delivery');
+      const isEnlevementEnabled = enabledFees.some(fee => fee.name === 'pickup');
+      
       // Montage checkbox
-      doc.rect(leftMargin + 5, currentY - 3, checkboxSize, checkboxSize);
+      const montageX = leftMargin + 5;
+      doc.rect(montageX, currentY - 3, checkboxSize, checkboxSize);
+      if (isMontageEnabled) {
+        // Add X mark
+        doc.setFontSize(6);
+        doc.text("X", montageX + 1, currentY - 0.5);
+        doc.setFontSize(9);
+      }
       doc.text("Montage", leftMargin + 12, currentY);
       
       // Démontage checkbox
       const demontageX = leftMargin + 5 + checkboxSpacing;
       doc.rect(demontageX, currentY - 3, checkboxSize, checkboxSize);
+      if (isDemontageEnabled) {
+        // Add X mark
+        doc.setFontSize(6);
+        doc.text("X", demontageX + 1, currentY - 0.5);
+        doc.setFontSize(9);
+      }
       doc.text("Démontage", demontageX + 7, currentY);
       
       // Livraison checkbox
       const livraisonX = leftMargin + 5 + (checkboxSpacing * 2);
       doc.rect(livraisonX, currentY - 3, checkboxSize, checkboxSize);
+      if (isLivraisonEnabled) {
+        // Add X mark
+        doc.setFontSize(6);
+        doc.text("X", livraisonX + 1, currentY - 0.5);
+        doc.setFontSize(9);
+      }
       doc.text("Livraison", livraisonX + 7, currentY);
       
       // Enlèvement checkbox
       const enlevementX = leftMargin + 5 + (checkboxSpacing * 3);
       doc.rect(enlevementX, currentY - 3, checkboxSize, checkboxSize);
+      if (isEnlevementEnabled) {
+        // Add X mark
+        doc.setFontSize(6);
+        doc.text("X", enlevementX + 1, currentY - 0.5);
+        doc.setFontSize(9);
+      }
       doc.text("Enlèvement", enlevementX + 7, currentY);
 
       // Section: DURÉE DE LA LOCATION
@@ -234,7 +266,7 @@ export const generateContractPDF = (quote: AnyQuote, quoteItems: QuoteItem[], pr
       doc.text(`La location est consentie pour une durée de _____ jour(s), du ____________ au ____________.`, leftMargin, currentY);
 
       // Section: LIEU DE LA LOCATION
-                currentY += 14;
+                currentY += 10;
       doc.setFontSize(9);
       doc.setFont('helvetica', 'bold');
       doc.text("LIEU DE LA LOCATION", leftMargin, currentY);
@@ -245,13 +277,42 @@ export const generateContractPDF = (quote: AnyQuote, quoteItems: QuoteItem[], pr
       doc.text("Le matériel sera installé et utilisé à l'adresse suivante :", leftMargin, currentY);
 
       currentY += 7;
-      // Event location (using client address for now)
-      if (quote.address?.voie) {
-        doc.text(`${quote.address.voie}${quote.address?.compl ? `, ${quote.address.compl}` : ''}`, leftMargin+5, currentY);
+      // Event location (using location_address if available, otherwise client address)
+      const locationAddress = quote.location_address || quote.address;
+      
+      // Check if location address has any meaningful content
+      const hasLocationAddress = locationAddress?.voie || locationAddress?.cp || locationAddress?.ville;
+      
+      if (hasLocationAddress) {
+        // Line 1: Voie
+        if (locationAddress?.voie) {
+          doc.text(locationAddress.voie, leftMargin+5, currentY);
+        }
         currentY += 5;
-      }
-      if (quote.address?.cp || quote.address?.ville) {
-        doc.text(`${quote.address?.cp || ''} ${quote.address?.ville || ''}`.trim(), leftMargin+5, currentY);
+        
+        // Line 2: Complément d'adresse (if exists)
+        if (locationAddress?.compl) {
+          doc.text(locationAddress.compl, leftMargin+5, currentY);
+          currentY += 5;
+        }
+        
+        
+        // Line 3: Ville, Code postal
+        const cityPostal = [];
+        if (locationAddress?.ville) cityPostal.push(locationAddress.ville);
+        if (locationAddress?.cp) cityPostal.push(locationAddress.cp);
+        if (cityPostal.length > 0) {
+          doc.text(cityPostal.join(', '), leftMargin+5, currentY);
+        }
+        currentY += 5;
+      } else {
+        // No location address - display 3 placeholder lines
+        doc.text("_________________________________________________", leftMargin, currentY);
+        currentY += 5;
+        doc.text("_________________________________________________", leftMargin, currentY);
+        currentY += 5;
+        doc.text("_________________________________________________", leftMargin, currentY);
+        currentY += 5;
       }
 
       // Check if we need to move payment section to page 2
@@ -259,10 +320,10 @@ export const generateContractPDF = (quote: AnyQuote, quoteItems: QuoteItem[], pr
       
       if (!shouldMovePaymentToPage2) {
         // Section: PRIX DE LA LOCATION ET MODALITÉS DE PAIEMENT (on page 1)
-              currentY += 14;;
+              currentY += 8;;
         
         // Check if we need to add a new page
-        if (currentY > pageHeight - 60) {
+        if (currentY > pageHeight - 20) {
           doc.addPage();
           currentPage++;
           totalPages++; // Increment total pages when adding a page
@@ -281,12 +342,16 @@ export const generateContractPDF = (quote: AnyQuote, quoteItems: QuoteItem[], pr
         doc.text(`Le prix de la location est fixé à ${totalTTC} euros, payable comme suit :`, leftMargin, currentY);
 
         currentY += 7;
-        doc.text("• 30 % à la réservation, soit _____ euros.", leftMargin + 5, currentY);
+        // Calculate 30% deposit and remaining amount
+        const depositAmount = quote.total_cost ? (quote.total_cost * 1.20 * 0.30).toFixed(2) : '0.00';
+        const remainingAmount = quote.total_cost ? (quote.total_cost * 1.20 * 0.70).toFixed(2) : '0.00';
+        
+        doc.text(`• 30 % à la réservation, soit ${depositAmount} euros.`, leftMargin + 5, currentY);
         currentY += 5;
-        doc.text("• Le solde, soit _____ euros, le jour de la livraison.", leftMargin + 5, currentY);
+        doc.text(`• Le solde, soit ${remainingAmount} euros, le jour de la livraison.`, leftMargin + 5, currentY);
 
         currentY += 5;
-        doc.text("Un dépôt de garantie de _____ euros sera versé par le Locataire au Loueur le jour de la livraison.", leftMargin, currentY);
+        doc.text(`Un dépôt de garantie de ___________________ euros sera versé par le Locataire au Loueur le jour de la livraison.`, leftMargin, currentY);
         currentY += 5;
         doc.text("Ce dépôt sera restitué au Locataire à la fin de la location, déduction faite des éventuels frais de réparation ou de", leftMargin, currentY);
         currentY += 5;
@@ -314,12 +379,16 @@ export const generateContractPDF = (quote: AnyQuote, quoteItems: QuoteItem[], pr
         doc.text(`Le prix de la location est fixé à ${totalTTC} euros, payable comme suit :`, leftMargin, currentY);
 
         currentY += 7;
-        doc.text("• 30 % à la réservation, soit _____ euros.", leftMargin + 5, currentY);
+        // Calculate 30% deposit and remaining amount
+        const depositAmount = quote.total_cost ? (quote.total_cost * 1.20 * 0.30).toFixed(2) : '0.00';
+        const remainingAmount = quote.total_cost ? (quote.total_cost * 1.20 * 0.70).toFixed(2) : '0.00';
+        
+        doc.text(`• 30 % à la réservation, soit ${depositAmount} euros.`, leftMargin + 5, currentY);
         currentY += 5;
-        doc.text("• Le solde, soit _____ euros, le jour de la livraison.", leftMargin + 5, currentY);
+        doc.text(`• Le solde, soit ${remainingAmount} euros, le jour de la livraison.`, leftMargin + 5, currentY);
 
         currentY += 5;
-        doc.text("Un dépôt de garantie de _____ euros sera versé par le Locataire au Loueur le jour de la livraison.", leftMargin, currentY);
+        doc.text(`Un dépôt de garantie de ${depositAmount} euros sera versé par le Locataire au Loueur le jour de la livraison.`, leftMargin, currentY);
         currentY += 5;
         doc.text("Ce dépôt sera restitué au Locataire à la fin de la location, déduction faite des éventuels frais de réparation ou de", leftMargin, currentY);
         currentY += 5;
@@ -391,7 +460,7 @@ export const generateContractPDF = (quote: AnyQuote, quoteItems: QuoteItem[], pr
       doc.setFontSize(9);
       doc.setFont('helvetica', 'bold');
       const currentDate = new Date().toLocaleDateString('fr-FR');
-      doc.text(`FAIT À _________________, LE ${currentDate}`, leftMargin, currentY);
+      doc.text(`FAIT À ____________________, LE __________________`, leftMargin, currentY);
 
       // Signature sections
       currentY += 20;
