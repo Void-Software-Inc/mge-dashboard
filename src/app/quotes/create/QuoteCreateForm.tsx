@@ -77,6 +77,14 @@ const initialQuote: Partial<Quote> = {
     ville: '',
     depart: '',
     pays: 'France'
+  },
+  location_address: {
+    voie: '',
+    compl: null,
+    cp: '',
+    ville: '',
+    depart: '',
+    pays: 'France'
   }
 };
 
@@ -391,6 +399,24 @@ export default function QuoteCreateForm({ clientId }: QuoteCreateFormProps) {
     });
   };
 
+  const handleLocationAddressChange = (field: keyof Address, value: string) => {
+    setFormData(prev => {
+      if (!prev) return prev;
+      return {
+        ...prev,
+        location_address: {
+          voie: prev.location_address?.voie ?? '',
+          compl: prev.location_address?.compl ?? null,
+          cp: prev.location_address?.cp ?? '',
+          ville: prev.location_address?.ville ?? '',
+          depart: prev.location_address?.depart ?? '',
+          pays: prev.location_address?.pays ?? '',
+          [field]: value
+        }
+      };
+    });
+  };
+
   // Calculate TTC to HT conversion helper
   const calculateTTC = (ht: number | undefined): number => {
     return ht !== undefined ? ht * 1.20 : 0;
@@ -514,6 +540,10 @@ export default function QuoteCreateForm({ clientId }: QuoteCreateFormProps) {
       if (key === 'address' && value) {
         Object.entries(value).forEach(([addressKey, addressValue]) => {
           formDataToSend.append(`address.${addressKey}`, addressValue?.toString() ?? '');
+        });
+      } else if (key === 'location_address' && value) {
+        Object.entries(value).forEach(([addressKey, addressValue]) => {
+          formDataToSend.append(`location_address.${addressKey}`, addressValue?.toString() ?? '');
         });
       } else if (key === 'fees') {
         formDataToSend.append('fees', JSON.stringify(initialFees));
@@ -746,6 +776,82 @@ export default function QuoteCreateForm({ clientId }: QuoteCreateFormProps) {
                 className="w-full text-base min-h-[120px]" 
                 placeholder="Description détaillée de l'événement..."
               />
+            </div>
+            
+            {/* Location Address Section */}
+            <div className="p-4 border border-gray-200 rounded-lg bg-white mt-6">
+              <h4 className="text-base font-medium mb-3 text-gray-700">Lieu de location <span className='text-xs font-medium text-gray-600'>(si différent de l'addresse du client)</span></h4>
+              <div className="space-y-4">
+                <div>
+                  <Label htmlFor="location_voie" className="text-sm text-gray-600">Voie</Label>
+                  <Input 
+                    id="location_voie" 
+                    value={formData?.location_address?.voie ?? ''} 
+                    onChange={(e) => handleLocationAddressChange('voie', e.target.value)} 
+                    className="w-full mt-1" 
+                    placeholder="Numéro et nom de rue"
+                  />
+                </div>
+                
+                <div>
+                  <Label htmlFor="location_compl" className="text-sm text-gray-600">Complément d'adresse</Label>
+                  <Input 
+                    id="location_compl" 
+                    value={formData?.location_address?.compl ?? ''} 
+                    onChange={(e) => handleLocationAddressChange('compl', e.target.value)} 
+                    className="w-full mt-1" 
+                    placeholder="Appartement, étage, bâtiment..."
+                  />
+                </div>
+                
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label htmlFor="location_cp" className="text-sm text-gray-600">Code Postal</Label>
+                    <Input 
+                      id="location_cp" 
+                      value={formData?.location_address?.cp ?? ''} 
+                      onChange={(e) => handleLocationAddressChange('cp', e.target.value)} 
+                      className="w-full mt-1" 
+                      placeholder="75001"
+                    />
+                  </div>
+                  
+                  <div>
+                    <Label htmlFor="location_ville" className="text-sm text-gray-600">Ville</Label>
+                    <Input 
+                      id="location_ville" 
+                      value={formData?.location_address?.ville ?? ''} 
+                      onChange={(e) => handleLocationAddressChange('ville', e.target.value)} 
+                      className="w-full mt-1" 
+                      placeholder="Paris"
+                    />
+                  </div>
+                </div>
+                
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label htmlFor="location_depart" className="text-sm text-gray-600">Département</Label>
+                    <Input 
+                      id="location_depart" 
+                      value={formData?.location_address?.depart ?? ''} 
+                      onChange={(e) => handleLocationAddressChange('depart', e.target.value)} 
+                      className="w-full mt-1" 
+                      placeholder="75"
+                    />
+                  </div>
+                  
+                  <div>
+                    <Label htmlFor="location_pays" className="text-sm text-gray-600">Pays</Label>
+                    <Input 
+                      id="location_pays" 
+                      value={formData?.location_address?.pays ?? 'France'} 
+                      onChange={(e) => handleLocationAddressChange('pays', e.target.value)} 
+                      className="w-full mt-1 bg-gray-50"
+                      disabled
+                    />
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
 

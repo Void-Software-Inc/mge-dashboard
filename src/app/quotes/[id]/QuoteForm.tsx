@@ -25,6 +25,7 @@ import { format, parseISO } from 'date-fns';
 import { Product } from "@/utils/types/products"
 import { getAllProducts } from "@/services/products"
 import { generateQuotePDF } from "@/utils/pdf/generateDocumentPDF"
+import { generateContractPDF } from "@/utils/pdf/generateContractPDF"
 import { QuoteFees } from "../components/QuoteFees"
 import { CodePromo } from "@/utils/types/codesPromos"
 import { getCodesPromos } from "@/services/codesPromos"
@@ -786,6 +787,11 @@ export default function QuoteForm({ quoteId }: { quoteId: string }) {
             Object.entries(value).forEach(([addressKey, addressValue]) => {
               freshFormData.append(`address.${addressKey}`, addressValue?.toString() ?? '');
             });
+          } else if (key === 'location_address' && value) {
+            // Handle location_address object separately
+            Object.entries(value).forEach(([addressKey, addressValue]) => {
+              freshFormData.append(`location_address.${addressKey}`, addressValue?.toString() ?? '');
+            });
           } else if (key === 'fees') {
             // Explicitly stringify the fees array
             freshFormData.append('fees', JSON.stringify(filteredFees));
@@ -864,6 +870,10 @@ export default function QuoteForm({ quoteId }: { quoteId: string }) {
             Object.entries(value).forEach(([addressKey, addressValue]) => {
               formDataToSend.append(`address.${addressKey}`, addressValue?.toString() ?? '');
             });
+          } else if (key === 'location_address' && value) {
+            Object.entries(value).forEach(([addressKey, addressValue]) => {
+              formDataToSend.append(`location_address.${addressKey}`, addressValue?.toString() ?? '');
+            });
           } else if (key === 'raison_sociale') {
             // Handle raison_sociale specifically to allow empty strings or null values
             formDataToSend.append('raison_sociale', value?.toString() ?? '');
@@ -918,6 +928,38 @@ export default function QuoteForm({ quoteId }: { quoteId: string }) {
     });
   };
 
+  const handleLocationAddressChange = (field: keyof Address, value: string) => {
+    setFormData(prev => {
+      if (!prev) return null;
+      return {
+        ...prev,
+        location_address: {
+          voie: prev.location_address?.voie ?? '',
+          compl: prev.location_address?.compl ?? null,
+          cp: prev.location_address?.cp ?? '',
+          ville: prev.location_address?.ville ?? '',
+          depart: prev.location_address?.depart ?? '',
+          pays: prev.location_address?.pays ?? '',
+          ...prev.location_address,
+          [field]: value
+        }
+      };
+    });
+  };
+
+  // Function to check if quote contains chapiteau products
+  const hasChapiteauProducts = (): boolean => {
+    if (!quoteItems || !products) return false;
+    
+    // Get all chapiteau product IDs
+    const chapiteauProductIds = products
+      .filter(product => product.type === 'chapiteau')
+      .map(product => product.id);
+    
+    // Check if any quote items contain chapiteau products
+    return quoteItems.some(item => chapiteauProductIds.includes(item.product_id));
+  };
+
   const downloadPDF = () => {
     if (isProductsLoading) {
       toast.error('Chargement des produits en cours...');
@@ -965,6 +1007,39 @@ export default function QuoteForm({ quoteId }: { quoteId: string }) {
       .catch((error) => {
         console.error('Error generating PDF:', error);
         toast.error('Erreur lors de la génération du PDF');
+      });
+  };
+
+  const downloadContractPDF = () => {
+    if (!formData) {
+      console.error('Missing form data');
+      toast.error('Impossible de générer le contrat : données du devis manquantes');
+      return;
+    }
+
+    if (!quoteItems || quoteItems.length === 0) {
+      console.error('Missing quote items');
+      toast.error('Impossible de générer le contrat : articles manquants');
+      return;
+    }
+
+    if (!products || products.length === 0) {
+      console.error('Missing products data');
+      toast.error('Impossible de générer le contrat : produits manquants');
+      return;
+    }
+
+    // Filter out tainted items
+    const filteredQuoteItems = quoteItems.filter(item => !taintedItems.has(item.id));
+
+    // Generate the contract PDF
+    (generateContractPDF(formData, filteredQuoteItems, products) as Promise<void>)
+      .then(() => {
+        toast.success('Contrat généré avec succès');
+      })
+      .catch((error) => {
+        console.error('Error generating contract PDF:', error);
+        toast.error('Erreur lors de la génération du contrat');
       });
   };
 
@@ -1327,6 +1402,82 @@ export default function QuoteForm({ quoteId }: { quoteId: string }) {
                 className="w-full text-base min-h-[120px]" 
                 placeholder="Description détaillée de l'événement..."
               />
+            </div>
+            
+            {/* Location Address Section */}
+            <div className="p-4 border border-gray-200 rounded-lg bg-white mt-6">
+              <h4 className="text-base font-medium mb-3 text-gray-700">Lieu de location <span className='text-xs font-medium text-gray-600'>(si différent de l'addresse du client)</span></h4>
+              <div className="space-y-4">
+                <div>
+                  <Label htmlFor="location_voie" className="text-sm text-gray-600">Voie</Label>
+                  <Input 
+                    id="location_voie" 
+                    value={formData?.location_address?.voie ?? ''} 
+                    onChange={(e) => handleLocationAddressChange('voie', e.target.value)} 
+                    className="w-full mt-1" 
+                    placeholder="Numéro et nom de rue"
+                  />
+                </div>
+                
+                <div>
+                  <Label htmlFor="location_compl" className="text-sm text-gray-600">Complément d'adresse</Label>
+                  <Input 
+                    id="location_compl" 
+                    value={formData?.location_address?.compl ?? ''} 
+                    onChange={(e) => handleLocationAddressChange('compl', e.target.value)} 
+                    className="w-full mt-1" 
+                    placeholder="Appartement, étage, bâtiment..."
+                  />
+                </div>
+                
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label htmlFor="location_cp" className="text-sm text-gray-600">Code Postal</Label>
+                    <Input 
+                      id="location_cp" 
+                      value={formData?.location_address?.cp ?? ''} 
+                      onChange={(e) => handleLocationAddressChange('cp', e.target.value)} 
+                      className="w-full mt-1" 
+                      placeholder="75001"
+                    />
+                  </div>
+                  
+                  <div>
+                    <Label htmlFor="location_ville" className="text-sm text-gray-600">Ville</Label>
+                    <Input 
+                      id="location_ville" 
+                      value={formData?.location_address?.ville ?? ''} 
+                      onChange={(e) => handleLocationAddressChange('ville', e.target.value)} 
+                      className="w-full mt-1" 
+                      placeholder="Paris"
+                    />
+                  </div>
+                </div>
+                
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label htmlFor="location_depart" className="text-sm text-gray-600">Département</Label>
+                    <Input 
+                      id="location_depart" 
+                      value={formData?.location_address?.depart ?? ''} 
+                      onChange={(e) => handleLocationAddressChange('depart', e.target.value)} 
+                      className="w-full mt-1" 
+                      placeholder="75"
+                    />
+                  </div>
+                  
+                  <div>
+                    <Label htmlFor="location_pays" className="text-sm text-gray-600">Pays</Label>
+                    <Input 
+                      id="location_pays" 
+                      value={formData?.location_address?.pays ?? 'France'} 
+                      onChange={(e) => handleLocationAddressChange('pays', e.target.value)} 
+                      className="w-full mt-1 bg-gray-50"
+                      disabled
+                    />
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
           
@@ -1888,24 +2039,48 @@ export default function QuoteForm({ quoteId }: { quoteId: string }) {
                   Afficher les mentions HT/TTC dans le PDF
                 </Label>
               </div>
-              <Button
-                onClick={downloadPDF}
-                className={`
-                  ${!isChanged 
-                    ? "bg-lime-300 hover:bg-lime-400" 
-                    : "bg-gray-300 hover:bg-gray-400 cursor-not-allowed"
-                  }
-                  text-black
-                `}
-                variant="secondary"
-                disabled={isChanged}
-              >
-                <DownloadIcon className="w-4 h-4 mr-2" />
-                {isChanged 
-                  ? "Sauvegardez les modifications avant de télécharger" 
-                  : "Télécharger le devis en PDF"
-                }
-              </Button>
+              <div className="flex flex-col space-y-2">
+                <div className="flex flex-col sm:flex-row gap-2">
+                  <Button
+                    onClick={downloadPDF}
+                    className={`
+                      ${!isChanged 
+                        ? "bg-lime-300 hover:bg-lime-400" 
+                        : "bg-gray-300 hover:bg-gray-400 cursor-not-allowed"
+                      }
+                      text-black flex-1
+                    `}
+                    variant="secondary"
+                    disabled={isChanged}
+                  >
+                    <DownloadIcon className="w-4 h-4 mr-2" />
+                    {isChanged 
+                      ? "Sauvegardez les modifications avant de télécharger" 
+                      : "Télécharger le devis en PDF"
+                    }
+                  </Button>
+                  <Button
+                    onClick={downloadContractPDF}
+                    className={`
+                      ${!isChanged && hasChapiteauProducts()
+                        ? "bg-blue-300 hover:bg-blue-400" 
+                        : "bg-gray-300 hover:bg-gray-400 cursor-not-allowed"
+                      }
+                      text-black flex-1
+                    `}
+                    variant="secondary"
+                    disabled={isChanged || !hasChapiteauProducts()}
+                  >
+                    <DownloadIcon className="w-4 h-4 mr-2" />
+                    {isChanged 
+                      ? "Sauvegardez les modifications avant de télécharger" 
+                      : !hasChapiteauProducts()
+                        ? "Aucun barnum dans ce devis"
+                        : "Télécharger le contrat barnum en PDF"
+                    }
+                  </Button>
+                </div>
+              </div>
             </div>
           </div>
         </div>

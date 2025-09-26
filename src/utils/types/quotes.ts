@@ -54,6 +54,7 @@ export type Quote = {
   deposit_amount: number;
   deposit_percentage: number;
   address: Address | null;
+  location_address: Address | null; // Event location address
   payments?: QuotePayment[];
   fees: Fee[];
   code_promo?: number | null; // Optional promo code field foreign key to codesPromos table
@@ -79,6 +80,7 @@ export type QuoteRecord = {
   deleted_at: string;
   description: string;
   address: Address | null;
+  location_address: Address | null; // Event location address
   payments?: QuotePayment[];
   is_deposit: boolean;
   deposit_amount: number;
@@ -110,6 +112,7 @@ export type FinishedQuote = {
   finished_at: string;
   description: string;
   address: Address | null;
+  location_address: Address | null; // Event location address
   payments?: QuotePayment[];
   fees: Fee[];
   code_promo?: number | null; // Optional promo code field foreign key to codesPromos table

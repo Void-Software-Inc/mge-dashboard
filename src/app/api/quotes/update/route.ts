@@ -58,6 +58,14 @@ export async function PUT(request: NextRequest) {
       depart: FormDataEntryValue | null;
       pays: FormDataEntryValue | null;
     };
+    location_address: {
+      voie: FormDataEntryValue | null;
+      compl: FormDataEntryValue | null;
+      cp: FormDataEntryValue | null;
+      ville: FormDataEntryValue | null;
+      depart: FormDataEntryValue | null;
+      pays: FormDataEntryValue | null;
+    };
     fees?: any[]; // Add this to allow the fees property
     code_promo?: FormDataEntryValue | null; // Optional promo code field
   }
@@ -89,6 +97,14 @@ export async function PUT(request: NextRequest) {
       ville: formData.get('address.ville'),
       depart: formData.get('address.depart'),
       pays: formData.get('address.pays')
+    },
+    location_address: {
+      voie: formData.get('location_address.voie'),
+      compl: formData.get('location_address.compl'),
+      cp: formData.get('location_address.cp'),
+      ville: formData.get('location_address.ville'),
+      depart: formData.get('location_address.depart'),
+      pays: formData.get('location_address.pays')
     },
     code_promo: formData.get('code_promo') || null,
   };
