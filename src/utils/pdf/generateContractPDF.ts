@@ -424,7 +424,7 @@ export const generateContractPDF = (quote: AnyQuote, quoteItems: QuoteItem[], pr
       currentY += 5;
       doc.text("• Le Locataire est responsable de tous les dommages causés au matériel pendant la durée de la location.", leftMargin + 5, currentY);
       currentY += 5;
-      doc.text("• Le Locataire doit s'assurer que le terrain où sera installé le Barnum soit apte à recevoir celui-ci, et est responsable de", leftMargin + 5, currentY);
+      doc.text("• Le Locataire doit s'assurer que le terrain où sera installé le Barnum est apte à recevoir celui-ci, et est responsable de", leftMargin + 5, currentY);
       currentY += 5;
       doc.text("toutes les démarches administratives concernant le terrain, et l'installation du Barnum.", leftMargin + 5, currentY);
 
@@ -441,9 +441,9 @@ export const generateContractPDF = (quote: AnyQuote, quoteItems: QuoteItem[], pr
       const modalitiesText = [
         "Pour une location en semaine, la durée de la location est de 48 heures environ avec un retrait du barnum la veille de l'événement et un retour le lendemain de l'événement.",
         "Pour une location le week-end, la durée de la location est de 96 heures environ avec un retrait du barnum le jeudi matin au plus tôt et un retour le lundi après-midi au plus tard.",
-        "La location sera due que le barnum ait été utilisé ou non. Le client donneur d'ordre reconnaît avoir reçu le(s) barnum(s) toutes en bon état, sauf observations consignées. L'équipement fera foi en aucune façon sans que le locataire ait pris les accessoires correspondant au règle avec les normes de sécurité et d'hygiène en vigueur. Le client donneur d'ordre déclare avoir eu toute latitude de vérifier le barnum. Celui-ci sera préparé et remontré à l'enlèvement ou au débarrassage des déchets, trié et rangé dans son emballage d'origine. Dans le cas contraire, le temps passé à la préparation pour l'enlèvement ou au débarrassage sera facturé au tarif en vigueur l'heure de manutention et par personne.",
-        "Un inventaire contradictoire est effectué avec le client donneur d'ordre ou son délégué lors de la reprise du barnum tout. En cas d'absence du client donneur d'ordre ou de son délégué, l'inventaire est effectué à l'entrepôt du loueur et seul accord particulier, seul l'inventaire du loueur fera foi, aucune contestation ne sera admise."
-      ];
+        "La location sera due que le barnum ait été utilisé ou non. Le client donneur d'ordre reconnaît avoir reçu le(s) barnum(s) loués en bon état, aptes au fonctionnement, avec l'équipement normal et les accessoires nécessaires, le tout propre, entretenu correctement, en règle avec les normes de sécurité et d'hygiène en vigueur. Le client donneur d'ordre déclare avoir eu toute latitude de vérifier le barnum. Celui-ci est rendu préparé pour l'enlèvement c'est à dire, débarrassé des déchets, trié et rangé dans son emballage d'origine. Dans le cas contraire, le temps passé à la préparation pour l'enlèvement et / ou débarrassage sera facturé au tarif en vigueur l'heure de manutention et par personne.",
+        "Un inventaire contradictoire est effectué avec le client donneur d'ordre ou son délégué lors de la reprise du barnum tout. En cas d'absence du client donneur d'ordre ou de son délégué, l'inventaire est effectué à l'entrepôt du loueur et seul accord particulier, seul l'inventaire du loueur fera foi, aucune contestation ne sera admise.",
+    ];
 
       modalitiesText.forEach((line) => {
         if (line === "") {
