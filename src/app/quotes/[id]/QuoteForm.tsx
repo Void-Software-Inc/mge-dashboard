@@ -25,6 +25,7 @@ import { format, parseISO } from 'date-fns';
 import { Product } from "@/utils/types/products"
 import { getAllProducts } from "@/services/products"
 import { generateQuotePDF } from "@/utils/pdf/generateDocumentPDF"
+import { generateContractPDF } from "@/utils/pdf/generateContractPDF"
 import { QuoteFees } from "../components/QuoteFees"
 import { CodePromo } from "@/utils/types/codesPromos"
 import { getCodesPromos } from "@/services/codesPromos"
@@ -918,6 +919,19 @@ export default function QuoteForm({ quoteId }: { quoteId: string }) {
     });
   };
 
+  // Function to check if quote contains chapiteau products
+  const hasChapiteauProducts = (): boolean => {
+    if (!quoteItems || !products) return false;
+    
+    // Get all chapiteau product IDs
+    const chapiteauProductIds = products
+      .filter(product => product.type === 'chapiteau')
+      .map(product => product.id);
+    
+    // Check if any quote items contain chapiteau products
+    return quoteItems.some(item => chapiteauProductIds.includes(item.product_id));
+  };
+
   const downloadPDF = () => {
     if (isProductsLoading) {
       toast.error('Chargement des produits en cours...');
@@ -965,6 +979,39 @@ export default function QuoteForm({ quoteId }: { quoteId: string }) {
       .catch((error) => {
         console.error('Error generating PDF:', error);
         toast.error('Erreur lors de la génération du PDF');
+      });
+  };
+
+  const downloadContractPDF = () => {
+    if (!formData) {
+      console.error('Missing form data');
+      toast.error('Impossible de générer le contrat : données du devis manquantes');
+      return;
+    }
+
+    if (!quoteItems || quoteItems.length === 0) {
+      console.error('Missing quote items');
+      toast.error('Impossible de générer le contrat : articles manquants');
+      return;
+    }
+
+    if (!products || products.length === 0) {
+      console.error('Missing products data');
+      toast.error('Impossible de générer le contrat : produits manquants');
+      return;
+    }
+
+    // Filter out tainted items
+    const filteredQuoteItems = quoteItems.filter(item => !taintedItems.has(item.id));
+
+    // Generate the contract PDF
+    (generateContractPDF(formData, filteredQuoteItems, products) as Promise<void>)
+      .then(() => {
+        toast.success('Contrat généré avec succès');
+      })
+      .catch((error) => {
+        console.error('Error generating contract PDF:', error);
+        toast.error('Erreur lors de la génération du contrat');
       });
   };
 
@@ -1888,24 +1935,46 @@ export default function QuoteForm({ quoteId }: { quoteId: string }) {
                   Afficher les mentions HT/TTC dans le PDF
                 </Label>
               </div>
-              <Button
-                onClick={downloadPDF}
-                className={`
-                  ${!isChanged 
-                    ? "bg-lime-300 hover:bg-lime-400" 
-                    : "bg-gray-300 hover:bg-gray-400 cursor-not-allowed"
+              <div className="flex flex-col space-y-2">
+                <Button
+                  onClick={downloadPDF}
+                  className={`
+                    ${!isChanged 
+                      ? "bg-lime-300 hover:bg-lime-400" 
+                      : "bg-gray-300 hover:bg-gray-400 cursor-not-allowed"
+                    }
+                    text-black
+                  `}
+                  variant="secondary"
+                  disabled={isChanged}
+                >
+                  <DownloadIcon className="w-4 h-4 mr-2" />
+                  {isChanged 
+                    ? "Sauvegardez les modifications avant de télécharger" 
+                    : "Télécharger le devis en PDF"
                   }
-                  text-black
-                `}
-                variant="secondary"
-                disabled={isChanged}
-              >
-                <DownloadIcon className="w-4 h-4 mr-2" />
-                {isChanged 
-                  ? "Sauvegardez les modifications avant de télécharger" 
-                  : "Télécharger le devis en PDF"
-                }
-              </Button>
+                </Button>
+                {hasChapiteauProducts() && (
+                  <Button
+                    onClick={downloadContractPDF}
+                    className={`
+                      ${!isChanged 
+                        ? "bg-blue-300 hover:bg-blue-400" 
+                        : "bg-gray-300 hover:bg-gray-400 cursor-not-allowed"
+                      }
+                      text-black
+                    `}
+                    variant="secondary"
+                    disabled={isChanged}
+                  >
+                    <DownloadIcon className="w-4 h-4 mr-2" />
+                    {isChanged 
+                      ? "Sauvegardez les modifications avant de télécharger" 
+                      : "Télécharger le contrat barnum en PDF"
+                    }
+                  </Button>
+                )}
+              </div>
             </div>
           </div>
         </div>
