@@ -392,37 +392,6 @@ export default function ClientDetailPage({ params }: { params: { id: string } })
           </CardHeader>
           <CardContent className="space-y-4">
             <div>
-              <p className="text-sm font-medium text-muted-foreground">Date de première relation</p>
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button
-                    variant="outline"
-                    className={cn(
-                      "w-full justify-start text-left font-normal h-8 px-3",
-                      !firstRelationDate && "text-muted-foreground"
-                    )}
-                    disabled={isSavingDate}
-                  >
-                    <CalendarIcon className="mr-2 h-4 w-4" />
-                    {firstRelationDate ? (
-                      format(firstRelationDate, "PPP", { locale: fr })
-                    ) : (
-                      <span>Sélectionner une date</span>
-                    )}
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-auto p-0" align="start">
-                  <Calendar
-                    mode="single"
-                    selected={firstRelationDate}
-                    onSelect={handleSaveFirstRelationDate}
-                    disabled={(date) => date > new Date()}
-                    initialFocus
-                  />
-                </PopoverContent>
-              </Popover>
-            </div>
-            <div>
               <p className="text-sm font-medium text-muted-foreground">Nombre de devis</p>
               <p className="text-2xl font-bold">{client.quotes?.length || 0}</p>
             </div>
