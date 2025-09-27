@@ -26,6 +26,7 @@ import { Product } from "@/utils/types/products"
 import { getAllProducts } from "@/services/products"
 import { generateQuotePDF } from "@/utils/pdf/generateDocumentPDF"
 import { generateContractPDF } from "@/utils/pdf/generateContractPDF"
+import { generateFurnitureContractPDF } from "@/utils/pdf/generateFurnitureContractPDF"
 import { QuoteFees } from "../components/QuoteFees"
 import { CodePromo } from "@/utils/types/codesPromos"
 import { getCodesPromos } from "@/services/codesPromos"
@@ -960,6 +961,19 @@ export default function QuoteForm({ quoteId }: { quoteId: string }) {
     return quoteItems.some(item => chapiteauProductIds.includes(item.product_id));
   };
 
+  // Function to check if quote contains decoration products that are not chapiteau
+  const hasFurnitureProducts = (): boolean => {
+    if (!quoteItems || !products) return false;
+    
+    // Get all decoration product IDs that are not chapiteau
+    const furnitureProductIds = products
+      .filter(product => product.category === 'decoration' && product.type !== 'chapiteau')
+      .map(product => product.id);
+    
+    // Check if any quote items contain furniture products
+    return quoteItems.some(item => furnitureProductIds.includes(item.product_id));
+  };
+
   const downloadPDF = () => {
     if (isProductsLoading) {
       toast.error('Chargement des produits en cours...');
@@ -1040,6 +1054,39 @@ export default function QuoteForm({ quoteId }: { quoteId: string }) {
       .catch((error) => {
         console.error('Error generating contract PDF:', error);
         toast.error('Erreur lors de la génération du contrat');
+      });
+  };
+
+  const downloadFurnitureContractPDF = () => {
+    if (!formData) {
+      console.error('Missing form data');
+      toast.error('Impossible de générer le contrat mobilier : données du devis manquantes');
+      return;
+    }
+
+    if (!quoteItems || quoteItems.length === 0) {
+      console.error('Missing quote items');
+      toast.error('Impossible de générer le contrat mobilier : articles manquants');
+      return;
+    }
+
+    if (!products || products.length === 0) {
+      console.error('Missing products data');
+      toast.error('Impossible de générer le contrat mobilier : produits manquants');
+      return;
+    }
+
+    // Filter out tainted items
+    const filteredQuoteItems = quoteItems.filter(item => !taintedItems.has(item.id));
+
+    // Generate the furniture contract PDF
+    (generateFurnitureContractPDF(formData, filteredQuoteItems, products) as Promise<void>)
+      .then(() => {
+        toast.success('Contrat mobilier généré avec succès');
+      })
+      .catch((error) => {
+        console.error('Error generating furniture contract PDF:', error);
+        toast.error('Erreur lors de la génération du contrat mobilier');
       });
   };
 
@@ -1195,7 +1242,7 @@ export default function QuoteForm({ quoteId }: { quoteId: string }) {
           </Button>
         </div>
       </div>
-      <form onSubmit={(e) => e.preventDefault()} className="flex flex-col items-center justify-center pt-20 px-4 md:px-0">
+      <form onSubmit={(e) => e.preventDefault()} className="flex flex-col items-center justify-center pt-20 px-4 md:px-6 lg:px-0">
         <div className="w-full max-w-5xl">
           <div className="mb-4">
             <Label className="text-base">Numéro du devis</Label>
@@ -2036,11 +2083,11 @@ export default function QuoteForm({ quoteId }: { quoteId: string }) {
                   className="data-[state=checked]:bg-lime-500"
                 />
                 <Label htmlFor="show_ht_ttc_pdf" className="text-sm text-gray-600">
-                  Afficher les mentions HT/TTC dans le PDF
+                  Afficher les mentions HT/TTC dans le devis
                 </Label>
               </div>
               <div className="flex flex-col space-y-2">
-                <div className="flex flex-col sm:flex-row gap-2">
+                <div className="flex flex-col lg:flex-row gap-2">
                   <Button
                     onClick={downloadPDF}
                     className={`
@@ -2054,10 +2101,15 @@ export default function QuoteForm({ quoteId }: { quoteId: string }) {
                     disabled={isChanged}
                   >
                     <DownloadIcon className="w-4 h-4 mr-2" />
-                    {isChanged 
-                      ? "Sauvegardez les modifications avant de télécharger" 
-                      : "Télécharger le devis en PDF"
-                    }
+                    <span className="hidden sm:inline">
+                      {isChanged 
+                        ? "Sauvegardez les modifications avant de télécharger" 
+                        : "Télécharger le devis en PDF"
+                      }
+                    </span>
+                    <span className="sm:hidden">
+                      {isChanged ? "Sauvegardez d'abord" : "Devis PDF"}
+                    </span>
                   </Button>
                   <Button
                     onClick={downloadContractPDF}
@@ -2072,12 +2124,42 @@ export default function QuoteForm({ quoteId }: { quoteId: string }) {
                     disabled={isChanged || !hasChapiteauProducts()}
                   >
                     <DownloadIcon className="w-4 h-4 mr-2" />
-                    {isChanged 
-                      ? "Sauvegardez les modifications avant de télécharger" 
-                      : !hasChapiteauProducts()
-                        ? "Aucun barnum dans ce devis"
-                        : "Télécharger le contrat barnum en PDF"
-                    }
+                    <span className="hidden sm:inline">
+                      {isChanged 
+                        ? "Sauvegardez les modifications avant de télécharger" 
+                        : !hasChapiteauProducts()
+                          ? "Aucun barnum dans ce devis"
+                          : "Télécharger le contrat barnum en PDF"
+                      }
+                    </span>
+                    <span className="sm:hidden">
+                      {isChanged ? "Sauvegardez d'abord" : !hasChapiteauProducts() ? "Aucun barnum" : "Contrat Barnum"}
+                    </span>
+                  </Button>
+                  <Button
+                    onClick={downloadFurnitureContractPDF}
+                    className={`
+                      ${!isChanged && hasFurnitureProducts()
+                        ? "bg-purple-300 hover:bg-purple-400" 
+                        : "bg-gray-300 hover:bg-gray-400 cursor-not-allowed"
+                      }
+                      text-black flex-1
+                    `}
+                    variant="secondary"
+                    disabled={isChanged || !hasFurnitureProducts()}
+                  >
+                    <DownloadIcon className="w-4 h-4 mr-2" />
+                    <span className="hidden sm:inline">
+                      {isChanged 
+                        ? "Sauvegardez les modifications avant de télécharger" 
+                        : !hasFurnitureProducts()
+                          ? "Aucun mobilier dans ce devis"
+                          : "Télécharger le contrat mobilier en PDF"
+                      }
+                    </span>
+                    <span className="sm:hidden">
+                      {isChanged ? "Sauvegardez d'abord" : !hasFurnitureProducts() ? "Aucun mobilier" : "Contrat Mobilier"}
+                    </span>
                   </Button>
                 </div>
               </div>
