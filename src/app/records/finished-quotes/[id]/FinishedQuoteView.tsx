@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { Label } from "@/components/ui/label"
 import { Button } from "@/components/ui/button"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { toast } from 'sonner'
 import { Skeleton } from "@/components/ui/skeleton"
 import { Switch } from "@/components/ui/switch"
@@ -22,6 +23,9 @@ import { Product } from "@/utils/types/products"
 import { CodePromo } from "@/utils/types/codesPromos"
 import { getCodesPromos } from "@/services/codesPromos"
 import { generateQuotePDF, generateInvoicePDF } from "@/utils/pdf/generateDocumentPDF"
+import { generateContractPDF } from "@/utils/pdf/generateContractPDF"
+import { generateFurnitureContractPDF } from "@/utils/pdf/generateFurnitureContractPDF"
+import { generateConditionsGeneralesPDF } from "@/utils/pdf/generateConditionsGeneralesPDF"
 import { QuoteFees } from "@/app/quotes/components/QuoteFees"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import {
@@ -50,6 +54,9 @@ export default function FinishedQuoteView({ quoteId }: { quoteId: string }) {
   // Promotional codes state
   const [selectedPromoCode, setSelectedPromoCode] = useState<CodePromo | null>(null)
   const [isPromoCodesLoading, setIsPromoCodesLoading] = useState(false)
+  
+  // PDF download state
+  const [selectedDownloadType, setSelectedDownloadType] = useState<string>('')
   
   // Move pagination state to the top level
   const [currentPage, setCurrentPage] = useState(1);
@@ -195,6 +202,148 @@ export default function FinishedQuoteView({ quoteId }: { quoteId: string }) {
     }
   };
 
+  // Function to check if quote contains chapiteau products
+  const hasChapiteauProducts = (): boolean => {
+    if (!quoteItems || !products) return false;
+    
+    // Get all chapiteau product IDs
+    const chapiteauProductIds = products
+      .filter(product => product.type === 'chapiteau')
+      .map(product => product.id);
+    
+    // Check if any quote items contain chapiteau products
+    return quoteItems.some(item => chapiteauProductIds.includes(item.product_id));
+  };
+
+  // Function to check if quote contains decoration products that are not chapiteau
+  const hasFurnitureProducts = (): boolean => {
+    if (!quoteItems || !products) return false;
+    
+    // Get all decoration product IDs that are not chapiteau
+    const furnitureProductIds = products
+      .filter(product => product.category === 'decoration' && product.type !== 'chapiteau')
+      .map(product => product.id);
+    
+    // Check if any quote items contain furniture products
+    return quoteItems.some(item => furnitureProductIds.includes(item.product_id));
+  };
+
+  const downloadContractPDF = async () => {
+    if (!quote) {
+      console.error('Missing quote data');
+      toast.error('Impossible de générer le contrat : données du devis manquantes');
+      return;
+    }
+
+    if (!quoteItems || quoteItems.length === 0) {
+      console.error('Missing quote items');
+      toast.error('Impossible de générer le contrat : articles manquants');
+      return;
+    }
+
+    if (!products || products.length === 0) {
+      console.error('Missing products data');
+      toast.error('Impossible de générer le contrat : produits manquants');
+      return;
+    }
+
+    try {
+      // Create enhanced quote object with promo code details
+      const enhancedQuote = {
+        ...quote,
+        code_promo_code: selectedPromoCode?.code_promo,
+        code_promo_discount: selectedPromoCode?.amount
+      };
+
+      await generateContractPDF(enhancedQuote, quoteItems, products);
+      toast.success('Contrat généré avec succès');
+    } catch (error) {
+      console.error('Error generating contract PDF:', error);
+      toast.error('Erreur lors de la génération du contrat');
+    }
+  };
+
+  const downloadFurnitureContractPDF = async () => {
+    if (!quote) {
+      console.error('Missing quote data');
+      toast.error('Impossible de générer le contrat mobilier : données du devis manquantes');
+      return;
+    }
+
+    if (!quoteItems || quoteItems.length === 0) {
+      console.error('Missing quote items');
+      toast.error('Impossible de générer le contrat mobilier : articles manquants');
+      return;
+    }
+
+    if (!products || products.length === 0) {
+      console.error('Missing products data');
+      toast.error('Impossible de générer le contrat mobilier : produits manquants');
+      return;
+    }
+
+    try {
+      // Create enhanced quote object with promo code details
+      const enhancedQuote = {
+        ...quote,
+        code_promo_code: selectedPromoCode?.code_promo,
+        code_promo_discount: selectedPromoCode?.amount
+      };
+
+      await generateFurnitureContractPDF(enhancedQuote, quoteItems, products);
+      toast.success('Contrat mobilier généré avec succès');
+    } catch (error) {
+      console.error('Error generating furniture contract PDF:', error);
+      toast.error('Erreur lors de la génération du contrat mobilier');
+    }
+  };
+
+  const downloadConditionsGeneralesPDF = async () => {
+    try {
+      await generateConditionsGeneralesPDF();
+      toast.success('Conditions générales générées avec succès');
+    } catch (error) {
+      console.error('Error generating conditions générales PDF:', error);
+      toast.error('Erreur lors de la génération des conditions générales');
+    }
+  };
+
+  // Handle download based on selected type
+  const handleDownload = async () => {
+    if (!selectedDownloadType) return;
+
+    // Check if the selected option is unavailable
+    if (selectedDownloadType === 'contract' && !hasChapiteauProducts()) {
+      toast.error('Contrat Barnum non disponible - aucun produit chapiteau dans ce devis');
+      return;
+    }
+    
+    if (selectedDownloadType === 'furniture-contract' && !hasFurnitureProducts()) {
+      toast.error('Contrat Mobilier non disponible - aucun produit mobilier dans ce devis');
+      return;
+    }
+
+    switch (selectedDownloadType) {
+      case 'quote':
+        await downloadPDF();
+        break;
+      case 'invoice':
+        await downloadInvoice();
+        break;
+      case 'contract':
+        await downloadContractPDF();
+        break;
+      case 'furniture-contract':
+        await downloadFurnitureContractPDF();
+        break;
+      case 'conditions-generales':
+        await downloadConditionsGeneralesPDF();
+        break;
+      default:
+        break;
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="flex flex-col items-center justify-center pt-20 px-4 md:px-0">
@@ -229,38 +378,69 @@ export default function FinishedQuoteView({ quoteId }: { quoteId: string }) {
             </Button>
             
             <div className="flex flex-col items-end space-y-3">
-              <div className="flex items-center space-x-2">
-                <Switch
-                  id="show_ht_ttc_pdf"
-                  checked={showHtTtcInPdf}
-                  onCheckedChange={setShowHtTtcInPdf}
-                  className="data-[state=checked]:bg-lime-500"
-                />
-                <Label htmlFor="show_ht_ttc_pdf" className="text-sm text-gray-600">
-                  Afficher les mentions HT/TTC dans le PDF
-                </Label>
-              </div>
-              
-              <div className="flex space-x-2">
-                <Button 
-                  className="bg-lime-300 hover:bg-lime-400 whitespace-nowrap"
-                  variant="secondary"
-                  onClick={downloadPDF}
-                >
-                  <DownloadIcon className="w-4 h-4 mr-2" />
-                  <span className="hidden sm:inline">Télécharger le devis en PDF</span>
-                  <span className="inline sm:hidden">Devis PDF</span>
-                </Button>
+              <div className="flex flex-col sm:flex-row gap-3 w-full">
+                {(selectedDownloadType === 'quote' || selectedDownloadType === 'invoice') && (
+                  <div className="flex items-end">
+                    <div className="flex items-center space-x-2 bg-gray-50 px-3 py-2 rounded-md border">
+                      <Switch
+                        id="show_ht_ttc_pdf"
+                        checked={showHtTtcInPdf}
+                        onCheckedChange={setShowHtTtcInPdf}
+                        className="data-[state=checked]:bg-lime-500"
+                      />
+                      <Label htmlFor="show_ht_ttc_pdf" className="text-sm text-gray-600 whitespace-nowrap">
+                        Afficher HT/TTC
+                      </Label>
+                    </div>
+                  </div>
+                )}
                 
-                <Button 
-                  className="bg-blue-300 hover:bg-blue-400 whitespace-nowrap"
-                  variant="secondary"
-                  onClick={downloadInvoice}
-                >
-                  <DownloadIcon className="w-4 h-4 mr-2" />
-                  <span className="hidden sm:inline">Télécharger la facture en PDF</span>
-                  <span className="inline sm:hidden">Facture PDF</span>
-                </Button>
+                <div className="flex-1">
+                  <Label htmlFor="download-type" className="text-sm text-gray-600 mb-2 block">
+                    Type de document à télécharger
+                  </Label>
+                  <Select value={selectedDownloadType} onValueChange={setSelectedDownloadType}>
+                    <SelectTrigger className="w-full min-w-[280px]">
+                      <SelectValue placeholder="Sélectionner un document" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="quote">Devis en PDF</SelectItem>
+                      <SelectItem value="invoice">Facture en PDF</SelectItem>
+                      <SelectItem value="contract">Contrat Barnum en PDF</SelectItem>
+                      <SelectItem value="furniture-contract">Contrat Mobilier en PDF</SelectItem>
+                      <SelectItem value="conditions-generales">Conditions Générales</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                
+                <div className="flex items-end">
+                  <Button
+                    onClick={handleDownload}
+                    disabled={!selectedDownloadType}
+                    className={`
+                      ${selectedDownloadType 
+                        ? (() => {
+                            if (selectedDownloadType === 'contract' && !hasChapiteauProducts()) {
+                              return "bg-gray-300 hover:bg-gray-400 cursor-not-allowed text-gray-500"
+                            }
+                            if (selectedDownloadType === 'furniture-contract' && !hasFurnitureProducts()) {
+                              return "bg-gray-300 hover:bg-gray-400 cursor-not-allowed text-gray-500"
+                            }
+                            return "bg-lime-500 hover:bg-lime-600 text-white"
+                          })()
+                        : "bg-gray-300 hover:bg-gray-400 cursor-not-allowed text-gray-500"
+                      }
+                      px-6 py-2
+                    `}
+                    variant="secondary"
+                  >
+                    <DownloadIcon className="w-4 h-4 mr-2" />
+                    {selectedDownloadType && (
+                      (selectedDownloadType === 'contract' && !hasChapiteauProducts()) ||
+                      (selectedDownloadType === 'furniture-contract' && !hasFurnitureProducts())
+                    ) ? "Indisponible" : "Télécharger"}
+                  </Button>
+                </div>
               </div>
             </div>
           </div>
