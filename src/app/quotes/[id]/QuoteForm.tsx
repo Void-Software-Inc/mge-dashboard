@@ -27,6 +27,7 @@ import { getAllProducts } from "@/services/products"
 import { generateQuotePDF } from "@/utils/pdf/generateDocumentPDF"
 import { generateContractPDF } from "@/utils/pdf/generateContractPDF"
 import { generateFurnitureContractPDF } from "@/utils/pdf/generateFurnitureContractPDF"
+import { generateConditionsGeneralesPDF } from "@/utils/pdf/generateConditionsGeneralesPDF"
 import { QuoteFees } from "../components/QuoteFees"
 import { CodePromo } from "@/utils/types/codesPromos"
 import { getCodesPromos } from "@/services/codesPromos"
@@ -1090,6 +1091,18 @@ export default function QuoteForm({ quoteId }: { quoteId: string }) {
       });
   };
 
+  const downloadConditionsGeneralesPDF = () => {
+    // Generate the conditions générales PDF
+    (generateConditionsGeneralesPDF() as Promise<void>)
+      .then(() => {
+        toast.success('Conditions générales générées avec succès');
+      })
+      .catch((error) => {
+        console.error('Error generating conditions générales PDF:', error);
+        toast.error('Erreur lors de la génération des conditions générales');
+      });
+  };
+
   const handleAddPayment = () => {
     setFormData(prev => {
       if (!prev) return prev;
@@ -2087,7 +2100,7 @@ export default function QuoteForm({ quoteId }: { quoteId: string }) {
                 </Label>
               </div>
               <div className="flex flex-col space-y-2">
-                <div className="flex flex-col lg:flex-row gap-2">
+                <div className="flex flex-col xl:flex-row gap-2">
                   <Button
                     onClick={downloadPDF}
                     className={`
@@ -2159,6 +2172,29 @@ export default function QuoteForm({ quoteId }: { quoteId: string }) {
                     </span>
                     <span className="sm:hidden">
                       {isChanged ? "Sauvegardez d'abord" : !hasFurnitureProducts() ? "Aucun mobilier" : "Contrat Mobilier"}
+                    </span>
+                  </Button>
+                  <Button
+                    onClick={downloadConditionsGeneralesPDF}
+                    className={`
+                      ${!isChanged 
+                        ? "bg-orange-300 hover:bg-orange-400" 
+                        : "bg-gray-300 hover:bg-gray-400 cursor-not-allowed"
+                      }
+                      text-black flex-1
+                    `}
+                    variant="secondary"
+                    disabled={isChanged}
+                  >
+                    <DownloadIcon className="w-4 h-4 mr-2" />
+                    <span className="hidden sm:inline">
+                      {isChanged 
+                        ? "Sauvegardez les modifications avant de télécharger" 
+                        : "Télécharger les conditions générales"
+                      }
+                    </span>
+                    <span className="sm:hidden">
+                      {isChanged ? "Sauvegardez d'abord" : "Conditions Générales"}
                     </span>
                   </Button>
                 </div>
