@@ -611,7 +611,7 @@ export default function QuoteCreateForm({ clientId }: QuoteCreateFormProps) {
                 <h4 className="text-base font-medium mb-3 text-gray-700">Coordonnées</h4>
                 <div className="space-y-4">
                   <div>
-                    <Label htmlFor="last_name" className="text-sm text-gray-600">Nom</Label>
+                    <Label htmlFor="last_name" className="text-sm text-gray-600">Nom*</Label>
                     <Input 
                       id="last_name" 
                       value={formData.last_name} 
@@ -622,7 +622,7 @@ export default function QuoteCreateForm({ clientId }: QuoteCreateFormProps) {
                   </div>
                   
                   <div>
-                    <Label htmlFor="first_name" className="text-sm text-gray-600">Prénom</Label>
+                    <Label htmlFor="first_name" className="text-sm text-gray-600">Prénom*</Label>
                     <Input 
                       id="first_name" 
                       value={formData.first_name} 
@@ -633,7 +633,7 @@ export default function QuoteCreateForm({ clientId }: QuoteCreateFormProps) {
                   </div>
                   
                   <div>
-                    <Label htmlFor="raison_sociale" className="text-sm text-gray-600">Raison sociale (optionnel)</Label>
+                    <Label htmlFor="raison_sociale" className="text-sm text-gray-600">Raison sociale</Label>
                     <Input 
                       id="raison_sociale" 
                       value={formData.raison_sociale || ''} 
@@ -645,7 +645,7 @@ export default function QuoteCreateForm({ clientId }: QuoteCreateFormProps) {
                   </div>
                   
                   <div>
-                    <Label htmlFor="phone_number" className="text-sm text-gray-600">Téléphone</Label>
+                    <Label htmlFor="phone_number" className="text-sm text-gray-600">Téléphone*</Label>
                     <Input 
                       id="phone_number" 
                       value={formData.phone_number} 
@@ -656,7 +656,7 @@ export default function QuoteCreateForm({ clientId }: QuoteCreateFormProps) {
                   </div>
                   
                   <div>
-                    <Label htmlFor="email" className="text-sm text-gray-600">Email</Label>
+                    <Label htmlFor="email" className="text-sm text-gray-600">Email*</Label>
                     <Input 
                       id="email" 
                       value={formData.email} 
@@ -673,7 +673,7 @@ export default function QuoteCreateForm({ clientId }: QuoteCreateFormProps) {
                 <h4 className="text-base font-medium mb-3 text-gray-700">Adresse</h4>
                 <div className="space-y-4">
                   <div>
-                    <Label htmlFor="voie" className="text-sm text-gray-600">Voie</Label>
+                    <Label htmlFor="voie" className="text-sm text-gray-600">Voie*</Label>
                     <Input 
                       id="voie" 
                       value={formData.address?.voie ?? ''} 
@@ -694,7 +694,7 @@ export default function QuoteCreateForm({ clientId }: QuoteCreateFormProps) {
                   
                   <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <Label htmlFor="cp" className="text-sm text-gray-600">Code Postal</Label>
+                      <Label htmlFor="cp" className="text-sm text-gray-600">Code Postal*</Label>
                       <Input 
                         id="cp" 
                         value={formData.address?.cp ?? ''} 
@@ -704,7 +704,7 @@ export default function QuoteCreateForm({ clientId }: QuoteCreateFormProps) {
                     </div>
                     
                     <div>
-                      <Label htmlFor="ville" className="text-sm text-gray-600">Ville</Label>
+                      <Label htmlFor="ville" className="text-sm text-gray-600">Ville*</Label>
                       <Input 
                         id="ville" 
                         value={formData.address?.ville ?? ''} 
@@ -716,7 +716,7 @@ export default function QuoteCreateForm({ clientId }: QuoteCreateFormProps) {
                   
                   <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <Label htmlFor="depart" className="text-sm text-gray-600">Département</Label>
+                      <Label htmlFor="depart" className="text-sm text-gray-600">Département*</Label>
                       <Input 
                         id="depart" 
                         value={formData.address?.depart ?? ''} 
@@ -747,7 +747,7 @@ export default function QuoteCreateForm({ clientId }: QuoteCreateFormProps) {
             
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
               <div className="p-4 border border-gray-200 rounded-lg bg-white">
-                <h4 className="text-base font-medium mb-3 text-gray-700">Date de début</h4>
+                <h4 className="text-base font-medium mb-3 text-gray-700">Date de début*</h4>
                 <DatePicker
                   date={formData.event_start_date ? new Date(formData.event_start_date) : undefined}
                   onDateChange={handleStartDateChange}
@@ -757,7 +757,7 @@ export default function QuoteCreateForm({ clientId }: QuoteCreateFormProps) {
               </div>
               
               <div className="p-4 border border-gray-200 rounded-lg bg-white">
-                <h4 className="text-base font-medium mb-3 text-gray-700">Date de fin</h4>
+                <h4 className="text-base font-medium mb-3 text-gray-700">Date de fin*</h4>
                 <DatePicker
                   date={formData.event_end_date ? new Date(formData.event_end_date) : undefined}
                   onDateChange={handleEndDateChange}
@@ -779,8 +779,8 @@ export default function QuoteCreateForm({ clientId }: QuoteCreateFormProps) {
             </div>
             
             {/* Location Address Section */}
-            <div className="p-4 border border-gray-200 rounded-lg bg-white mt-6">
-              <h4 className="text-base font-medium mb-3 text-gray-700">Lieu de location <span className='text-xs font-medium text-gray-600'>(si différent de l'addresse du client)</span></h4>
+            <div className="p-4 border border-gray-200 rounded-lg bg-gray-50 mt-6">
+              <h4 className="text-base font-medium mb-3 text-gray-600">Adresse de l'événement <span className='text-xs font-medium text-gray-500'>(optionnel - si différente de l'adresse du client)</span></h4>
               <div className="space-y-4">
                 <div>
                   <Label htmlFor="location_voie" className="text-sm text-gray-600">Voie</Label>
@@ -857,7 +857,7 @@ export default function QuoteCreateForm({ clientId }: QuoteCreateFormProps) {
 
           {/* Enhanced Products Section */}
           <div className="mb-8 border border-gray-200 rounded-lg p-6 bg-gray-50">
-            <h3 className="text-lg font-semibold mb-4">Produits du devis</h3>
+            <h3 className="text-lg font-semibold mb-4">Produits du devis*</h3>
             
             <div className="p-4 border border-gray-200 rounded-lg bg-white">
               <QuoteItemList 
