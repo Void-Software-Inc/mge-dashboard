@@ -3,7 +3,7 @@ import { redirect } from "next/navigation"
 import QuoteCreateForm from "./QuoteCreateForm"
 
 export default async function CreateQuotePage({ searchParams }: { searchParams: { client_id?: string } }) {
-  const supabase = createClient()
+  const supabase = await createClient()
 
   const { data, error } = await supabase.auth.getUser()
   if (error || !data?.user) {

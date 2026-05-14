@@ -1,12 +1,15 @@
 import { createClient } from "@/utils/supabase/server";
 import { NextRequest, NextResponse } from "next/server";
 
-export async function POST(request: NextRequest, { params }: { params: { id: string } }) {
-    const supabase = createClient();
+export async function POST(
+    request: NextRequest,
+    { params }: { params: Promise<{ id: string }> },
+) {
+    const supabase = await createClient();
 
     const bucketPath = process.env.NEXT_PUBLIC_SUPABASE_BUCKET || 'mge-product-images';
 
-    const productId = params.id;
+    const { id: productId } = await params;
     const { imageId } = await request.json();
 
     // Fetch the image details

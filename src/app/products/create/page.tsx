@@ -3,7 +3,7 @@ import { redirect } from "next/navigation"
 import ProductCreateForm from "./ProductCreateForm"
 
 export default async function CreateProductPage() {
-  const supabase = createClient()
+  const supabase = await createClient()
 
   const { data, error } = await supabase.auth.getUser()
   if (error || !data?.user) {

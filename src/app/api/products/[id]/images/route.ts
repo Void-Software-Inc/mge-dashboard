@@ -1,9 +1,12 @@
 import { createClient } from "@/utils/supabase/server";
 import { NextResponse } from 'next/server';
 
-export async function GET(request: Request, { params }: { params: { id: string } }) {
-  const supabase = createClient();
-  const productId = params.id;
+export async function GET(
+  request: Request,
+  { params }: { params: Promise<{ id: string }> },
+) {
+  const supabase = await createClient();
+  const { id: productId } = await params;
 
   const { data: images, error } = await supabase
     .from('productImages')

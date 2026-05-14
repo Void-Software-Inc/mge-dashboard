@@ -2,7 +2,7 @@ import { createClient } from "@/utils/supabase/server";
 import { NextResponse } from 'next/server';
 
 export async function GET(request: { url: string | URL; }) {
-  const supabase = createClient();
+  const supabase = await createClient();
 
   const extractedURL = request.url;
   const pathSegments = extractedURL.toString().split('/');

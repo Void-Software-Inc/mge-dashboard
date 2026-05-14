@@ -3,7 +3,7 @@ import { redirect } from 'next/navigation';
 import StatsRegroupment from '@/components/stats/StatsRegroupment';
 
 export default async function Home() {
-  const supabase = createClient()
+  const supabase = await createClient()
 
   const { data, error } = await supabase.auth.getUser()
   if (error || !data?.user) {

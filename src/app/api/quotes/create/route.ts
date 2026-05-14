@@ -4,7 +4,7 @@ import { formatInTimeZone } from 'date-fns-tz'
 import { QuoteItem } from "@/utils/types/quotes";
 
 export async function POST(request: NextRequest) {
-    const supabase = createClient();
+    const supabase = await createClient();
     const body = await request.json();
     const { quoteData, quoteItems } = body;
 

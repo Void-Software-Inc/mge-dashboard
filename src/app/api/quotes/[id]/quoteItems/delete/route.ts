@@ -2,7 +2,7 @@ import { createClient } from "@/utils/supabase/server";
 import { NextRequest, NextResponse } from "next/server";
 
 export async function POST(request: NextRequest, { params }: { params: { id: string } }) {
-    const supabase = createClient();
+    const supabase = await createClient();
     const quoteId = params.id;
     const { quoteItemId } = await request.json();
 

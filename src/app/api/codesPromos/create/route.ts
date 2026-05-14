@@ -3,7 +3,7 @@ import { createClient } from '@/utils/supabase/server'
 import { formatInTimeZone } from 'date-fns-tz'
 
 export async function POST(request: NextRequest) {
-  const supabase = createClient()
+  const supabase = await createClient()
 
   const body = await request.json()
   const { code_promo, amount, is_active = true } = body

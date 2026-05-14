@@ -4,7 +4,7 @@ import { revalidateTag } from 'next/cache';
 
 export async function GET() {
   try {
-    const supabase = createClient();
+    const supabase = await createClient();
 
     // Query all quotes with non-null raison_sociale from all quote types
     const [activeQuotes, finishedQuotes, deletedQuotes] = await Promise.all([

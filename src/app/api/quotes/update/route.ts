@@ -3,7 +3,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { formatInTimeZone } from 'date-fns-tz'
 
 export async function PUT(request: NextRequest) {
-  const supabase = createClient();
+  const supabase = await createClient();
   
   const formData = await request.formData();
   const id = formData.get('id') as string;

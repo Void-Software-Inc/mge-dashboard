@@ -3,7 +3,7 @@ import { createClient } from '@/utils/supabase/server'
 import { formatInTimeZone } from 'date-fns-tz'
 
 export async function POST(request: NextRequest) {
-  const supabase = createClient()
+  const supabase = await createClient()
 
   const bucketPath = process.env.NEXT_PUBLIC_SUPABASE_BUCKET || 'mge-product-images';
   

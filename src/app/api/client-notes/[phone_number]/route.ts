@@ -10,7 +10,7 @@ export async function GET(
   { params }: { params: { phone_number: string } }
 ) {
   try {
-    const supabase = createClient();
+    const supabase = await createClient();
     const { data, error } = await supabase
       .from('client_notes')
       .select('*')
@@ -53,7 +53,7 @@ export async function PUT(
       );
     }
 
-    const supabase = createClient();
+    const supabase = await createClient();
     const { data, error } = await supabase
       .from('client_notes')
       .update({
@@ -87,7 +87,7 @@ export async function DELETE(
   { params }: { params: { phone_number: string } }
 ) {
   try {
-    const supabase = createClient();
+    const supabase = await createClient();
     const { error } = await supabase
       .from('client_notes')
       .delete()

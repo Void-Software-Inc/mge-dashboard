@@ -3,7 +3,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { formatInTimeZone } from 'date-fns-tz'
 
 export async function PUT(request: NextRequest) {
-  const supabase = createClient();
+  const supabase = await createClient();
   
   const bucketPath = process.env.NEXT_PUBLIC_SUPABASE_BUCKET || 'mge-product-images';
 

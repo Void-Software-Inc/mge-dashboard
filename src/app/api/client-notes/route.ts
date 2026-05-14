@@ -17,7 +17,7 @@ export async function GET(request: Request) {
       );
     }
 
-    const supabase = createClient();
+    const supabase = await createClient();
     const { data, error } = await supabase
       .from('client_notes')
       .select('*')
@@ -57,7 +57,7 @@ export async function POST(request: Request) {
       );
     }
 
-    const supabase = createClient();
+    const supabase = await createClient();
     
     // Prepare the data object for upsert
     const upsertData: any = {

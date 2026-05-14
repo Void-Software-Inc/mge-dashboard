@@ -3,7 +3,7 @@ import { NextResponse } from 'next/server';
 import { revalidateTag } from 'next/cache'
 
 export async function GET() {
-  const supabase = createClient();
+  const supabase = await createClient();
 
   const { data: quotes, error } = await supabase
     .from('quotes')

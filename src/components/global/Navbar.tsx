@@ -1,7 +1,6 @@
 "use client"
 
 import Link from "next/link";
-import Image from "next/image";
 import { useState } from "react";
 import { CircleUser, Menu } from "lucide-react"
 import { Button } from "@/components/ui/button"
@@ -13,7 +12,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
+import { Sheet, SheetContent, SheetTitle, SheetTrigger } from "@/components/ui/sheet"
 
 export default function Navbar(){
   const [isOpen, setIsOpen] = useState(false);
@@ -32,11 +31,16 @@ export default function Navbar(){
     <header className="sticky top-0 flex h-16 items-center gap-4 border-b bg-background px-4 md:px-6 z-50">
         <nav className="hidden flex-col gap-6 text-lg font-medium md:flex md:flex-row md:items-center md:gap-5 md:text-sm lg:gap-6">
           <Link
-            legacyBehavior
             href="/"
-            className="flex items-center gap-2 text-lg font-semibold md:text-base"
+            className="flex shrink-0 items-center gap-2 text-lg font-semibold md:text-base"
           >
-            <Image className="cursor-pointer" src="/static/svg/mglogo.svg" alt="logo" width={32} height={32} />
+            <img
+              src="/static/svg/mglogo.svg"
+              alt="MGE"
+              width={32}
+              height={32}
+              className="h-5 w-auto cursor-pointer"
+            />
           </Link>
           <Link
             href="/products"
@@ -81,13 +85,20 @@ export default function Navbar(){
             </Button>
           </SheetTrigger>
           <SheetContent side="left">
+            <SheetTitle className="sr-only">Menu de navigation</SheetTitle>
             <nav className="grid gap-6 text-lg font-medium">
               <Link
-                legacyBehavior
                 href="/"
-                className="flex items-center gap-2 text-lg font-semibold"
+                className="flex shrink-0 items-center gap-2 text-lg font-semibold"
+                onClick={handleItemClick}
               >
-                <Image onClick={handleItemClick} className="cursor-pointer" src="/static/svg/mglogo.svg" alt="logo" width={32} height={32} />
+                <img
+                  src="/static/svg/mglogo.svg"
+                  alt="MGE"
+                  width={87}
+                  height={46}
+                  className="h-8 w-auto cursor-pointer"
+                />
               </Link>
               <Link
                 href="/products"

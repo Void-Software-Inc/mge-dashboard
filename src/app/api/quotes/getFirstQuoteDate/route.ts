@@ -9,7 +9,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Phone number is required' }, { status: 400 });
     }
 
-    const supabase = createClient();
+    const supabase = await createClient();
 
     // Query all quotes tables to find the first quote date for this phone number
     const [activeQuotes, finishedQuotes, deletedQuotes] = await Promise.all([
