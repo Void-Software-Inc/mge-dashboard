@@ -3,6 +3,17 @@ import { NextRequest, NextResponse } from "next/server";
 import { formatInTimeZone } from 'date-fns-tz'
 import { QuoteItem } from "@/utils/types/quotes";
 
+/** Client form state keys that must not be sent to the `quotes` table */
+function sanitizeQuotePayload(quoteData: Record<string, unknown>) {
+    const out: Record<string, unknown> = { ...quoteData }
+    for (const key of Object.keys(out)) {
+        if (key.endsWith("_input")) {
+            delete out[key]
+        }
+    }
+    return out
+}
+
 export async function POST(request: NextRequest) {
     const supabase = await createClient();
     const body = await request.json();
@@ -13,7 +24,7 @@ export async function POST(request: NextRequest) {
 
     // Add timestamps to quoteData
     const quoteWithTimestamps = {
-        ...quoteData,
+        ...sanitizeQuotePayload(quoteData as Record<string, unknown>),
         created_at: parisDate,
         last_update: parisDate
     };
