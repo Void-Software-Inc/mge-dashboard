@@ -310,7 +310,7 @@ export default function ProductCreateForm() {
               </Label>
               <Input 
                 id="name" 
-                value={formData.name} 
+                value={formData.name ?? ''} 
                 onChange={handleInputChange} 
                 className={`w-full text-base ${errors.name ? 'border-red-500' : ''}`}
               />
@@ -330,7 +330,7 @@ export default function ProductCreateForm() {
               </Label>
               <Select 
                 onValueChange={(value) => handleSelectChange('category', value)}
-                value={formData.category}
+                value={formData.category ?? ''}
               >
                 <SelectTrigger className={`w-full ${errors.category ? 'border-red-500' : ''}`}>
                   <SelectValue placeholder="Sélectionner une catégorie" />
@@ -359,6 +359,7 @@ export default function ProductCreateForm() {
               </Label>
               <Select 
                 onValueChange={(value) => handleSelectChange('type', value)}
+                value={formData.type ?? ''}
                 disabled={!formData.category}
               >
                 <SelectTrigger className={`w-full ${errors.type ? 'border-red-500' : ''} ${!formData.category ? 'bg-gray-100' : ''}`}>
@@ -405,7 +406,7 @@ export default function ProductCreateForm() {
               </Label>
               <Select
                 onValueChange={(value) => handleSelectChange('color', value)}
-                value={formData.color}
+                value={formData.color ?? ''}
                 disabled={formData.category === 'traiteur'}
               >
                 <SelectTrigger className={`w-full ${errors.color ? 'border-red-500' : ''} ${formData.category === 'traiteur' ? 'bg-gray-100' : ''}`}>
@@ -465,7 +466,13 @@ export default function ProductCreateForm() {
                 type="number"
                 step="1"
                 min="0"
-                value={formData.category === 'traiteur' ? '∞' : formData.stock} 
+                value={
+                  formData.category === 'traiteur'
+                    ? '∞'
+                    : formData.stock === null || formData.stock === undefined
+                      ? ''
+                      : formData.stock
+                } 
                 onChange={handleInputChange} 
                 className={`w-full text-base ${errors.stock ? 'border-red-500' : ''} ${formData.category === 'traiteur' ? 'bg-gray-100' : ''}`}
                 disabled={formData.category === 'traiteur'}
@@ -489,7 +496,13 @@ export default function ProductCreateForm() {
                 type="number"
                 step="1"
                 min="0"
-                value={formData.ttc_price === null || formData.ttc_price === undefined || formData.ttc_price === 0 ? '' : formData.ttc_price} 
+                value={
+                  formData.ttc_price === null ||
+                  formData.ttc_price === undefined ||
+                  formData.ttc_price === 0
+                    ? ''
+                    : String(formData.ttc_price)
+                } 
                 onChange={handleInputChange} 
                 className={`w-full text-base ${errors.price ? 'border-red-500' : ''}`}
               />
@@ -497,7 +510,7 @@ export default function ProductCreateForm() {
             </div>
             <div className="mb-4">
               <Label htmlFor="description" className="text-base">Description du produit</Label>
-              <Textarea id="description" value={formData.description} onChange={handleInputChange} className="w-full text-base" />
+              <Textarea id="description" value={formData.description ?? ''} onChange={handleInputChange} className="w-full text-base" />
             </div>
             <div className="mb-4">
               <Label className="text-base flex items-center">
