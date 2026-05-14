@@ -146,7 +146,7 @@ export default function ClientsPage() {
   }
 
   const handleClientClick = (client: Client) => {
-    router.push(`/clients/${client.id}`)
+    router.push(`/clients/${encodeURIComponent(client.id)}`)
   }
   
   const handleQuoteTypeChange = (type: string) => {

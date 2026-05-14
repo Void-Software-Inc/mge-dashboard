@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@/utils/supabase/server';
+import { decodeClientRouteParam } from '@/utils/clientRouteParam';
 
 /**
  * GET /api/client-notes/[phone_number]
@@ -7,14 +8,16 @@ import { createClient } from '@/utils/supabase/server';
  */
 export async function GET(
   request: Request,
-  { params }: { params: { phone_number: string } }
+  { params }: { params: Promise<{ phone_number: string }> }
 ) {
+  const { phone_number: rawPhone } = await params;
+  const phone_number = decodeClientRouteParam(rawPhone);
   try {
     const supabase = await createClient();
     const { data, error } = await supabase
       .from('client_notes')
       .select('*')
-      .eq('phone_number', params.phone_number)
+      .eq('phone_number', phone_number)
       .single();
 
     if (error) {
@@ -27,7 +30,7 @@ export async function GET(
 
     return NextResponse.json({ notes: data });
   } catch (error) {
-    console.error(`Error fetching client notes for ${params.phone_number}:`, error);
+    console.error(`Error fetching client notes for ${phone_number}:`, error);
     return NextResponse.json(
       { error: 'Failed to fetch client notes' },
       { status: 500 }
@@ -41,8 +44,10 @@ export async function GET(
  */
 export async function PUT(
   request: Request,
-  { params }: { params: { phone_number: string } }
+  { params }: { params: Promise<{ phone_number: string }> }
 ) {
+  const { phone_number: rawPhone } = await params;
+  const phone_number = decodeClientRouteParam(rawPhone);
   try {
     const body = await request.json();
 
@@ -60,7 +65,7 @@ export async function PUT(
         notes: body.notes,
         updated_at: new Date().toISOString()
       })
-      .eq('phone_number', params.phone_number)
+      .eq('phone_number', phone_number)
       .select()
       .single();
 
@@ -70,7 +75,7 @@ export async function PUT(
 
     return NextResponse.json({ notes: data });
   } catch (error) {
-    console.error(`Error updating client notes for ${params.phone_number}:`, error);
+    console.error(`Error updating client notes for ${phone_number}:`, error);
     return NextResponse.json(
       { error: 'Failed to update client notes' },
       { status: 500 }
@@ -84,14 +89,16 @@ export async function PUT(
  */
 export async function DELETE(
   request: Request,
-  { params }: { params: { phone_number: string } }
+  { params }: { params: Promise<{ phone_number: string }> }
 ) {
+  const { phone_number: rawPhone } = await params;
+  const phone_number = decodeClientRouteParam(rawPhone);
   try {
     const supabase = await createClient();
     const { error } = await supabase
       .from('client_notes')
       .delete()
-      .eq('phone_number', params.phone_number);
+      .eq('phone_number', phone_number);
 
     if (error) {
       throw error;
@@ -99,7 +106,7 @@ export async function DELETE(
 
     return NextResponse.json({ success: true });
   } catch (error) {
-    console.error(`Error deleting client notes for ${params.phone_number}:`, error);
+    console.error(`Error deleting client notes for ${phone_number}:`, error);
     return NextResponse.json(
       { error: 'Failed to delete client notes' },
       { status: 500 }

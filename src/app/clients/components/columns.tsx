@@ -88,7 +88,7 @@ export const columns: ColumnDef<Client>[] = [
         <div className="flex justify-center">
           <Button
             variant="ghost"
-            onClick={() => router.push(`/clients/${client.phone}`)}
+            onClick={() => router.push(`/clients/${encodeURIComponent(client.phone)}`)}
             size="icon"
             className="text-blue-500 hover:text-blue-700 hover:bg-gray-50"
             title="Voir les détails du client"
@@ -97,7 +97,7 @@ export const columns: ColumnDef<Client>[] = [
           </Button>
           <Button
             variant="ghost"
-            onClick={() => router.push(`/quotes?client=${client.phone}`)}
+            onClick={() => router.push(`/quotes?client=${encodeURIComponent(client.phone)}`)}
             size="icon"
             className="text-green-500 hover:text-green-700 hover:bg-gray-50"
             title="Voir les devis du client"

@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { use, useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import { getClient } from "@/services/clients"
 import { Client } from "@/utils/types/clients"
@@ -21,7 +21,8 @@ import { cn } from "@/lib/utils"
 import { toast } from "sonner"
 import { ClientNote } from "@/utils/types/clients"
 
-export default function ClientDetailPage({ params }: { params: { id: string } }) {
+export default function ClientDetailPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = use(params)
   const router = useRouter()
   const [client, setClient] = useState<Client & { quotes?: any[] }>()
   const [isLoading, setIsLoading] = useState(true)
@@ -37,7 +38,7 @@ export default function ClientDetailPage({ params }: { params: { id: string } })
   useEffect(() => {
     const fetchClient = async () => {
       try {
-        const clientData = await getClient(params.id)
+        const clientData = await getClient(id)
        
         setClient(clientData)
         // Initialize filtered quotes with all quotes
@@ -52,7 +53,7 @@ export default function ClientDetailPage({ params }: { params: { id: string } })
     }
 
     fetchClient()
-  }, [params.id])
+  }, [id])
 
   // Fetch client notes including first relation date
   useEffect(() => {
@@ -296,7 +297,7 @@ export default function ClientDetailPage({ params }: { params: { id: string } })
         <div className="flex flex-col items-center justify-center py-10">
           <h2 className="text-2xl font-bold mb-4">Client non trouvé</h2>
           <p className="text-muted-foreground mb-6">
-            Le client avec l'identifiant {params.id} n'existe pas.
+            Le client avec l'identifiant {id} n'existe pas.
           </p>
           <Button onClick={() => router.push('/clients')}>
             <ArrowLeftIcon className="mr-2 h-4 w-4" />
@@ -330,7 +331,7 @@ export default function ClientDetailPage({ params }: { params: { id: string } })
             Retour
           </Button>
           <Button 
-            onClick={() => router.push(`/quotes/create?client_id=${params.id}`)}
+            onClick={() => router.push(`/quotes/create?client_id=${encodeURIComponent(id)}`)}
             className="bg-lime-300 hover:bg-lime-400 text-black w-full sm:w-auto"
           >
             <PlusIcon className="mr-2 h-4 w-4" />

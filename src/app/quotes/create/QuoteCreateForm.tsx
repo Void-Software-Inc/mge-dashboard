@@ -199,7 +199,7 @@ export default function QuoteCreateForm({ clientId }: QuoteCreateFormProps) {
   const handleGoBack = useCallback(() => {
     // If we came from a client page, go back there
     if (clientIdFromUrl) {
-      router.push(`/clients/${clientIdFromUrl}`);
+      router.push(`/clients/${encodeURIComponent(clientIdFromUrl)}`);
     } else {
       router.push('/quotes');
     }

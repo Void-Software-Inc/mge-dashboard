@@ -1,3 +1,4 @@
+import { decodeClientRouteParam } from "@/utils/clientRouteParam";
 import { Client } from "@/utils/types/clients";
 import { Quote, QuoteRecord, FinishedQuote } from "@/utils/types/quotes";
 import { getQuotes as originalGetQuotes, getFinishedQuotes as originalGetFinishedQuotes, getQuotesRecords as originalGetQuotesRecords } from "./quotes";
@@ -131,7 +132,8 @@ export async function getClients(): Promise<(Client & { quotes: any[] })[]> {
 }
 
 // Get a single client by phone number
-export async function getClient(phoneNumber: string): Promise<Client & { quotes: Quote[] }> {
+export async function getClient(rawPhoneNumber: string): Promise<Client & { quotes: Quote[] }> {
+  const phoneNumber = decodeClientRouteParam(rawPhoneNumber);
   try {    
     // Fetch quotes from all sources and first quote date in parallel
     const [activeQuotes, finishedQuotes, deletedQuotes, firstQuoteDate] = await Promise.all([
