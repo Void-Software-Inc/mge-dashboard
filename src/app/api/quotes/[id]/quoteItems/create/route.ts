@@ -1,9 +1,12 @@
 import { createClient } from "@/utils/supabase/server";
 import { NextRequest, NextResponse } from "next/server";
 
-export async function POST(request: NextRequest, { params }: { params: { id: string } }) {
+export async function POST(
+    request: NextRequest,
+    { params }: { params: Promise<{ id: string }> },
+) {
     const supabase = await createClient();
-    const quoteId = params.id;
+    const { id: quoteId } = await params;
     const { productId, quantity } = await request.json();
 
     if (!productId || quantity === undefined) {
