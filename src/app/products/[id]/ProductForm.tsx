@@ -11,7 +11,7 @@ import { Button } from "@/components/ui/button"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Toaster, toast } from 'sonner'
 import { Skeleton } from "@/components/ui/skeleton"
-import { ChevronLeftIcon, DownloadIcon, Cross2Icon, UploadIcon } from "@radix-ui/react-icons"
+import { ChevronLeftIcon, DownloadIcon, Cross2Icon, UploadIcon, CopyIcon } from "@radix-ui/react-icons"
 import {
   Tooltip,
   TooltipContent,
@@ -326,6 +326,25 @@ export default function ProductForm({ productId }: { productId: string }) {
     }
   };
 
+  const handleCopyAsJson = useCallback(() => {
+    if (!formData) return;
+    const json = {
+      name: formData.name,
+      description: formData.description,
+      basePrice: formData.ttc_price,
+      stock: formData.stock,
+      category: formData.category?.toUpperCase() ?? '',
+      type: (formData.type === 'acessoires' ? 'accessoires' : formData.type)?.toUpperCase() ?? '',
+      color: '#ffffff',
+      published: true,
+      bulletPoints: [],
+      instructions: [],
+    };
+    navigator.clipboard.writeText(JSON.stringify(json, null, 2))
+      .then(() => toast.success('JSON copié dans le presse-papier'))
+      .catch(() => toast.error('Impossible de copier dans le presse-papier'));
+  }, [formData]);
+
   const getFileExtension = (url: string): string => {
     const extension = url.split('.').pop();
     return extension || 'jpg'; // Default to jpg if no extension found
@@ -363,7 +382,15 @@ export default function ProductForm({ productId }: { productId: string }) {
             <ChevronLeftIcon className="w-4 h-4" />
           </Button>
         </div>
-        <div className="p-4 md:p-6 flex justify-end w-full">
+        <div className="p-4 md:p-6 flex justify-end w-full gap-2">
+          <Button
+            variant="secondary"
+            onClick={handleCopyAsJson}
+            type="button"
+          >
+            <CopyIcon className="w-4 h-4 mr-2" />
+            Copier JSON
+          </Button>
         <Button 
             className={`
               ${isChanged && isFormValid 
